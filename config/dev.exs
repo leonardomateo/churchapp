@@ -1,9 +1,10 @@
 import Config
+config :ash, policies: [show_policy_breakdowns?: true]
 
 # Configure your database
 config :churchapp, Churchapp.Repo,
   username: "postgres",
-  password: "postgres",
+  password: "Saved777",
   hostname: "localhost",
   database: "churchapp_dev",
   stacktrace: true,
@@ -64,7 +65,7 @@ config :churchapp, ChurchappWeb.Endpoint,
   ]
 
 # Enable dev routes for dashboard and mailbox
-config :churchapp, dev_routes: true
+config :churchapp, dev_routes: true, token_signing_secret: "yNqbC0ocxWAfSJnmLaAA+c4AGIuJUoSg"
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"

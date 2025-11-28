@@ -46,6 +46,47 @@ liveSocket.connect()
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
 
+// Theme toggle functionality
+const THEME_KEY = "theme"
+const THEMES = ["system", "light", "dark"]
+
+// Apply theme on page load
+const applyTheme = (theme) => {
+  const html = document.documentElement
+  
+  if (theme === "system") {
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+    html.setAttribute("data-theme", prefersDark ? "dark" : "light")
+  } else {
+    html.setAttribute("data-theme", theme)
+  }
+  
+  localStorage.setItem(THEME_KEY, theme)
+}
+
+// Initialize theme from localStorage or default to system
+const savedTheme = localStorage.getItem(THEME_KEY) || "dark"
+applyTheme(savedTheme)
+
+// Listen for theme toggle events
+window.addEventListener("phx:set-theme", (e) => {
+  const button = e.target
+  const newTheme = button.dataset.phxTheme
+  
+  if (THEMES.includes(newTheme)) {
+    applyTheme(newTheme)
+  }
+})
+
+// Watch for system theme changes when in system mode
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+  const currentTheme = localStorage.getItem(THEME_KEY)
+  if (currentTheme === "system") {
+    applyTheme("system")
+  }
+})
+
+
 // The lines below enable quality of life phoenix_live_reload
 // development features:
 //

@@ -1,0 +1,90 @@
+<div class="drawer lg:drawer-open">
+  <input id="main-drawer" type="checkbox" class="drawer-toggle" />
+  
+  <!-- Page Content -->
+  <div class="drawer-content flex flex-col min-h-screen">
+    <!-- Navbar -->
+    <div class="w-full navbar bg-base-100 shadow-sm lg:hidden">
+      <div class="flex-none">
+        <label for="main-drawer" class="btn btn-square btn-ghost">
+          <.icon name="hero-bars-3" class="w-6 h-6" />
+        </label>
+      </div>
+      <div class="flex-1 px-2 mx-2 text-xl font-bold">ChurchApp</div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 p-6 md:p-8 lg:p-10">
+      <div class="mx-auto max-w-6xl">
+        <.flash_group flash={@flash} />
+        {@inner_content}
+      </div>
+    </main>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="drawer-side z-40">
+    <label for="main-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+    <aside class="bg-base-100 min-h-screen w-80 flex flex-col border-r border-base-300">
+      <!-- Sidebar Header -->
+      <div class="p-6 flex items-center gap-3 border-b border-base-200">
+        <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-content font-bold text-xl">
+          C
+        </div>
+        <span class="text-2xl font-bold tracking-tight">ChurchApp</span>
+      </div>
+
+      <!-- Navigation -->
+      <div class="flex-1 px-4 py-6 overflow-y-auto">
+        <ul class="menu menu-lg gap-2">
+          <li>
+            <.link navigate={~p"/"}>
+              <.icon name="hero-home" class="w-5 h-5" />
+              Dashboard
+            </.link>
+          </li>
+          
+          <li class="menu-title mt-4">People</li>
+          <li>
+            <.link navigate={~p"/congregants"}>
+              <.icon name="hero-users" class="w-5 h-5" />
+              Congregants
+            </.link>
+            <ul>
+              <li>
+                <.link navigate={~p"/congregants/new"}>
+                  <.icon name="hero-plus" class="w-4 h-4" />
+                  New Congregant
+                </.link>
+              </li>
+            </ul>
+          </li>
+          
+          <li class="menu-title mt-4">Administration</li>
+          <li>
+            <.link href={~p"/admin"}>
+              <.icon name="hero-cog-6-tooth" class="w-5 h-5" />
+              Ash Admin
+            </.link>
+          </li>
+        </ul>
+      </div>
+
+      <!-- User Profile / Footer -->
+      <div class="p-4 border-t border-base-200">
+        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200 transition-colors cursor-pointer">
+          <div class="avatar placeholder">
+            <div class="bg-neutral text-neutral-content rounded-full w-10">
+              <span>U</span>
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium truncate">User Name</p>
+            <p class="text-xs text-base-content/60 truncate">user@churchapp.com</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+

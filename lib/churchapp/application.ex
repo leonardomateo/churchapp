@@ -15,7 +15,8 @@ defmodule Churchapp.Application do
       # Start a worker by calling: Churchapp.Worker.start_link(arg)
       # {Churchapp.Worker, arg},
       # Start to serve requests, typically the last entry
-      ChurchappWeb.Endpoint
+      ChurchappWeb.Endpoint,
+      {AshAuthentication.Supervisor, [otp_app: :churchapp]}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
