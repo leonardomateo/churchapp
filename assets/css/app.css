@@ -244,6 +244,49 @@
   background-color: #ffffff !important;
 }
 
+/* Dark theme - checkbox styling with proper contrast */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #6b7280;
+  border-radius: 0.25rem;
+  background-color: transparent;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+input[type="checkbox"]:hover {
+  border-color: #06b6d4;
+  background-color: rgba(6, 182, 212, 0.1);
+}
+
+input[type="checkbox"]:checked {
+  background-color: #06b6d4;
+  border-color: #06b6d4;
+}
+
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.375rem;
+  height: 0.625rem;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -60%) rotate(45deg);
+}
+
+input[type="checkbox"]:focus {
+  outline: none;
+  ring: 2px solid #06b6d4;
+  ring-offset: 2px;
+}
+
 /* Light theme - button styling */
 [data-theme="light"] button.bg-dark-700,
 [data-theme="light"] button[class*="bg-dark"] {
@@ -286,6 +329,22 @@
 [data-theme="light"] input[type="checkbox"][class*="bg-dark"] {
   background-color: #ffffff !important;
   border-color: #d1d5db !important;
+}
+
+/* Light theme - checkboxes */
+[data-theme="light"] input[type="checkbox"] {
+  border-color: #9ca3af;
+  background-color: #ffffff;
+}
+
+[data-theme="light"] input[type="checkbox"]:hover {
+  border-color: #06b6d4;
+  background-color: rgba(6, 182, 212, 0.05);
+}
+
+[data-theme="light"] input[type="checkbox"]:checked {
+  background-color: #06b6d4;
+  border-color: #06b6d4;
 }
 
 /* Custom Utilities */
@@ -359,4 +418,60 @@
 /* Table row hover effect */
 tbody tr:hover {
   background-color: rgba(45, 45, 45, 0.4) !important;
+}
+
+/* Modal backdrop overlay */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Flash message animation */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* Floating action bar animation */
+@keyframes slide-up {
+  from {
+    transform: translate(-50%, calc(100% + 3rem));
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out forwards;
+}
+
+/* Light theme flash messages */
+[data-theme="light"] .bg-primary-500 {
+  background-color: #06b6d4 !important;
+}
+
+[data-theme="light"] .border-primary-600 {
+  border-color: #0891b2 !important;
+}
+
+[data-theme="light"] .bg-red-600 {
+  background-color: #dc2626 !important;
+}
+
+[data-theme="light"] .border-red-700 {
+  border-color: #b91c1c !important;
 }

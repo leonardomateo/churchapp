@@ -10,6 +10,10 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
       |> assign(:sort_by, :first_name)
       |> assign(:sort_dir, :asc)
       |> assign(:search_query, "")
+      |> assign(:open_menu_id, nil)
+      |> assign(:selected_ids, MapSet.new())
+      |> assign(:show_delete_confirm, false)
+      |> assign(:delete_single_id, nil)
       |> fetch_congregants()
 
     {:ok, socket}
@@ -39,12 +43,101 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
     |> then(&{:noreply, &1})
   end
 
+  def handle_event("toggle_select", %{"id" => id}, socket) do
+    selected_ids = socket.assigns.selected_ids
+
+    new_selected_ids =
+      if MapSet.member?(selected_ids, id) do
+        MapSet.delete(selected_ids, id)
+      else
+        MapSet.put(selected_ids, id)
+      end
+
+    {:noreply, assign(socket, :selected_ids, new_selected_ids)}
+  end
+
+  def handle_event("toggle_select_all", _params, socket) do
+    all_ids = Enum.map(socket.assigns.congregants, & &1.id) |> MapSet.new()
+
+    new_selected_ids =
+      if MapSet.equal?(socket.assigns.selected_ids, all_ids) do
+        MapSet.new()
+      else
+        all_ids
+      end
+
+    {:noreply, assign(socket, :selected_ids, new_selected_ids)}
+  end
+
+  def handle_event("show_delete_confirm", _params, socket) do
+    {:noreply, assign(socket, :show_delete_confirm, true)}
+  end
+
+  def handle_event("cancel_delete", _params, socket) do
+    {:noreply, assign(socket, :show_delete_confirm, false)}
+  end
+
+  def handle_event("confirm_delete_selected", _params, socket) do
+    count = MapSet.size(socket.assigns.selected_ids)
+
+    Enum.each(socket.assigns.selected_ids, fn id ->
+      case Chms.Church.get_congregant_by_id(id) do
+        {:ok, congregant} -> Chms.Church.destroy_congregant(congregant)
+        _ -> :ok
+      end
+    end)
+
+    socket
+    |> put_flash(:info, "Successfully deleted #{count} member(s)")
+    |> assign(:selected_ids, MapSet.new())
+    |> assign(:show_delete_confirm, false)
+    |> fetch_congregants()
+    |> then(&{:noreply, &1})
+  end
+
+  def handle_event("show_delete_single", %{"id" => id}, socket) do
+    {:noreply, assign(socket, delete_single_id: id, open_menu_id: nil)}
+  end
+
+  def handle_event("cancel_delete_single", _params, socket) do
+    {:noreply, assign(socket, :delete_single_id, nil)}
+  end
+
+  def handle_event("confirm_delete_single", _params, socket) do
+    case Chms.Church.get_congregant_by_id(socket.assigns.delete_single_id) do
+      {:ok, congregant} ->
+        {:ok, _} = Chms.Church.destroy_congregant(congregant)
+
+        socket
+        |> put_flash(:info, "Congregant deleted successfully")
+        |> assign(:delete_single_id, nil)
+        |> fetch_congregants()
+        |> then(&{:noreply, &1})
+
+      {:error, _} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Failed to delete congregant")
+         |> assign(:delete_single_id, nil)}
+    end
+  end
+
+  def handle_event("toggle_menu", %{"id" => id}, socket) do
+    new_menu_id = if socket.assigns.open_menu_id == id, do: nil, else: id
+    {:noreply, assign(socket, :open_menu_id, new_menu_id)}
+  end
+
+  def handle_event("close_menu", _params, socket) do
+    {:noreply, assign(socket, :open_menu_id, nil)}
+  end
+
   def handle_event("delete", %{"id" => id}, socket) do
     {:ok, congregant} = Chms.Church.get_congregant_by_id(id)
     {:ok, _} = Chms.Church.destroy_congregant(congregant)
 
     socket
     |> put_flash(:info, "Congregant deleted successfully")
+    |> assign(:open_menu_id, nil)
     |> fetch_congregants()
     |> then(&{:noreply, &1})
   end
@@ -75,9 +168,11 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
 
   def render(assigns) do
     ~H"""
-    <div class="view-container active">
+    <div class="view-container active" phx-click="close_menu">
       <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-        <h2 class="text-2xl font-bold text-white">All Members</h2>
+        <div class="flex items-center gap-4">
+          <h2 class="text-2xl font-bold text-white">All Members</h2>
+        </div>
         <div class="flex items-center gap-3">
           <.link
             navigate={~p"/congregants/new"}
@@ -88,6 +183,29 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
           </.link>
         </div>
       </div>
+
+      <%!-- Floating Action Bar for Selected Items --%>
+      <%= if MapSet.size(@selected_ids) > 0 do %>
+        <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
+          <div class="flex items-center gap-4 px-6 py-4 bg-dark-800 border-2 border-primary-500 rounded-full shadow-2xl shadow-primary-500/30">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-check-circle" class="h-5 w-5 text-primary-500" />
+              <span class="text-sm font-medium text-white">
+                {MapSet.size(@selected_ids)} selected
+              </span>
+            </div>
+            <div class="h-6 w-px bg-dark-600"></div>
+            <button
+              type="button"
+              phx-click="show_delete_confirm"
+              class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full transition-colors"
+            >
+              <.icon name="hero-trash" class="mr-2 h-4 w-4" />
+              Delete Selected
+            </button>
+          </div>
+        </div>
+      <% end %>
 
       <div class="mb-6 flex flex-col sm:flex-row gap-4">
         <div class="relative flex-1">
@@ -114,6 +232,15 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
         <table class="min-w-full">
           <thead>
             <tr class="border-b border-dark-700">
+              <th scope="col" class="px-6 py-4 w-12">
+                <input
+                  type="checkbox"
+                  phx-click="toggle_select_all"
+                  checked={MapSet.size(@selected_ids) > 0 && MapSet.size(@selected_ids) == length(@congregants)}
+                  class="h-4 w-4 text-primary-600 bg-dark-700 border-dark-600 rounded focus:ring-primary-500 focus:ring-offset-dark-800 cursor-pointer"
+                  aria-label="Select all"
+                />
+              </th>
               <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Member
               </th>
@@ -126,15 +253,30 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
               <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Ministry
               </th>
+              <th scope="col" class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody class="bg-dark-800">
             <tr
               :for={congregant <- @congregants}
-              phx-click={JS.navigate(~p"/congregants/#{congregant}")}
-              class="border-b border-dark-700 hover:bg-dark-700/40 transition-all duration-200 cursor-pointer group"
+              class={[
+                "border-b border-dark-700 hover:bg-dark-700/40 transition-all duration-200 group",
+                MapSet.member?(@selected_ids, congregant.id) && "bg-primary-900/20"
+              ]}
             >
-              <td class="px-6 py-5">
+              <td class="px-6 py-5 w-12">
+                <input
+                  type="checkbox"
+                  phx-click="toggle_select"
+                  phx-value-id={congregant.id}
+                  checked={MapSet.member?(@selected_ids, congregant.id)}
+                  class="h-4 w-4 text-primary-600 bg-dark-700 border-dark-600 rounded focus:ring-primary-500 focus:ring-offset-dark-800 cursor-pointer"
+                  aria-label={"Select #{congregant.first_name} #{congregant.last_name}"}
+                />
+              </td>
+              <td class="px-6 py-5 cursor-pointer" phx-click={JS.navigate(~p"/congregants/#{congregant}")}>
                 <div class="flex items-center">
                   <img
                     src={"https://ui-avatars.com/api/?name=#{URI.encode(congregant.first_name <> "+" <> congregant.last_name)}&background=404040&color=D1D5DB&bold=true"}
@@ -151,7 +293,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                   </div>
                 </div>
               </td>
-              <td class="px-6 py-5">
+              <td class="px-6 py-5 cursor-pointer" phx-click={JS.navigate(~p"/congregants/#{congregant}")}>
                 <div class="text-sm text-gray-300">
                   {if congregant.address, do: congregant.address, else: "—"}
                 </div>
@@ -159,7 +301,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                   {format_phone(congregant.mobile_tel)}
                 </div>
               </td>
-              <td class="px-6 py-5">
+              <td class="px-6 py-5 cursor-pointer" phx-click={JS.navigate(~p"/congregants/#{congregant}")}>
                 <span class={[
                   "px-3 py-1 inline-flex text-sm font-medium rounded-full",
                   congregant.status == :member && "bg-green-900/60 text-green-400",
@@ -176,8 +318,59 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                   end}
                 </span>
               </td>
-              <td class="px-6 py-5 text-sm text-gray-300">
+              <td class="px-6 py-5 text-sm text-gray-300 cursor-pointer" phx-click={JS.navigate(~p"/congregants/#{congregant}")}>
                 {if congregant.is_leader, do: "Worship Team, Kids Ministry", else: "—"}
+              </td>
+              <td class="px-6 py-5 text-right relative">
+                <div class="flex items-center justify-end">
+                  <button
+                    type="button"
+                    phx-click="toggle_menu"
+                    phx-value-id={congregant.id}
+                    class="p-2 text-gray-400 hover:text-white rounded-md hover:bg-dark-700 transition-colors"
+                    aria-label="Actions menu"
+                  >
+                    <.icon name="hero-ellipsis-vertical" class="h-5 w-5" />
+                  </button>
+
+                  <%!-- Dropdown Menu --%>
+                  <div
+                    :if={@open_menu_id == congregant.id}
+                    class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-dark-700 ring-1 ring-dark-600 z-10"
+                    style="top: 100%;"
+                  >
+                    <div class="py-1" role="menu" aria-orientation="vertical">
+                      <.link
+                        navigate={~p"/congregants/#{congregant}"}
+                        class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-dark-600 hover:text-white transition-colors"
+                        role="menuitem"
+                      >
+                        <.icon name="hero-eye" class="mr-3 h-4 w-4" />
+                        View Details
+                      </.link>
+
+                      <.link
+                        navigate={~p"/congregants/#{congregant}/edit"}
+                        class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-dark-600 hover:text-white transition-colors"
+                        role="menuitem"
+                      >
+                        <.icon name="hero-pencil-square" class="mr-3 h-4 w-4" />
+                        Edit Member
+                      </.link>
+
+                      <button
+                        type="button"
+                        phx-click="show_delete_single"
+                        phx-value-id={congregant.id}
+                        class="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-dark-600 hover:text-red-300 transition-colors text-left"
+                        role="menuitem"
+                      >
+                        <.icon name="hero-trash" class="mr-3 h-4 w-4" />
+                        Delete Member
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -202,6 +395,116 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
           </div>
         </div>
       </div>
+
+      <%!-- Custom Delete Confirmation Modal --%>
+      <%= if @show_delete_confirm do %>
+        <div
+          class="fixed inset-0 z-[100] overflow-y-auto"
+          aria-labelledby="modal-title"
+          role="dialog"
+          aria-modal="true"
+        >
+          <%!-- Background overlay --%>
+          <div class="fixed inset-0 modal-backdrop transition-opacity"></div>
+
+          <%!-- Modal panel --%>
+          <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative transform overflow-hidden rounded-lg bg-dark-800 border border-dark-700 shadow-2xl transition-all w-full max-w-lg">
+              <%!-- Modal content --%>
+              <div class="p-6">
+                <div class="flex items-start gap-4">
+                  <div class="flex-shrink-0">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-900/20">
+                      <.icon name="hero-exclamation-triangle" class="h-6 w-6 text-red-500" />
+                    </div>
+                  </div>
+                  <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-white mb-2" id="modal-title">
+                      Delete Members
+                    </h3>
+                    <p class="text-sm text-gray-300">
+                      Are you sure you want to delete {MapSet.size(@selected_ids)} member(s)? This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <%!-- Modal actions --%>
+              <div class="px-6 py-4 bg-dark-700/50 flex justify-end gap-3">
+                <button
+                  type="button"
+                  phx-click="cancel_delete"
+                  class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 hover:bg-dark-600 rounded-md border border-dark-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  phx-click="confirm_delete_selected"
+                  class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                >
+                  Delete Members
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%!-- Single Delete Confirmation Modal --%>
+      <%= if @delete_single_id do %>
+        <div
+          class="fixed inset-0 z-[100] overflow-y-auto"
+          aria-labelledby="modal-title-single"
+          role="dialog"
+          aria-modal="true"
+        >
+          <%!-- Background overlay --%>
+          <div class="fixed inset-0 modal-backdrop transition-opacity"></div>
+
+          <%!-- Modal panel --%>
+          <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative transform overflow-hidden rounded-lg bg-dark-800 border border-dark-700 shadow-2xl transition-all w-full max-w-lg">
+              <%!-- Modal content --%>
+              <div class="p-6">
+                <div class="flex items-start gap-4">
+                  <div class="flex-shrink-0">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-900/20">
+                      <.icon name="hero-exclamation-triangle" class="h-6 w-6 text-red-500" />
+                    </div>
+                  </div>
+                  <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-white mb-2" id="modal-title-single">
+                      Delete Member
+                    </h3>
+                    <p class="text-sm text-gray-300">
+                      Are you sure you want to delete this member? This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <%!-- Modal actions --%>
+              <div class="px-6 py-4 bg-dark-700/50 flex justify-end gap-3">
+                <button
+                  type="button"
+                  phx-click="cancel_delete_single"
+                  class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 hover:bg-dark-600 rounded-md border border-dark-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  phx-click="confirm_delete_single"
+                  class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                >
+                  Delete Member
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
     """
   end
