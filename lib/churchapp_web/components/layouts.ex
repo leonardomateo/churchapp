@@ -64,32 +64,50 @@ defmodule ChurchappWeb.Layouts do
   """
   def theme_toggle(assigns) do
     ~H"""
-    <div class="relative flex flex-row items-center border-2 border-dark-600 bg-dark-700 rounded-full">
-      <div class="absolute w-1/3 h-full rounded-full border border-dark-600 bg-dark-600 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 transition-[left] duration-200" />
-
+    <div class="relative" id="theme-dropdown" phx-hook="ThemeDropdown">
       <button
         type="button"
-        class="flex p-2 cursor-pointer w-1/3 relative z-10"
-        onclick="window.setTheme('system')"
+        id="theme-toggle-btn"
+        class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-dark-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
+        aria-label="Toggle theme"
       >
-        <.icon name="hero-computer-desktop-micro" class="size-4 text-gray-400 hover:text-white" />
+        <%!-- Show sun in dark mode, moon in light mode --%>
+        <.icon name="hero-sun" class="size-5 hidden [[data-theme=dark]_&]:block" />
+        <.icon name="hero-moon" class="size-5 block [[data-theme=dark]_&]:hidden" />
       </button>
 
-      <button
-        type="button"
-        class="flex p-2 cursor-pointer w-1/3 relative z-10"
-        onclick="window.setTheme('light')"
+      <%!-- Dropdown menu --%>
+      <div
+        id="theme-menu"
+        class="absolute right-0 mt-2 w-36 bg-dark-800 border border-dark-700 rounded-lg shadow-xl z-50 hidden"
       >
-        <.icon name="hero-sun-micro" class="size-4 text-gray-400 hover:text-white" />
-      </button>
-
-      <button
-        type="button"
-        class="flex p-2 cursor-pointer w-1/3 relative z-10"
-        onclick="window.setTheme('dark')"
-      >
-        <.icon name="hero-moon-micro" class="size-4 text-gray-400 hover:text-white" />
-      </button>
+        <div class="py-1">
+          <button
+            type="button"
+            class="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+            onclick="window.setTheme('light'); document.getElementById('theme-menu').classList.add('hidden');"
+          >
+            <.icon name="hero-sun" class="size-4 mr-3" />
+            Light
+          </button>
+          <button
+            type="button"
+            class="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+            onclick="window.setTheme('dark'); document.getElementById('theme-menu').classList.add('hidden');"
+          >
+            <.icon name="hero-moon" class="size-4 mr-3" />
+            Dark
+          </button>
+          <button
+            type="button"
+            class="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+            onclick="window.setTheme('system'); document.getElementById('theme-menu').classList.add('hidden');"
+          >
+            <.icon name="hero-computer-desktop" class="size-4 mr-3" />
+            System
+          </button>
+        </div>
+      </div>
     </div>
     """
   end

@@ -74,11 +74,44 @@ const MobileMenu = {
   }
 }
 
+// Theme Dropdown Hook
+const ThemeDropdown = {
+  mounted() {
+    this.button = document.getElementById("theme-toggle-btn")
+    this.menu = document.getElementById("theme-menu")
+
+    this.toggleDropdown = (e) => {
+      e.stopPropagation()
+      // Check actual menu state instead of tracking with variable
+      const isCurrentlyHidden = this.menu.classList.contains("hidden")
+      if (isCurrentlyHidden) {
+        this.menu.classList.remove("hidden")
+      } else {
+        this.menu.classList.add("hidden")
+      }
+    }
+
+    this.closeDropdown = (e) => {
+      if (!this.el.contains(e.target)) {
+        this.menu.classList.add("hidden")
+      }
+    }
+
+    this.button?.addEventListener("click", this.toggleDropdown)
+    document.addEventListener("click", this.closeDropdown)
+  },
+
+  destroyed() {
+    this.button?.removeEventListener("click", this.toggleDropdown)
+    document.removeEventListener("click", this.closeDropdown)
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown},
 })
 
 // Show progress bar on live navigation and form submits
