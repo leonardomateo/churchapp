@@ -20,27 +20,34 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
   def render(assigns) do
     ~H"""
     <div class="max-w-4xl mx-auto">
-      <!-- Back Navigation and Edit Button -->
+      <%!-- Back Navigation and Edit Button --%>
       <div class="mb-6 flex items-center justify-between">
-        <.link navigate={~p"/congregants"} class="text-gray-400 hover:text-white flex items-center transition-colors">
-          <.icon name="hero-arrow-left" class="h-4 w-4 mr-2" /> Back to List
+        <.link
+          navigate={~p"/congregants"}
+          class="flex items-center text-gray-400 hover:text-white transition-colors"
+        >
+          <.icon name="hero-arrow-left" class="mr-2 h-4 w-4" />
+          Back to List
         </.link>
 
-        <.link navigate={~p"/congregants/#{@congregant}/edit"} class="inline-flex items-center px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-md transition-colors shadow-lg shadow-primary-500/20">
-          <.icon name="hero-pencil-square" class="w-4 h-4 mr-2" />
+        <.link
+          navigate={~p"/congregants/#{@congregant}/edit"}
+          class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md shadow-lg shadow-primary-500/20 transition-colors"
+        >
+          <.icon name="hero-pencil-square" class="mr-2 w-4 h-4" />
           Edit Member
         </.link>
       </div>
 
       <div class="bg-dark-800 shadow-xl rounded-lg border border-dark-700 overflow-hidden">
-
-        <!-- Member Header -->
+        <%!-- Member Header --%>
         <div class="px-6 py-8 border-b border-dark-700">
           <div class="flex items-center gap-6">
             <img
-              class="h-24 w-24 rounded-full object-cover border-2 border-dark-600"
               src={"https://ui-avatars.com/api/?name=#{URI.encode(@congregant.first_name <> "+" <> @congregant.last_name)}&background=404040&color=D1D5DB&bold=true&size=256"}
-              alt="">
+              alt=""
+              class="h-24 w-24 rounded-full object-cover border-2 border-dark-600"
+            />
 
             <div class="flex-1">
               <div class="flex items-center gap-3 mb-3">
@@ -78,28 +85,33 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
           </div>
         </div>
 
-        <!-- Member Details -->
+        <%!-- Member Details --%>
         <div class="p-8">
-
-          <!-- Personal Information -->
+          <%!-- Personal Information --%>
           <div class="py-8">
-            <h3 class="text-lg font-medium leading-6 text-white mb-6 flex items-center ml-6">
-              <.icon name="hero-user" class="h-5 w-5 mr-2 text-primary-500" /> Personal Information
+            <h3 class="mb-6 ml-6 flex items-center text-lg font-medium leading-6 text-white">
+              <.icon name="hero-user" class="mr-2 h-5 w-5 text-primary-500" />
+              Personal Information
             </h3>
-            <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 ml-6">
+            <dl class="ml-6 grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
               <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Birth</dt>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date of Birth
+                </dt>
                 <dd class="mt-2 text-sm text-white">
                   {if @congregant.dob, do: Calendar.strftime(@congregant.dob, "%B %d, %Y"), else: "Not provided"}
                 </dd>
               </div>
 
               <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Role</dt>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Role
+                </dt>
                 <dd class="mt-2 text-sm text-white">
                   <%= if @congregant.is_leader do %>
                     <span class="inline-flex items-center text-primary-500">
-                      <.icon name="hero-shield-check" class="w-4 h-4 mr-1" /> Leader
+                      <.icon name="hero-shield-check" class="mr-1 w-4 h-4" />
+                      Leader
                     </span>
                   <% else %>
                     Member
@@ -109,37 +121,51 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
             </dl>
           </div>
 
-          <hr class="border-dark-700">
+          <hr class="border-dark-700" />
 
-          <!-- Contact Information -->
+          <%!-- Contact Information --%>
           <div class="py-8">
-            <h3 class="text-lg font-medium leading-6 text-white mb-6 flex items-center ml-6">
-              <.icon name="hero-phone" class="h-5 w-5 mr-2 text-primary-500" /> Contact Information
+            <h3 class="mb-6 ml-6 flex items-center text-lg font-medium leading-6 text-white">
+              <.icon name="hero-phone" class="mr-2 h-5 w-5 text-primary-500" />
+              Contact Information
             </h3>
-            <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-3 ml-6">
+            <dl class="ml-6 grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-3">
               <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile Phone</dt>
-                <dd class="mt-2 text-sm text-white">{if @congregant.mobile_tel, do: @congregant.mobile_tel, else: "—"}</dd>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Mobile Phone
+                </dt>
+                <dd class="mt-2 text-sm text-white">
+                  {format_phone(@congregant.mobile_tel)}
+                </dd>
               </div>
 
               <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Home Phone</dt>
-                <dd class="mt-2 text-sm text-white">{if @congregant.home_tel, do: @congregant.home_tel, else: "—"}</dd>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Home Phone
+                </dt>
+                <dd class="mt-2 text-sm text-white">
+                  {format_phone(@congregant.home_tel)}
+                </dd>
               </div>
 
               <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Work Phone</dt>
-                <dd class="mt-2 text-sm text-white">{if @congregant.work_tel, do: @congregant.work_tel, else: "—"}</dd>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Work Phone
+                </dt>
+                <dd class="mt-2 text-sm text-white">
+                  {format_phone(@congregant.work_tel)}
+                </dd>
               </div>
             </dl>
           </div>
 
-          <hr class="border-dark-700">
+          <hr class="border-dark-700" />
 
-          <!-- Address -->
+          <%!-- Address --%>
           <div class="py-8">
-            <h3 class="text-lg font-medium leading-6 text-white mb-6 flex items-center ml-6">
-              <.icon name="hero-map-pin" class="h-5 w-5 mr-2 text-primary-500" /> Address
+            <h3 class="mb-6 ml-6 flex items-center text-lg font-medium leading-6 text-white">
+              <.icon name="hero-map-pin" class="mr-2 h-5 w-5 text-primary-500" />
+              Address
             </h3>
             <dl class="ml-6">
               <%= if @congregant.address do %>
@@ -151,31 +177,40 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
                   <div>
                     {@congregant.city}<%= if @congregant.city && @congregant.state, do: ", " %>{@congregant.state} {@congregant.zip_code}
                   </div>
-                  <div class="text-gray-400 mt-2">{@congregant.country}</div>
+                  <div class="mt-2 text-gray-400">
+                    {@congregant.country}
+                  </div>
                 </dd>
               <% else %>
-                <dd class="text-gray-500 italic text-sm">No address provided</dd>
+                <dd class="text-sm text-gray-500 italic">
+                  No address provided
+                </dd>
               <% end %>
             </dl>
           </div>
 
-          <hr class="border-dark-700">
+          <hr class="border-dark-700" />
 
-          <!-- System Information -->
+          <%!-- System Information --%>
           <div class="py-8">
-            <h3 class="text-lg font-medium leading-6 text-white mb-6 flex items-center ml-6">
-              <.icon name="hero-clock" class="h-5 w-5 mr-2 text-primary-500" /> System Information
+            <h3 class="mb-6 ml-6 flex items-center text-lg font-medium leading-6 text-white">
+              <.icon name="hero-clock" class="mr-2 h-5 w-5 text-primary-500" />
+              System Information
             </h3>
-            <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 ml-6">
+            <dl class="ml-6 grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
               <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Created</dt>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Created
+                </dt>
                 <dd class="mt-2 text-sm text-white">
                   {Calendar.strftime(@congregant.inserted_at, "%B %d, %Y at %I:%M %p")}
                 </dd>
               </div>
 
               <div>
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</dt>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Last Updated
+                </dt>
                 <dd class="mt-2 text-sm text-white">
                   {Calendar.strftime(@congregant.updated_at, "%B %d, %Y at %I:%M %p")}
                 </dd>
@@ -186,5 +221,19 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
       </div>
     </div>
     """
+  end
+
+  # Format phone number for display: (123) 456 - 7890
+  defp format_phone(nil), do: "—"
+  defp format_phone(""), do: "—"
+  defp format_phone(phone) do
+    digits = String.replace(phone, ~r/\D/, "")
+
+    case String.length(digits) do
+      10 ->
+        "(#{String.slice(digits, 0, 3)}) #{String.slice(digits, 3, 3)} - #{String.slice(digits, 6, 4)}"
+      _ ->
+        phone  # Return as-is if not 10 digits
+    end
   end
 end

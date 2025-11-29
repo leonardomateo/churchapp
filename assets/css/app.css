@@ -149,6 +149,145 @@
   color: inherit;
 }
 
+/* Light theme - form styling */
+[data-theme="light"] label {
+  color: #111827 !important;
+}
+
+[data-theme="light"] input,
+[data-theme="light"] textarea {
+  background-color: #f9fafb !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+[data-theme="light"] input:focus,
+[data-theme="light"] textarea:focus,
+[data-theme="light"] select:focus {
+  border-color: #06b6d4 !important;
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2) !important;
+}
+
+[data-theme="light"] input[type="date"],
+[data-theme="light"] input[type="datetime-local"],
+[data-theme="light"] input[type="time"] {
+  color: #111827 !important;
+}
+
+[data-theme="light"] input[readonly],
+[data-theme="light"] input:disabled {
+  background-color: #e5e7eb !important;
+  color: #6b7280 !important;
+}
+
+/* Light theme - section headers */
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4 {
+  color: #111827 !important;
+}
+
+/* Light theme - icons in headers */
+[data-theme="light"] .text-primary-500 svg,
+[data-theme="light"] [class*="text-primary"] svg {
+  color: #0891b2 !important;
+}
+
+/* Light theme - form field wrapper backgrounds */
+[data-theme="light"] .bg-dark-800 {
+  background-color: #ffffff !important;
+}
+
+[data-theme="light"] .bg-dark-900 {
+  background-color: #f3f4f6 !important;
+}
+
+/* Light theme - card/panel styling */
+[data-theme="light"] [class*="rounded-lg"][class*="bg-dark"] {
+  background-color: #ffffff !important;
+  border: 1px solid #e5e7eb;
+}
+
+/* Light theme - select/dropdown with better contrast */
+[data-theme="light"] select {
+  background-color: #f9fafb !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+/* Light theme - placeholder text - darker for better readability */
+[data-theme="light"] ::placeholder {
+  color: #6b7280 !important;
+  opacity: 1;
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: #6b7280 !important;
+}
+
+/* Light theme - input values (not placeholder) should be dark */
+[data-theme="light"] input[value]:not([value=""]),
+[data-theme="light"] input:not(:placeholder-shown) {
+  color: #111827 !important;
+}
+
+/* Light theme - footer/bottom bar */
+[data-theme="light"] .bg-dark-700,
+[data-theme="light"] [class*="bg-dark-700"] {
+  background-color: #e5e7eb !important;
+}
+
+/* Light theme - checkbox styling */
+[data-theme="light"] input[type="checkbox"] {
+  accent-color: #06b6d4;
+  background-color: #ffffff !important;
+}
+
+/* Light theme - button styling */
+[data-theme="light"] button.bg-dark-700,
+[data-theme="light"] button[class*="bg-dark"] {
+  background-color: #e5e7eb !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+[data-theme="light"] button.bg-dark-700:hover,
+[data-theme="light"] button[class*="bg-dark"]:hover {
+  background-color: #d1d5db !important;
+}
+
+/* Light theme - footer bar with opacity */
+[data-theme="light"] .bg-dark-700\/50,
+[data-theme="light"] [class*="bg-dark-700/50"] {
+  background-color: rgba(229, 231, 235, 0.8) !important;
+}
+
+/* Light theme - cancel/secondary button */
+[data-theme="light"] a.bg-dark-800,
+[data-theme="light"] a[class*="bg-dark-800"] {
+  background-color: #ffffff !important;
+  color: #374151 !important;
+  border-color: #d1d5db !important;
+}
+
+[data-theme="light"] a.bg-dark-800:hover,
+[data-theme="light"] a[class*="bg-dark-800"]:hover {
+  background-color: #f3f4f6 !important;
+}
+
+/* Light theme - checkbox and its label */
+[data-theme="light"] .text-gray-300 {
+  color: #374151 !important;
+}
+
+/* Light theme - form checkbox specifically */
+[data-theme="light"] input[type="checkbox"].bg-dark-700,
+[data-theme="light"] input[type="checkbox"][class*="bg-dark"] {
+  background-color: #ffffff !important;
+  border-color: #d1d5db !important;
+}
+
 /* Custom Utilities */
 @layer utilities {
   .bg-dark-900 { background-color: var(--dark-900); }

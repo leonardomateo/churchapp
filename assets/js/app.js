@@ -107,11 +107,58 @@ const ThemeDropdown = {
   }
 }
 
+// Phone Number Format Hook - formats as (123) 456 - 7890
+const PhoneFormat = {
+  mounted() {
+    this.el.addEventListener("input", this.formatPhone.bind(this))
+    // Format existing value on mount
+    if (this.el.value) {
+      this.el.value = this.formatPhoneNumber(this.el.value)
+    }
+  },
+
+  formatPhone(e) {
+    const input = e.target
+    const cursorPos = input.selectionStart
+    const oldLength = input.value.length
+    
+    input.value = this.formatPhoneNumber(input.value)
+    
+    // Adjust cursor position after formatting
+    const newLength = input.value.length
+    const diff = newLength - oldLength
+    input.setSelectionRange(cursorPos + diff, cursorPos + diff)
+  },
+
+  formatPhoneNumber(value) {
+    // Remove all non-digit characters
+    const digits = value.replace(/\D/g, "")
+    
+    // Limit to 10 digits
+    const limited = digits.slice(0, 10)
+    
+    // Format based on length
+    if (limited.length === 0) {
+      return ""
+    } else if (limited.length <= 3) {
+      return `(${limited}`
+    } else if (limited.length <= 6) {
+      return `(${limited.slice(0, 3)}) ${limited.slice(3)}`
+    } else {
+      return `(${limited.slice(0, 3)}) ${limited.slice(3, 6)} - ${limited.slice(6)}`
+    }
+  },
+
+  destroyed() {
+    this.el.removeEventListener("input", this.formatPhone.bind(this))
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat},
 })
 
 // Show progress bar on live navigation and form submits
