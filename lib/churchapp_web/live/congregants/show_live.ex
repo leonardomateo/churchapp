@@ -20,154 +20,167 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
   def render(assigns) do
     ~H"""
     <div class="max-w-4xl mx-auto">
-      <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-4">
-          <.link navigate={~p"/congregants"} class="btn btn-circle btn-ghost">
-            <.icon name="hero-arrow-left" class="w-6 h-6" />
-          </.link>
-          <div>
-            <h1 class="text-3xl font-bold">
-              {@congregant.first_name} {@congregant.last_name}
-            </h1>
-            <div class="flex items-center gap-2 mt-1 text-base-content/60">
-              <span class="font-mono text-sm">Congregant ID: {@congregant.member_id}</span>
-              <span>•</span>
-              <span>Joined {if @congregant.member_since, do: Calendar.strftime(@congregant.member_since, "%B %d, %Y"), else: "Unknown date"}</span>
-            </div>
-          </div>
-        </div>
+      <!-- Back Navigation and Edit Button -->
+      <div class="mb-6 flex items-center justify-between">
+        <.link navigate={~p"/congregants"} class="text-gray-400 hover:text-white flex items-center transition-colors">
+          <.icon name="hero-arrow-left" class="h-4 w-4 mr-2" /> Back to List
+        </.link>
 
-        <div class="flex items-center gap-2">
-          <.link navigate={~p"/congregants/#{@congregant}/edit"} class="btn btn-primary gap-2">
-            <.icon name="hero-pencil-square" class="w-5 h-5" />
-            Edit
-          </.link>
-        </div>
+        <.link navigate={~p"/congregants/#{@congregant}/edit"} class="inline-flex items-center px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-md transition-colors shadow-lg shadow-primary-500/20">
+          <.icon name="hero-pencil-square" class="w-4 h-4 mr-2" />
+          Edit Member
+        </.link>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Main Info Card -->
-        <div class="col-span-1 lg:col-span-2 space-y-6">
-          <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-              <h2 class="card-title mb-4 text-primary">
-                <.icon name="hero-user" class="w-6 h-6" />
-                Personal Information
-              </h2>
+      <div class="bg-dark-800 shadow-xl rounded-lg border border-dark-700 overflow-hidden">
 
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <div class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-1">Status</div>
-                  <div class={[
-                    "badge badge-lg gap-1",
-                    @congregant.status == :member && "badge-success",
-                    @congregant.status == :visitor && "badge-info",
-                    @congregant.status == :deceased && "badge-ghost",
-                    @congregant.status == :honorific && "badge-warning"
-                  ]}>
-                    {Phoenix.Naming.humanize(@congregant.status)}
-                  </div>
-                </div>
+        <!-- Member Header -->
+        <div class="px-6 py-8 border-b border-dark-700">
+          <div class="flex items-center gap-6">
+            <img
+              class="h-24 w-24 rounded-full object-cover border-2 border-dark-600"
+              src={"https://ui-avatars.com/api/?name=#{URI.encode(@congregant.first_name <> "+" <> @congregant.last_name)}&background=404040&color=D1D5DB&bold=true&size=256"}
+              alt="">
 
-                <div>
-                  <div class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-1">Role</div>
-                  <%= if @congregant.is_leader do %>
-                    <div class="badge badge-accent gap-1">
-                      <.icon name="hero-shield-check" class="w-4 h-4" />
-                      Leader
-                    </div>
-                  <% else %>
-                    <span class="text-base-content">Member</span>
-                  <% end %>
-                </div>
-
-                <div>
-                  <div class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-1">Date of Birth</div>
-                  <div class="text-lg">
-                    {if @congregant.dob, do: Calendar.strftime(@congregant.dob, "%B %d, %Y"), else: "Not provided"}
-                  </div>
-                </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-3">
+                <h1 class="text-2xl font-bold text-white">
+                  {@congregant.first_name} {@congregant.last_name}
+                </h1>
+                <span class={[
+                  "px-3 py-1 inline-flex text-xs font-medium rounded-full border",
+                  @congregant.status == :member && "bg-green-900/60 text-green-400 border-green-800",
+                  @congregant.status == :visitor && "bg-yellow-900/60 text-yellow-500 border-yellow-800",
+                  @congregant.status == :deceased && "bg-gray-800 text-gray-400 border-gray-700",
+                  @congregant.status == :honorific && "bg-blue-900/60 text-blue-400 border-blue-800"
+                ]}>
+                  {Phoenix.Naming.humanize(@congregant.status)}
+                </span>
               </div>
-            </div>
-          </div>
 
-          <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-              <h2 class="card-title mb-4 text-primary">
-                <.icon name="hero-map-pin" class="w-6 h-6" />
-                Address
-              </h2>
-
-              <%= if @congregant.address do %>
-                <div class="text-lg">
-                  <div>{@congregant.address} {if @congregant.suite, do: "Ste #{@congregant.suite}"}</div>
-                  <div>
-                    {@congregant.city}{if @congregant.city && @congregant.state, do: ","} {@congregant.state} {@congregant.zip_code}
-                  </div>
-                  <div class="text-base-content/60 mt-1">{@congregant.country}</div>
-                </div>
-              <% else %>
-                <div class="text-base-content/60 italic">No address information provided</div>
-              <% end %>
+              <div class="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+                <span class="flex items-center gap-1.5">
+                  <.icon name="hero-identification" class="h-4 w-4" />
+                  ID: {@congregant.member_id}
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <.icon name="hero-calendar" class="h-4 w-4" />
+                  Member since {if @congregant.member_since, do: Calendar.strftime(@congregant.member_since, "%b %Y"), else: "Unknown"}
+                </span>
+                <%= if @congregant.is_leader do %>
+                  <span class="flex items-center gap-1.5 text-primary-500">
+                    <.icon name="hero-shield-check" class="h-4 w-4" />
+                    Leader
+                  </span>
+                <% end %>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Sidebar Info -->
-        <div class="col-span-1 space-y-6">
-          <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-              <h2 class="card-title mb-4 text-primary">
-                <.icon name="hero-phone" class="w-6 h-6" />
-                Contact Details
-              </h2>
+        <!-- Member Details -->
+        <div class="p-8">
 
-              <div class="space-y-4">
-                <div>
-                  <div class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-1">Mobile</div>
-                  <div class="flex items-center gap-2">
-                    <.icon name="hero-device-phone-mobile" class="w-5 h-5 opacity-60" />
-                    <span>{if @congregant.mobile_tel, do: @congregant.mobile_tel, else: "—"}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <div class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-1">Home</div>
-                  <div class="flex items-center gap-2">
-                    <.icon name="hero-phone" class="w-5 h-5 opacity-60" />
-                    <span>{if @congregant.home_tel, do: @congregant.home_tel, else: "—"}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <div class="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-1">Work</div>
-                  <div class="flex items-center gap-2">
-                    <.icon name="hero-briefcase" class="w-5 h-5 opacity-60" />
-                    <span>{if @congregant.work_tel, do: @congregant.work_tel, else: "—"}</span>
-                  </div>
-                </div>
+          <!-- Personal Information -->
+          <div class="py-8">
+            <h3 class="text-lg font-medium leading-6 text-white mb-6 flex items-center ml-6">
+              <.icon name="hero-user" class="h-5 w-5 mr-2 text-primary-500" /> Personal Information
+            </h3>
+            <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 ml-6">
+              <div>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Birth</dt>
+                <dd class="mt-2 text-sm text-white">
+                  {if @congregant.dob, do: Calendar.strftime(@congregant.dob, "%B %d, %Y"), else: "Not provided"}
+                </dd>
               </div>
-            </div>
+
+              <div>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Role</dt>
+                <dd class="mt-2 text-sm text-white">
+                  <%= if @congregant.is_leader do %>
+                    <span class="inline-flex items-center text-primary-500">
+                      <.icon name="hero-shield-check" class="w-4 h-4 mr-1" /> Leader
+                    </span>
+                  <% else %>
+                    Member
+                  <% end %>
+                </dd>
+              </div>
+            </dl>
           </div>
 
-          <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-              <h2 class="card-title mb-4 text-primary">
-                <.icon name="hero-clock" class="w-6 h-6" />
-                System Info
-              </h2>
+          <hr class="border-dark-700">
 
-              <div class="space-y-4 text-sm">
-                <div>
-                  <div class="text-base-content/60">Created At</div>
-                  <div>{Calendar.strftime(@congregant.inserted_at, "%b %d, %Y %I:%M %p")}</div>
-                </div>
-                <div>
-                  <div class="text-base-content/60">Last Updated</div>
-                  <div>{Calendar.strftime(@congregant.updated_at, "%b %d, %Y %I:%M %p")}</div>
-                </div>
+          <!-- Contact Information -->
+          <div class="py-8">
+            <h3 class="text-lg font-medium leading-6 text-white mb-6 flex items-center ml-6">
+              <.icon name="hero-phone" class="h-5 w-5 mr-2 text-primary-500" /> Contact Information
+            </h3>
+            <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-3 ml-6">
+              <div>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile Phone</dt>
+                <dd class="mt-2 text-sm text-white">{if @congregant.mobile_tel, do: @congregant.mobile_tel, else: "—"}</dd>
               </div>
-            </div>
+
+              <div>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Home Phone</dt>
+                <dd class="mt-2 text-sm text-white">{if @congregant.home_tel, do: @congregant.home_tel, else: "—"}</dd>
+              </div>
+
+              <div>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Work Phone</dt>
+                <dd class="mt-2 text-sm text-white">{if @congregant.work_tel, do: @congregant.work_tel, else: "—"}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <hr class="border-dark-700">
+
+          <!-- Address -->
+          <div class="py-8">
+            <h3 class="text-lg font-medium leading-6 text-white mb-6 flex items-center ml-6">
+              <.icon name="hero-map-pin" class="h-5 w-5 mr-2 text-primary-500" /> Address
+            </h3>
+            <dl class="ml-6">
+              <%= if @congregant.address do %>
+                <dd class="text-sm text-white leading-relaxed">
+                  <div>{@congregant.address}</div>
+                  <%= if @congregant.suite do %>
+                    <div>{@congregant.suite}</div>
+                  <% end %>
+                  <div>
+                    {@congregant.city}<%= if @congregant.city && @congregant.state, do: ", " %>{@congregant.state} {@congregant.zip_code}
+                  </div>
+                  <div class="text-gray-400 mt-2">{@congregant.country}</div>
+                </dd>
+              <% else %>
+                <dd class="text-gray-500 italic text-sm">No address provided</dd>
+              <% end %>
+            </dl>
+          </div>
+
+          <hr class="border-dark-700">
+
+          <!-- System Information -->
+          <div class="py-8">
+            <h3 class="text-lg font-medium leading-6 text-white mb-6 flex items-center ml-6">
+              <.icon name="hero-clock" class="h-5 w-5 mr-2 text-primary-500" /> System Information
+            </h3>
+            <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 ml-6">
+              <div>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Created</dt>
+                <dd class="mt-2 text-sm text-white">
+                  {Calendar.strftime(@congregant.inserted_at, "%B %d, %Y at %I:%M %p")}
+                </dd>
+              </div>
+
+              <div>
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</dt>
+                <dd class="mt-2 text-sm text-white">
+                  {Calendar.strftime(@congregant.updated_at, "%B %d, %Y at %I:%M %p")}
+                </dd>
+              </div>
+            </dl>
           </div>
         </div>
       </div>

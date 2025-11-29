@@ -1,90 +1,149 @@
-<div class="drawer lg:drawer-open">
-  <input id="main-drawer" type="checkbox" class="drawer-toggle" />
-  
-  <!-- Page Content -->
-  <div class="drawer-content flex flex-col min-h-screen">
-    <!-- Navbar -->
-    <div class="w-full navbar bg-base-100 shadow-sm lg:hidden">
-      <div class="flex-none">
-        <label for="main-drawer" class="btn btn-square btn-ghost">
-          <.icon name="hero-bars-3" class="w-6 h-6" />
-        </label>
+<div class="flex h-screen bg-dark-900 overflow-hidden">
+  <!-- Sidebar for Desktop -->
+  <aside class="hidden lg:flex flex-shrink-0">
+    <div class="flex flex-col w-64 bg-dark-800 border-r border-dark-700">
+      <!-- Sidebar Header -->
+      <div class="h-16 flex items-center px-6 border-b border-dark-700 flex-shrink-0">
+        <.icon name="hero-cube" class="text-primary-500 mr-3 w-6 h-6 flex-shrink-0" />
+        <span class="text-xl font-bold text-white">ChurchApp</span>
       </div>
-      <div class="flex-1 px-2 mx-2 text-xl font-bold">ChurchApp</div>
-    </div>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 p-6 md:p-8 lg:p-10">
-      <div class="mx-auto max-w-6xl">
+      <!-- Navigation -->
+      <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        <.link navigate={~p"/"} class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors">
+          <.icon name="hero-home" class="mr-3 h-5 w-5 flex-shrink-0" />
+          Dashboard
+        </.link>
+        
+        <.link navigate={~p"/congregants"} class="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary-500/10 text-primary-500">
+          <.icon name="hero-users" class="mr-3 h-5 w-5 flex-shrink-0" />
+          Members
+        </.link>
+        
+        <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors">
+           <.icon name="hero-heart" class="mr-3 h-5 w-5 flex-shrink-0" />
+           Ministries
+        </a>
+        
+        <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors">
+           <.icon name="hero-calendar" class="mr-3 h-5 w-5 flex-shrink-0" />
+           Events
+        </a>
+        
+        <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors">
+           <.icon name="hero-banknotes" class="mr-3 h-5 w-5 flex-shrink-0" />
+           Giving
+        </a>
+        
+        <a href="/admin" class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors">
+          <.icon name="hero-cog-6-tooth" class="mr-3 h-5 w-5 flex-shrink-0" />
+          Admin
+        </a>
+      </nav>
+
+      <!-- User Profile / Footer -->
+      <div class="p-4 border-t border-dark-700 flex-shrink-0">
+        <div class="flex items-center">
+            <img class="h-9 w-9 rounded-full object-cover border-2 border-dark-700 flex-shrink-0" src="https://i.pravatar.cc/150?img=3" alt="Admin Profile">
+            <div class="ml-3 min-w-0">
+                <p class="text-sm font-medium text-white truncate">Admin User</p>
+                <p class="text-xs text-gray-500">View Profile</p>
+            </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile menu button -->
+  <div class="lg:hidden fixed top-0 left-0 right-0 z-50 bg-dark-800 border-b border-dark-700">
+    <div class="flex items-center justify-between h-16 px-4">
+      <button type="button" id="mobile-menu-button" phx-hook="MobileMenu" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-dark-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500">
+        <span class="sr-only">Open main menu</span>
+        <.icon name="hero-bars-3" class="h-6 w-6" />
+      </button>
+      <span class="text-xl font-bold text-white">ChurchApp</span>
+      <div class="w-10"></div>
+    </div>
+  </div>
+
+  <!-- Mobile menu overlay -->
+  <div id="mobile-menu-overlay" class="lg:hidden fixed inset-0 z-40 hidden">
+    <div class="fixed inset-0 bg-black bg-opacity-50" id="mobile-menu-backdrop"></div>
+    <aside class="fixed inset-y-0 left-0 w-64 bg-dark-800 border-r border-dark-700 z-50 transform -translate-x-full transition-transform duration-300 ease-in-out" id="mobile-menu">
+      <!-- Sidebar Header -->
+      <div class="h-16 flex items-center px-6 border-b border-dark-700">
+        <.icon name="hero-cube" class="text-primary-500 mr-3 w-6 h-6" />
+        <span class="text-xl font-bold text-white">ChurchApp</span>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        <.link navigate={~p"/"} class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors">
+          <.icon name="hero-home" class="mr-3 h-5 w-5" />
+          Dashboard
+        </.link>
+        
+        <.link navigate={~p"/congregants"} class="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary-500/10 text-primary-500">
+          <.icon name="hero-users" class="mr-3 h-5 w-5" />
+          Members
+        </.link>
+        
+        <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors">
+           <.icon name="hero-heart" class="mr-3 h-5 w-5" />
+           Ministries
+        </a>
+        
+        <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors">
+           <.icon name="hero-calendar" class="mr-3 h-5 w-5" />
+           Events
+        </a>
+        
+        <a href="#" class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors">
+           <.icon name="hero-banknotes" class="mr-3 h-5 w-5" />
+           Giving
+        </a>
+        
+        <a href="/admin" class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors">
+          <.icon name="hero-cog-6-tooth" class="mr-3 h-5 w-5" />
+          Admin
+        </a>
+      </nav>
+
+      <!-- User Profile / Footer -->
+      <div class="p-4 border-t border-dark-700">
+        <div class="flex items-center">
+            <img class="h-9 w-9 rounded-full object-cover border-2 border-dark-700" src="https://i.pravatar.cc/150?img=3" alt="Admin Profile">
+            <div class="ml-3">
+                <p class="text-sm font-medium text-white">Admin User</p>
+                <p class="text-xs text-gray-500">View Profile</p>
+            </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <!-- Header (Desktop) -->
+    <header class="hidden lg:flex h-16 bg-dark-800 border-b border-dark-700 items-center justify-between px-6 flex-shrink-0">
+        <h1 class="text-lg font-semibold text-white">Member Management</h1>
+        <div class="flex items-center space-x-2">
+          <Layouts.theme_toggle />
+          <button class="p-2 rounded-full text-gray-400 hover:text-white hover:bg-dark-700 transition-colors">
+            <.icon name="hero-bell" class="h-5 w-5" />
+          </button>
+        </div>
+    </header>
+
+    <!-- Mobile header spacer -->
+    <div class="lg:hidden h-16"></div>
+
+    <!-- Main content with scroll -->
+    <main class="flex-1 overflow-y-auto p-6">
+      <div class="mx-auto max-w-7xl">
         <.flash_group flash={@flash} />
         {@inner_content}
       </div>
     </main>
   </div>
-
-  <!-- Sidebar -->
-  <div class="drawer-side z-40">
-    <label for="main-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
-    <aside class="bg-base-100 min-h-screen w-80 flex flex-col border-r border-base-300">
-      <!-- Sidebar Header -->
-      <div class="p-6 flex items-center gap-3 border-b border-base-200">
-        <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-content font-bold text-xl">
-          C
-        </div>
-        <span class="text-2xl font-bold tracking-tight">ChurchApp</span>
-      </div>
-
-      <!-- Navigation -->
-      <div class="flex-1 px-4 py-6 overflow-y-auto">
-        <ul class="menu menu-lg gap-2">
-          <li>
-            <.link navigate={~p"/"}>
-              <.icon name="hero-home" class="w-5 h-5" />
-              Dashboard
-            </.link>
-          </li>
-          
-          <li class="menu-title mt-4">People</li>
-          <li>
-            <.link navigate={~p"/congregants"}>
-              <.icon name="hero-users" class="w-5 h-5" />
-              Congregants
-            </.link>
-            <ul>
-              <li>
-                <.link navigate={~p"/congregants/new"}>
-                  <.icon name="hero-plus" class="w-4 h-4" />
-                  New Congregant
-                </.link>
-              </li>
-            </ul>
-          </li>
-          
-          <li class="menu-title mt-4">Administration</li>
-          <li>
-            <.link href={~p"/admin"}>
-              <.icon name="hero-cog-6-tooth" class="w-5 h-5" />
-              Ash Admin
-            </.link>
-          </li>
-        </ul>
-      </div>
-
-      <!-- User Profile / Footer -->
-      <div class="p-4 border-t border-base-200">
-        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200 transition-colors cursor-pointer">
-          <div class="avatar placeholder">
-            <div class="bg-neutral text-neutral-content rounded-full w-10">
-              <span>U</span>
-            </div>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium truncate">User Name</p>
-            <p class="text-xs text-base-content/60 truncate">user@churchapp.com</p>
-          </div>
-        </div>
-      </div>
-    </aside>
-  </div>
 </div>
-

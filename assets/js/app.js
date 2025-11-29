@@ -25,11 +25,60 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/churchapp"
 import topbar from "../vendor/topbar"
 
+// Mobile Menu Hook
+const MobileMenu = {
+  mounted() {
+    this.menuOverlay = document.getElementById("mobile-menu-overlay")
+    this.menu = document.getElementById("mobile-menu")
+    this.backdrop = document.getElementById("mobile-menu-backdrop")
+    this.isOpen = false
+
+    this.openMenu = () => {
+      if (this.menuOverlay && this.menu) {
+        this.isOpen = true
+        this.menuOverlay.classList.remove("hidden")
+        setTimeout(() => {
+          this.menu.classList.remove("-translate-x-full")
+        }, 10)
+      }
+    }
+
+    this.closeMenu = () => {
+      if (this.menuOverlay && this.menu) {
+        this.isOpen = false
+        this.menu.classList.add("-translate-x-full")
+        setTimeout(() => {
+          this.menuOverlay.classList.add("hidden")
+        }, 300)
+      }
+    }
+
+    this.toggleMenu = () => {
+      if (this.isOpen) {
+        this.closeMenu()
+      } else {
+        this.openMenu()
+      }
+    }
+
+    this.el.addEventListener("click", this.toggleMenu)
+    this.backdrop?.addEventListener("click", this.closeMenu)
+
+    // Close menu on navigation
+    this.handleEvent("close-mobile-menu", () => this.closeMenu())
+  },
+
+  destroyed() {
+    this.el.removeEventListener("click", this.toggleMenu)
+    this.backdrop?.removeEventListener("click", this.closeMenu)
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {...colocatedHooks, MobileMenu},
 })
 
 // Show progress bar on live navigation and form submits
@@ -64,25 +113,32 @@ const applyTheme = (theme) => {
   localStorage.setItem(THEME_KEY, theme)
 }
 
-// Initialize theme from localStorage or default to system
+// Expose setTheme function globally for onclick handlers
+window.setTheme = (theme) => {
+  if (THEMES.includes(theme)) {
+    applyTheme(theme)
+  }
+}
+
+// Initialize theme from localStorage or default to dark
 const savedTheme = localStorage.getItem(THEME_KEY) || "dark"
 applyTheme(savedTheme)
-
-// Listen for theme toggle events
-window.addEventListener("phx:set-theme", (e) => {
-  const button = e.target
-  const newTheme = button.dataset.phxTheme
-  
-  if (THEMES.includes(newTheme)) {
-    applyTheme(newTheme)
-  }
-})
 
 // Watch for system theme changes when in system mode
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
   const currentTheme = localStorage.getItem(THEME_KEY)
   if (currentTheme === "system") {
     applyTheme("system")
+  }
+})
+
+// Close mobile menu on LiveView navigation
+window.addEventListener("phx:navigate", () => {
+  const menuOverlay = document.getElementById("mobile-menu-overlay")
+  const menu = document.getElementById("mobile-menu")
+  if (menuOverlay && menu) {
+    menu.classList.add("-translate-x-full")
+    menuOverlay.classList.add("hidden")
   }
 })
 

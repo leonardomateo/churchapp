@@ -1,8 +1,6 @@
 defmodule ChurchappWeb.CongregantsLive.IndexLive do
   use ChurchappWeb, :live_view
 
-
-
   require Ash.Query
 
   def mount(_params, _session, socket) do
@@ -77,172 +75,107 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
 
   def render(assigns) do
     ~H"""
-    <div class="space-y-6">
-      <div class="flex justify-between items-center">
-        <div>
-          <h1 class="text-3xl font-bold">Congregants</h1>
-          <p class="text-base-content/60 mt-1">Manage your church members and visitors</p>
-        </div>
-        <div class="flex items-center gap-3">
-          <div class="form-control">
-            <div class="input-group">
-              <form phx-change="search" phx-submit="search">
-                <input type="text" name="query" value={@search_query} placeholder="Search..." class="input input-bordered" />
-              </form>
-            </div>
+    <div class="view-container active">
+      <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+          <h2 class="text-2xl font-bold text-white">All Members</h2>
+          <div class="flex items-center gap-3">
+            <.link navigate={~p"/congregants/new"} class="inline-flex items-center px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-md transition-colors shadow-lg shadow-primary-500/20">
+                <.icon name="hero-plus" class="h-4 w-4 mr-2" />
+                Add New Member
+            </.link>
           </div>
-          <Layouts.theme_toggle />
-          <.link navigate={~p"/congregants/new"} class="btn btn-primary gap-2">
-            <.icon name="hero-plus" class="w-5 h-5" />
-            New Member
-          </.link>
-        </div>
       </div>
 
-
-
-      <div class="card bg-base-100 shadow-xl">
-        <div class="card-body p-0">
-          <div class="overflow-x-auto">
-            <table class="table table-zebra table-pin-rows">
-              <thead>
-                <tr>
-                  <th class="cursor-pointer hover:bg-base-200 transition-colors" phx-click="sort" phx-value-col="first_name">
-                    <div class="flex items-center gap-2">
-                      Name
-                      <.icon name={if @sort_by == :first_name, do: (if @sort_dir == :asc, do: "hero-chevron-up", else: "hero-chevron-down"), else: "hero-chevron-up-down"} class={"w-4 h-4 #{if @sort_by == :first_name, do: "opacity-100", else: "opacity-30"}"} />
-                    </div>
-                  </th>
-                  <th class="cursor-pointer hover:bg-base-200 transition-colors" phx-click="sort" phx-value-col="city">
-                    <div class="flex items-center gap-2">
-                      Location
-                      <.icon name={if @sort_by == :city, do: (if @sort_dir == :asc, do: "hero-chevron-up", else: "hero-chevron-down"), else: "hero-chevron-up-down"} class={"w-4 h-4 #{if @sort_by == :city, do: "opacity-100", else: "opacity-30"}"} />
-                    </div>
-                  </th>
-                  <th class="cursor-pointer hover:bg-base-200 transition-colors" phx-click="sort" phx-value-col="status">
-                    <div class="flex items-center gap-2">
-                      Status
-                      <.icon name={if @sort_by == :status, do: (if @sort_dir == :asc, do: "hero-chevron-up", else: "hero-chevron-down"), else: "hero-chevron-up-down"} class={"w-4 h-4 #{if @sort_by == :status, do: "opacity-100", else: "opacity-30"}"} />
-                    </div>
-                  </th>
-                  <th class="cursor-pointer hover:bg-base-200 transition-colors" phx-click="sort" phx-value-col="is_leader">
-                    <div class="flex items-center gap-2">
-                      Role
-                      <.icon name={if @sort_by == :is_leader, do: (if @sort_dir == :asc, do: "hero-chevron-up", else: "hero-chevron-down"), else: "hero-chevron-up-down"} class={"w-4 h-4 #{if @sort_by == :is_leader, do: "opacity-100", else: "opacity-30"}"} />
-                    </div>
-                  </th>
-                  <th class="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  :for={congregant <- @congregants}
-                  class="hover hover:bg-base-200/50 transition-colors cursor-pointer group"
-                  phx-click={JS.navigate(~p"/congregants/#{congregant}")}
-                >
-                  <td>
-                    <div class="flex items-center gap-3">
-                      <div class="avatar placeholder">
-                        <div class="bg-neutral text-neutral-content rounded-full w-10">
-                          <span class="text-sm">
-                            {String.first(congregant.first_name)}{String.first(congregant.last_name)}
-                          </span>
-                        </div>
-                      </div>
-                      <div>
-                        <div class="font-bold">{congregant.first_name} {congregant.last_name}</div>
-                        <div class="text-sm opacity-60">
-                          {if congregant.city, do: congregant.city, else: "No location"}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div class="text-sm">
-                      <%= if congregant.mobile_tel do %>
-                        <div class="flex items-center gap-1">
-                          <.icon name="hero-device-phone-mobile" class="w-4 h-4 opacity-60" />
-                          {congregant.mobile_tel}
-                        </div>
-                      <% else %>
-                        <span class="opacity-40">No phone</span>
-                      <% end %>
-                    </div>
-                  </td>
-                  <td>
-                    <div class={[
-                      "badge badge-lg gap-1",
-                      congregant.status == :member && "badge-success",
-                      congregant.status == :visitor && "badge-info",
-                      congregant.status == :deceased && "badge-ghost",
-                      congregant.status == :honorific && "badge-warning"
-                    ]}>
-                      <.icon
-                        name={
-                          case congregant.status do
-                            :member -> "hero-check-badge"
-                            :visitor -> "hero-user"
-                            :deceased -> "hero-heart"
-                            :honorific -> "hero-star"
-                          end
-                        }
-                        class="w-3 h-3"
-                      />
-                      {congregant.status}
-                    </div>
-                  </td>
-                  <td>
-                    <%= if congregant.is_leader do %>
-                      <div class="badge badge-accent gap-1">
-                        <.icon name="hero-shield-check" class="w-3 h-3" />
-                        Leader
-                      </div>
-                    <% else %>
-                      <span class="opacity-40">—</span>
-                    <% end %>
-                  </td>
-                  <td>
-                    <div class="flex justify-end">
-                      <div class="dropdown dropdown-end">
-                        <div tabindex="0" role="button" class="btn btn-ghost btn-xs btn-circle">
-                          <.icon name="hero-ellipsis-vertical" class="w-5 h-5" />
-                        </div>
-                        <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow-xl border border-base-300">
-                          <li>
-                            <.link navigate={~p"/congregants/#{congregant}"} class="gap-2">
-                              <.icon name="hero-eye" class="w-4 h-4" />
-                              View Details
-                            </.link>
-                          </li>
-                          <li>
-                            <.link navigate={~p"/congregants/#{congregant}/edit"} class="gap-2">
-                              <.icon name="hero-pencil-square" class="w-4 h-4" />
-                              Edit Member
-                            </.link>
-                          </li>
-                          <li>
-                            <a
-                              phx-click="delete"
-                              phx-value-id={congregant.id}
-                              data-confirm="Are you sure you want to delete this congregant? This action cannot be undone."
-                              class="gap-2 text-error"
-                            >
-                              <.icon name="hero-trash" class="w-4 h-4" />
-                              Delete
-                            </a>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+      <div class="mb-6 flex flex-col sm:flex-row gap-4">
+          <div class="relative flex-1">
+              <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+              <form phx-change="search" phx-submit="search" onsubmit="return false;">
+                <input type="text" name="query" value={@search_query} placeholder="Search members by name..." class="w-full pl-10 pr-4 py-2 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-200 placeholder-gray-500">
+              </form>
           </div>
-        </div>
+          <select class="bg-dark-800 border border-dark-700 rounded-md py-2 px-3 text-gray-200 focus:ring-primary-500 focus:border-primary-500">
+              <option value="">All Statuses</option>
+              <option value="active">Active Member</option>
+              <option value="pending">Visitor/Pending</option>
+              <option value="inactive">Inactive</option>
+          </select>
+      </div>
+
+      <div class="bg-dark-800 rounded-lg shadow-xl overflow-hidden">
+          <table class="min-w-full">
+              <thead>
+                  <tr class="border-b border-dark-700">
+                      <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Member
+                      </th>
+                      <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Contact Info
+                      </th>
+                      <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Ministry
+                      </th>
+                  </tr>
+              </thead>
+              <tbody class="bg-dark-800">
+                  <tr :for={congregant <- @congregants} class="border-b border-dark-700 hover:bg-dark-700/40 transition-all duration-200 cursor-pointer group" phx-click={JS.navigate(~p"/congregants/#{congregant}")}>
+                      <td class="px-6 py-5">
+                          <div class="flex items-center">
+                              <img class="h-12 w-12 rounded-full object-cover" src={"https://ui-avatars.com/api/?name=#{URI.encode(congregant.first_name <> "+" <> congregant.last_name)}&background=404040&color=D1D5DB&bold=true"} alt="">
+                              <div class="ml-4">
+                                  <div class="text-base font-medium text-white">{congregant.first_name} {congregant.last_name}</div>
+                                  <div class="text-sm text-gray-500">Joined {if congregant.member_since, do: Calendar.strftime(congregant.member_since, "%b %Y"), else: "N/A"}</div>
+                              </div>
+                          </div>
+                      </td>
+                      <td class="px-6 py-5">
+                          <div class="text-sm text-gray-300">
+                            {if congregant.address, do: congregant.address, else: "—"}
+                          </div>
+                          <div class="text-sm text-gray-500">
+                            {if congregant.mobile_tel, do: congregant.mobile_tel, else: "—"}
+                          </div>
+                      </td>
+                      <td class="px-6 py-5">
+                          <span class={[
+                            "px-3 py-1 inline-flex text-sm font-medium rounded-full",
+                            congregant.status == :member && "bg-green-900/60 text-green-400",
+                            congregant.status == :visitor && "bg-yellow-900/60 text-yellow-500",
+                            congregant.status == :deceased && "bg-gray-800 text-gray-400",
+                            congregant.status == :honorific && "bg-blue-900/60 text-blue-400"
+                          ]}>
+                              {case congregant.status do
+                                :member -> "Active Member"
+                                :visitor -> "Visitor"
+                                :deceased -> "Deceased"
+                                :honorific -> "Honorific"
+                                _ -> congregant.status |> to_string() |> String.capitalize()
+                              end}
+                          </span>
+                      </td>
+                      <td class="px-6 py-5 text-sm text-gray-300">
+                          {if congregant.is_leader, do: "Worship Team, Kids Ministry", else: "—"}
+                      </td>
+                  </tr>
+              </tbody>
+          </table>
+          <div class="bg-dark-800 px-6 py-4 flex items-center justify-between border-t border-dark-700">
+              <div class="text-sm text-gray-500">
+                  Showing 1 to {length(@congregants)} of {length(@congregants)} results
+              </div>
+              <div class="flex space-x-2">
+                  <button class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled>
+                    Previous
+                  </button>
+                  <button class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled>
+                    Next
+                  </button>
+              </div>
+          </div>
       </div>
     </div>
     """
   end
-
 end

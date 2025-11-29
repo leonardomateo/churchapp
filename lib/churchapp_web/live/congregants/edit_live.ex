@@ -47,186 +47,196 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
 
   def render(assigns) do
     ~H"""
-    <div class="max-w-2xl mx-auto">
-      <div class="flex items-center gap-4 mb-6">
-        <.link navigate={~p"/congregants/#{@congregant}"} class="btn btn-circle btn-ghost">
-          <.icon name="hero-arrow-left" class="w-6 h-6" />
+    <div class="max-w-4xl mx-auto">
+      <div class="mb-6">
+        <.link navigate={~p"/congregants/#{@congregant}"} class="text-gray-400 hover:text-white flex items-center mb-4 transition-colors">
+          <.icon name="hero-arrow-left" class="h-4 w-4 mr-2" /> Back to Details
         </.link>
-        <div>
-          <h1 class="text-3xl font-bold">Edit Congregant</h1>
-          <p class="text-base-content/60">
-            Update details for {@congregant.first_name} {@congregant.last_name}
-          </p>
-        </div>
+        <h2 class="text-2xl font-bold text-white">Edit Member</h2>
+        <p class="text-gray-500 mt-1">Update details for {@congregant.first_name} {@congregant.last_name}</p>
       </div>
 
-      <div class="card bg-base-100 shadow-xl">
-        <div class="card-body">
-          <.form for={@form} phx-change="validate" phx-submit="save" class="space-y-6">
-
+      <div class="bg-dark-800 shadow-xl rounded-lg border border-dark-700 overflow-hidden">
+        <.form for={@form} phx-change="validate" phx-submit="save">
+          <div class="p-6 space-y-6">
             <!-- Personal Information Section -->
-            <div class="divider text-primary font-semibold">Personal Information</div>
+            <div>
+              <h3 class="text-lg font-medium leading-6 text-white mb-4 flex items-center">
+                <.icon name="hero-user" class="h-5 w-5 mr-2 text-primary-500" /> Personal Information
+              </h3>
+              <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                <div class="sm:col-span-2">
+                  <label for="first-name" class="block text-sm font-medium text-gray-400">First name</label>
+                  <div class="mt-1">
+                    <.input field={@form[:first_name]} type="text" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-dark-700 bg-dark-900 text-white rounded-md py-2 px-3" />
+                  </div>
+                </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Member ID (Read Only) -->
-              <div class="form-control w-full">
-                <label class="label">
-                  <span class="label-text">Member ID</span>
-                </label>
-                <input type="text" class="input input-bordered w-full bg-base-200 text-base-content/50 cursor-not-allowed" value={@form[:member_id].value} readonly />
-              </div>
+                <div class="sm:col-span-2">
+                  <label for="last-name" class="block text-sm font-medium text-gray-400">Last name</label>
+                  <div class="mt-1">
+                    <.input field={@form[:last_name]} type="text" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-dark-700 bg-dark-900 text-white rounded-md py-2 px-3" />
+                  </div>
+                </div>
 
-              <!-- Status -->
-              <div class="form-control w-full">
-                <label class="label">
-                  <span class="label-text">Status</span>
-                </label>
-                <.input
-                  field={@form[:status]}
-                  type="select"
-                  options={[
-                    {"Member", :member},
-                    {"Visitor", :visitor},
-                    {"Honorific", :honorific},
-                    {"Deceased", :deceased}
-                  ]}
-                  class="select select-bordered w-full"
-                />
-              </div>
+                <div class="sm:col-span-2">
+                  <label for="member-id" class="block text-sm font-medium text-gray-400">Member ID</label>
+                  <div class="mt-1">
+                    <.input
+                      field={@form[:member_id]}
+                      type="text"
+                      readonly
+                      class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border border-dark-700 bg-dark-900 text-gray-400 rounded-md py-2 px-3 cursor-not-allowed"
+                    />
+                  </div>
+                </div>
 
-              <!-- First Name -->
-              <div class="form-control w-full">
-                <label class="label">
-                  <span class="label-text">First Name</span>
-                </label>
-                <.input field={@form[:first_name]} type="text" class="input input-bordered w-full" />
-              </div>
+                <div class="sm:col-span-3">
+                  <label for="dob" class="block text-sm font-medium text-gray-400">Date of Birth</label>
+                  <div class="mt-1">
+                    <.input field={@form[:dob]} type="date" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-dark-700 bg-dark-900 text-white rounded-md py-2 px-3" />
+                  </div>
+                </div>
 
-              <!-- Last Name -->
-              <div class="form-control w-full">
-                <label class="label">
-                  <span class="label-text">Last Name</span>
-                </label>
-                <.input field={@form[:last_name]} type="text" class="input input-bordered w-full" />
-              </div>
-
-              <!-- Date of Birth -->
-              <div class="form-control w-full">
-                <label class="label">
-                  <span class="label-text">Date of Birth</span>
-                </label>
-                <.input field={@form[:dob]} type="date" class="input input-bordered w-full" />
-              </div>
-
-              <!-- Member Since -->
-              <div class="form-control w-full">
-                <label class="label">
-                  <span class="label-text">Member Since</span>
-                </label>
-                <.input field={@form[:member_since]} type="date" class="input input-bordered w-full" />
+                <div class="sm:col-span-3">
+                  <label for="member-since" class="block text-sm font-medium text-gray-400">Member Since</label>
+                  <div class="mt-1">
+                    <.input field={@form[:member_since]} type="date" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-dark-700 bg-dark-900 text-white rounded-md py-2 px-3" />
+                  </div>
+                </div>
               </div>
             </div>
+
+            <hr class="border-dark-700">
 
             <!-- Contact Information Section -->
-            <div class="divider text-primary font-semibold">Contact Information</div>
+            <div>
+              <h3 class="text-lg font-medium leading-6 text-white mb-4 flex items-center">
+                <.icon name="hero-phone" class="h-5 w-5 mr-2 text-primary-500" /> Contact Information
+              </h3>
+              <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                <div class="sm:col-span-2">
+                  <label for="mobile-tel" class="block text-sm font-medium text-gray-400">Mobile Phone</label>
+                  <div class="mt-1">
+                    <.input field={@form[:mobile_tel]} type="tel" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-dark-700 bg-dark-900 text-white rounded-md py-2 px-3" />
+                  </div>
+                </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <!-- Mobile Phone -->
-              <div class="form-control w-full">
-                <label class="label">
-                  <span class="label-text">Mobile Phone</span>
-                </label>
-                <.input field={@form[:mobile_tel]} type="tel" class="input input-bordered w-full" placeholder="(555) 123-4567" />
-              </div>
+                <div class="sm:col-span-2">
+                  <label for="home-tel" class="block text-sm font-medium text-gray-400">Home Phone</label>
+                  <div class="mt-1">
+                    <.input field={@form[:home_tel]} type="tel" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-dark-700 bg-dark-900 text-white rounded-md py-2 px-3" />
+                  </div>
+                </div>
 
-              <!-- Home Phone -->
-              <div class="form-control w-full">
-                <label class="label">
-                  <span class="label-text">Home Phone</span>
-                </label>
-                <.input field={@form[:home_tel]} type="tel" class="input input-bordered w-full" placeholder="(555) 123-4567" />
-              </div>
-
-              <!-- Work Phone -->
-              <div class="form-control w-full">
-                <label class="label">
-                  <span class="label-text">Work Phone</span>
-                </label>
-                <.input field={@form[:work_tel]} type="tel" class="input input-bordered w-full" placeholder="(555) 123-4567" />
+                <div class="sm:col-span-2">
+                  <label for="work-tel" class="block text-sm font-medium text-gray-400">Work Phone</label>
+                  <div class="mt-1">
+                    <.input field={@form[:work_tel]} type="tel" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-dark-700 bg-dark-900 text-white rounded-md py-2 px-3" />
+                  </div>
+                </div>
               </div>
             </div>
+
+            <hr class="border-dark-700">
 
             <!-- Address Section -->
-            <div class="divider text-primary font-semibold">Address</div>
-
-            <div class="space-y-4">
-              <div class="form-control w-full">
-                <label class="label">
-                  <span class="label-text">Street Address</span>
-                </label>
-                <.input field={@form[:address]} type="text" class="input input-bordered w-full" placeholder="123 Main St" />
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="form-control w-full">
-                  <label class="label">
-                    <span class="label-text">City</span>
-                  </label>
-                  <.input field={@form[:city]} type="text" class="input input-bordered w-full" placeholder="Springfield" />
+            <div>
+              <h3 class="text-lg font-medium leading-6 text-white mb-4 flex items-center">
+                <.icon name="hero-map-pin" class="h-5 w-5 mr-2 text-primary-500" /> Address
+              </h3>
+              <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                <div class="sm:col-span-6">
+                  <label for="address" class="block text-sm font-medium text-gray-400">Street Address</label>
+                  <div class="mt-1">
+                    <.input field={@form[:address]} type="text" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-dark-700 bg-dark-900 text-white rounded-md py-2 px-3" placeholder="123 Main Street" />
+                  </div>
                 </div>
 
-                <div class="form-control w-full">
-                  <label class="label">
-                    <span class="label-text">State/Province</span>
-                  </label>
-                  <.input field={@form[:state]} type="text" class="input input-bordered w-full" placeholder="IL" />
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="form-control w-full">
-                  <label class="label">
-                    <span class="label-text">Zip Code</span>
-                  </label>
-                  <.input field={@form[:zip_code]} type="text" class="input input-bordered w-full" placeholder="62704" />
+                <div class="sm:col-span-2">
+                  <label for="suite" class="block text-sm font-medium text-gray-400">Suite/Apt</label>
+                  <div class="mt-1">
+                    <.input field={@form[:suite]} type="text" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-dark-700 bg-dark-900 text-white rounded-md py-2 px-3" placeholder="Apt 4B" />
+                  </div>
                 </div>
 
-                <div class="form-control w-full">
-                  <label class="label">
-                    <span class="label-text">Country</span>
-                  </label>
-                  <.input field={@form[:country]} type="text" class="input input-bordered w-full" placeholder="USA" />
+                <div class="sm:col-span-2">
+                  <label for="city" class="block text-sm font-medium text-gray-400">City</label>
+                  <div class="mt-1">
+                    <.input field={@form[:city]} type="text" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-dark-700 bg-dark-900 text-white rounded-md py-2 px-3" />
+                  </div>
                 </div>
 
-                <div class="form-control w-full">
-                  <label class="label">
-                    <span class="label-text">Suite/Apt</span>
-                  </label>
-                  <.input field={@form[:suite]} type="text" class="input input-bordered w-full" placeholder="Apt 4B" />
+                <div class="sm:col-span-2">
+                  <label for="state" class="block text-sm font-medium text-gray-400">State</label>
+                  <div class="mt-1">
+                    <.input field={@form[:state]} type="text" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-dark-700 bg-dark-900 text-white rounded-md py-2 px-3" />
+                  </div>
+                </div>
+
+                <div class="sm:col-span-3">
+                  <label for="zip-code" class="block text-sm font-medium text-gray-400">Zip Code</label>
+                  <div class="mt-1">
+                    <.input field={@form[:zip_code]} type="text" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-dark-700 bg-dark-900 text-white rounded-md py-2 px-3" />
+                  </div>
+                </div>
+
+                <div class="sm:col-span-3">
+                  <label for="country" class="block text-sm font-medium text-gray-400">Country</label>
+                  <div class="mt-1">
+                    <.input field={@form[:country]} type="text" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-dark-700 bg-dark-900 text-white rounded-md py-2 px-3" placeholder="USA" />
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Leadership -->
-            <div class="divider text-primary font-semibold">Role</div>
+            <hr class="border-dark-700">
 
-            <div class="form-control">
-              <label class="label cursor-pointer justify-start gap-4">
-                <.input field={@form[:is_leader]} type="checkbox" class="checkbox checkbox-primary" />
-                <span class="label-text font-medium">Is a Leader?</span>
-              </label>
-            </div>
+            <!-- Church Details Section -->
+            <div>
+              <h3 class="text-lg font-medium leading-6 text-white mb-4 flex items-center">
+                <.icon name="hero-building-library" class="h-5 w-5 mr-2 text-primary-500" /> Church Details
+              </h3>
+              <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                <div class="sm:col-span-3">
+                  <label for="status" class="block text-sm font-medium text-gray-400">Membership Status</label>
+                  <div class="mt-1">
+                    <.input
+                      field={@form[:status]}
+                      type="select"
+                      options={[
+                        {"Active Member", :member},
+                        {"Visitor", :visitor},
+                        {"Honorific", :honorific},
+                        {"Deceased", :deceased}
+                      ]}
+                      class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-dark-700 bg-dark-900 text-white rounded-md py-2 px-3"
+                    />
+                  </div>
+                </div>
 
-            <!-- Actions -->
-            <div class="card-actions justify-end mt-8 pt-4 border-t border-base-200">
-              <.link navigate={~p"/congregants/#{@congregant}"} class="btn btn-ghost">Cancel</.link>
-              <button class="btn btn-primary min-w-[120px]" phx-disable-with="Saving...">
-                <.icon name="hero-check" class="w-5 h-5" />
-                Save Changes
-              </button>
+                <div class="sm:col-span-3">
+                  <label for="is-leader" class="block text-sm font-medium text-gray-400">Role</label>
+                  <div class="mt-1 flex items-center h-10">
+                    <label class="inline-flex items-center cursor-pointer">
+                      <.input field={@form[:is_leader]} type="checkbox" class="form-checkbox h-4 w-4 text-primary-600 bg-dark-700 border-dark-600 rounded focus:ring-primary-500" />
+                      <span class="ml-2 text-sm text-gray-300">Is a Leader</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
             </div>
-          </.form>
-        </div>
+          </div>
+
+          <div class="px-6 py-4 bg-dark-700/50 border-t border-dark-700 flex justify-end space-x-3">
+            <.link navigate={~p"/congregants/#{@congregant}"} class="px-4 py-2 border border-dark-700 rounded-md shadow-sm text-sm font-medium text-gray-300 bg-dark-800 hover:bg-dark-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+              Cancel
+            </.link>
+            <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors">
+              Save Changes
+            </button>
+          </div>
+        </.form>
       </div>
     </div>
     """

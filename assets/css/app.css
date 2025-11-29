@@ -2,105 +2,93 @@
    https://tailwindcss.com/docs/configuration */
 
 @import "tailwindcss" source(none);
-@source "../../deps/ash_authentication_phoenix";
 @source "../css";
 @source "../js";
 @source "../../lib/churchapp_web";
 
-/* A Tailwind plugin that makes "hero-#{ICON}" classes available.
-   The heroicons installation itself is managed by your mix.exs */
-@plugin "../vendor/heroicons";
+/* Heroicons plugin for icon components */
+@plugin "../vendor/heroicons.js";
 
-/* daisyUI Tailwind Plugin. You can update this file by fetching the latest version with:
-   curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.js
-   Make sure to look at the daisyUI changelog: https://daisyui.com/docs/changelog/ */
-@plugin "../vendor/daisyui" {
-  themes: false;
+/* Custom color variables */
+:root {
+  --dark-900: #121212;
+  --dark-800: #1E1E1E;
+  --dark-700: #2D2D2D;
+  --dark-600: #404040;
+  
+  --primary-500: #06b6d4;
+  --primary-600: #0891b2;
 }
 
-/* daisyUI theme plugin. You can update this file by fetching the latest version with:
-  curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.js
-  We ship with two themes, a light one inspired on Phoenix colors and a dark one inspired
-  on Elixir colors. Build your own at: https://daisyui.com/theme-generator/ */
-@plugin "../vendor/daisyui-theme" {
-  name: "dark";
-  default: false;
-  prefersdark: true;
-  color-scheme: "dark";
-  --color-base-100: oklch(30.33% 0.016 252.42);
-  --color-base-200: oklch(25.26% 0.014 253.1);
-  --color-base-300: oklch(20.15% 0.012 254.09);
-  --color-base-content: oklch(97.807% 0.029 256.847);
-  --color-primary: oklch(58% 0.233 277.117);
-  --color-primary-content: oklch(96% 0.018 272.314);
-  --color-secondary: oklch(58% 0.233 277.117);
-  --color-secondary-content: oklch(96% 0.018 272.314);
-  --color-accent: oklch(60% 0.25 292.717);
-  --color-accent-content: oklch(96% 0.016 293.756);
-  --color-neutral: oklch(37% 0.044 257.287);
-  --color-neutral-content: oklch(98% 0.003 247.858);
-  --color-info: oklch(58% 0.158 241.966);
-  --color-info-content: oklch(97% 0.013 236.62);
-  --color-success: oklch(60% 0.118 184.704);
-  --color-success-content: oklch(98% 0.014 180.72);
-  --color-warning: oklch(66% 0.179 58.318);
-  --color-warning-content: oklch(98% 0.022 95.277);
-  --color-error: oklch(58% 0.253 17.585);
-  --color-error-content: oklch(96% 0.015 12.422);
-  --radius-selector: 0.25rem;
-  --radius-field: 0.25rem;
-  --radius-box: 0.5rem;
-  --size-selector: 0.21875rem;
-  --size-field: 0.21875rem;
-  --border: 1.5px;
-  --depth: 1;
-  --noise: 0;
+/* Custom Utilities */
+@layer utilities {
+  .bg-dark-900 { background-color: #121212; }
+  .bg-dark-800 { background-color: #1E1E1E; }
+  .bg-dark-700 { background-color: #2D2D2D; }
+  .border-dark-700 { border-color: #2D2D2D; }
+  .border-dark-600 { border-color: #404040; }
+  
+  .text-primary-500 { color: #06b6d4; }
+  .bg-primary-500 { background-color: #06b6d4; }
+  .bg-primary-500\/10 { background-color: rgba(6, 182, 212, 0.1); }
+  .shadow-primary-500\/20 { --tw-shadow-color: rgba(6, 182, 212, 0.2); }
+  
+  .hover\:bg-primary-600:hover { background-color: #0891b2; }
+  .hover\:text-primary-600:hover { color: #0891b2; }
+  .hover\:bg-dark-700:hover { background-color: #2D2D2D; }
+  .hover\:text-white:hover { color: #ffffff; }
+  
+  .focus\:ring-primary-500:focus { 
+    --tw-ring-opacity: 1;
+    --tw-ring-color: rgb(6 182 212 / var(--tw-ring-opacity));
+  }
+  .focus\:border-primary-500:focus { border-color: #06b6d4; }
+  .focus\:border-transparent:focus { border-color: transparent; }
+  
+  .hover\:bg-dark-700\/30:hover { background-color: rgba(45, 45, 45, 0.3); }
+  .hover\:bg-dark-700\/40:hover { background-color: rgba(45, 45, 45, 0.4); }
+  .bg-dark-700\/50 { background-color: rgba(45, 45, 45, 0.5); }
+  .hover\:bg-dark-700\/20:hover { background-color: rgba(45, 45, 45, 0.2); }
+  
+  /* Status badge colors */
+  .bg-green-900\/60 { background-color: rgba(20, 83, 45, 0.6); }
+  .border-green-800 { border-color: rgb(22, 101, 52); }
+  .text-green-400 { color: rgb(74, 222, 128); }
+  
+  .bg-yellow-900\/60 { background-color: rgba(113, 63, 18, 0.6); }
+  .border-yellow-800 { border-color: rgb(133, 77, 14); }
+  .text-yellow-500 { color: rgb(234, 179, 8); }
+  
+  .bg-gray-800 { background-color: rgb(31, 41, 55); }
+  .border-gray-700 { border-color: rgb(55, 65, 81); }
+  .text-gray-400 { color: rgb(156, 163, 175); }
+  
+  .bg-blue-900\/60 { background-color: rgba(30, 58, 138, 0.6); }
+  .border-blue-800 { border-color: rgb(30, 64, 175); }
+  .text-blue-400 { color: rgb(96, 165, 250); }
 }
 
-@plugin "../vendor/daisyui-theme" {
-  name: "light";
-  default: true;
-  prefersdark: false;
-  color-scheme: "light";
-  --color-base-100: oklch(98% 0 0);
-  --color-base-200: oklch(96% 0.001 286.375);
-  --color-base-300: oklch(92% 0.004 286.32);
-  --color-base-content: oklch(21% 0.006 285.885);
-  --color-primary: oklch(70% 0.213 47.604);
-  --color-primary-content: oklch(98% 0.016 73.684);
-  --color-secondary: oklch(55% 0.027 264.364);
-  --color-secondary-content: oklch(98% 0.002 247.839);
-  --color-accent: oklch(0% 0 0);
-  --color-accent-content: oklch(100% 0 0);
-  --color-neutral: oklch(44% 0.017 285.786);
-  --color-neutral-content: oklch(98% 0 0);
-  --color-info: oklch(62% 0.214 259.815);
-  --color-info-content: oklch(97% 0.014 254.604);
-  --color-success: oklch(70% 0.14 182.503);
-  --color-success-content: oklch(98% 0.014 180.72);
-  --color-warning: oklch(66% 0.179 58.318);
-  --color-warning-content: oklch(98% 0.022 95.277);
-  --color-error: oklch(58% 0.253 17.585);
-  --color-error-content: oklch(96% 0.015 12.422);
-  --radius-selector: 0.25rem;
-  --radius-field: 0.25rem;
-  --radius-box: 0.5rem;
-  --size-selector: 0.21875rem;
-  --size-field: 0.21875rem;
-  --border: 1.5px;
-  --depth: 1;
-  --noise: 0;
+/* LiveView loading states */
+@layer utilities {
+  .phx-click-loading\:opacity-50:where(.phx-click-loading, .phx-click-loading *) {
+    opacity: 0.5;
+  }
+  
+  .phx-submit-loading\:opacity-50:where(.phx-submit-loading, .phx-submit-loading *) {
+    opacity: 0.5;
+  }
+  
+  .phx-change-loading\:opacity-50:where(.phx-change-loading, .phx-change-loading *) {
+    opacity: 0.5;
+  }
 }
-
-/* Add variants based on LiveView classes */
-@custom-variant phx-click-loading (.phx-click-loading&, .phx-click-loading &);
-@custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
-@custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
-
-/* Use the data attribute for dark mode  */
-@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
 /* Make LiveView wrapper divs transparent for layout */
-[data-phx-session], [data-phx-teleported-src] { display: contents }
+[data-phx-session], [data-phx-teleported-src] { 
+  display: contents;
+}
 
-/* This file is for your main application CSS */
+/* Table row hover effect */
+tbody tr:hover {
+  background-color: rgba(45, 45, 45, 0.4) !important;
+}
