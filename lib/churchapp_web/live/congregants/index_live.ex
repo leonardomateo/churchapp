@@ -10,6 +10,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
       |> assign(:sort_by, :first_name)
       |> assign(:sort_dir, :asc)
       |> assign(:search_query, "")
+      |> assign(:status_filter, "")
       |> assign(:open_menu_id, nil)
       |> assign(:selected_ids, MapSet.new())
       |> assign(:show_delete_confirm, false)
@@ -41,6 +42,14 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
   def handle_event("search", %{"query" => query}, socket) do
     socket
     |> assign(:search_query, query)
+    |> assign(:page, 1)
+    |> fetch_congregants()
+    |> then(&{:noreply, &1})
+  end
+
+  def handle_event("filter_status", %{"status" => status}, socket) do
+    socket
+    |> assign(:status_filter, status)
     |> assign(:page, 1)
     |> fetch_congregants()
     |> then(&{:noreply, &1})
@@ -177,6 +186,14 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
         query
       end
 
+    query =
+      if socket.assigns.status_filter != "" do
+        status = String.to_existing_atom(socket.assigns.status_filter)
+        Ash.Query.filter(query, status == ^status)
+      else
+        query
+      end
+
     # Get total count for pagination
     {:ok, all_congregants} = Chms.Church.list_congregants(query: query)
     total_count = length(all_congregants)
@@ -262,12 +279,19 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
             />
           </form>
         </div>
-        <select class="px-3 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-primary-500 focus:border-primary-500">
-          <option value="">All Statuses</option>
-          <option value="active">Active Member</option>
-          <option value="pending">Visitor/Pending</option>
-          <option value="inactive">Inactive</option>
-        </select>
+        <form phx-change="filter_status">
+          <select
+            name="status"
+            value={@status_filter}
+            class="h-[42px] px-4 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent hover:bg-dark-700 hover:border-dark-600 transition-colors cursor-pointer"
+          >
+            <option value="">All Statuses</option>
+            <option value="member">Active Member</option>
+            <option value="visitor">Visitor</option>
+            <option value="honorific">Honorific</option>
+            <option value="deceased">Deceased</option>
+          </select>
+        </form>
       </div>
 
       <div class="bg-dark-800 rounded-lg shadow-xl overflow-hidden">

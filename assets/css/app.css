@@ -517,6 +517,49 @@ button[disabled] {
   border-color: #9ca3af !important;
 }
 
+/* Custom select dropdown options styling - Dark mode */
+select {
+  accent-color: #404040;
+}
+
+select option {
+  background-color: #1E1E1E;
+  color: #D1D5DB;
+  padding: 8px 12px;
+}
+
+select option:hover,
+select option:focus {
+  background-color: #404040 !important;
+  background: linear-gradient(#404040, #404040) !important;
+  color: #f3f4f6 !important;
+}
+
+select option:checked {
+  background-color: #404040 !important;
+  background: #404040 !important;
+}
+
+/* Force specific styling on the dropdown */
+select:focus option:checked,
+select option:checked:hover {
+  background: #404040 !important;
+  color: #f3f4f6 !important;
+}
+
+/* Light theme - select options */
+[data-theme="light"] select option {
+  background-color: #ffffff;
+  color: #111827;
+}
+
+[data-theme="light"] select option:hover,
+[data-theme="light"] select option:focus,
+[data-theme="light"] select option:checked {
+  background-color: #e5e7eb !important;
+  background: #e5e7eb !important;
+}
+
 /* Light theme flash messages */
 [data-theme="light"] .bg-primary-500 {
   background-color: #06b6d4 !important;
