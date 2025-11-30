@@ -78,15 +78,30 @@ defmodule Chms.Church.Congregants do
       allow_nil? false
     end
 
-    attribute :address, :string
-    attribute :city, :string
-    attribute :state, :string
+    attribute :address, :string do
+      allow_nil? false
+    end
+
+    attribute :city, :string do
+      allow_nil? false
+    end
+
+    attribute :state, :string do
+      allow_nil? false
+    end
+
     attribute :suite, :string
-    attribute :zip_code, :string
+
+    attribute :zip_code, :string do
+      allow_nil? false
+    end
 
     attribute :country, :string
 
-    attribute :mobile_tel, :string
+    attribute :mobile_tel, :string do
+      allow_nil? false
+    end
+
     attribute :home_tel, :string
     attribute :work_tel, :string
 

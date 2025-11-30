@@ -219,7 +219,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
     <div class="view-container active" phx-click="close_menu">
       <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
         <div class="flex items-center gap-4">
-          <h2 class="text-2xl font-bold text-white">All Members</h2>
+          <h2 class="text-2xl font-bold text-white">All Congregants</h2>
         </div>
         <div class="flex items-center gap-3">
           <.link
@@ -227,7 +227,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
             class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md shadow-lg shadow-primary-500/20 transition-colors"
           >
             <.icon name="hero-plus" class="mr-2 h-4 w-4" />
-            Add New Member
+            Add New Congregant
           </.link>
         </div>
       </div>
@@ -376,7 +376,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                   congregant.status == :honorific && "bg-blue-900/60 text-blue-400"
                 ]}>
                   {case congregant.status do
-                    :member -> "Active Member"
+                    :member -> "Member"
                     :visitor -> "Visitor"
                     :deceased -> "Deceased"
                     :honorific -> "Honorific"
@@ -421,7 +421,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                         role="menuitem"
                       >
                         <.icon name="hero-pencil-square" class="mr-3 h-4 w-4" />
-                        Edit Member
+                        Edit Congregant
                       </.link>
 
                       <button
@@ -432,7 +432,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                         role="menuitem"
                       >
                         <.icon name="hero-trash" class="mr-3 h-4 w-4" />
-                        Delete Member
+                        Delete Congregant
                       </button>
                     </div>
                   </div>

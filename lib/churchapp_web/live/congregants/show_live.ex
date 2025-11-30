@@ -195,12 +195,12 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
           <div class="py-8">
             <h3 class="mb-6 ml-6 flex items-center text-lg font-medium leading-6 text-white">
               <.icon name="hero-clock" class="mr-2 h-5 w-5 text-primary-500" />
-              System Information
+              Record Information
             </h3>
             <dl class="ml-6 grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
               <div>
                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
+                  Record Created
                 </dt>
                 <dd class="mt-2 text-sm text-white">
                   {Calendar.strftime(@congregant.inserted_at, "%B %d, %Y at %I:%M %p")}
@@ -209,7 +209,7 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
 
               <div>
                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Updated
+                  Record Last Updated
                 </dt>
                 <dd class="mt-2 text-sm text-white">
                   {Calendar.strftime(@congregant.updated_at, "%B %d, %Y at %I:%M %p")}

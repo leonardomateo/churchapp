@@ -56,7 +56,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
           <.icon name="hero-arrow-left" class="mr-2 h-4 w-4" />
           Back to Details
         </.link>
-        <h2 class="text-2xl font-bold text-white">Edit Member</h2>
+        <h2 class="text-2xl font-bold text-white">Edit Congregant</h2>
         <p class="mt-1 text-gray-500">
           Update details for {@congregant.first_name} {@congregant.last_name}
         </p>
@@ -74,7 +74,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-2">
                   <label for="first-name" class="block text-sm font-medium text-gray-400">
-                    First name
+                    First name <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -87,7 +87,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
 
                 <div class="sm:col-span-2">
                   <label for="last-name" class="block text-sm font-medium text-gray-400">
-                    Last name
+                    Last name <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -100,7 +100,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
 
                 <div class="sm:col-span-2">
                   <label for="member-id" class="block text-sm font-medium text-gray-400">
-                    Member ID
+                    Congregant ID
                   </label>
                   <div class="mt-1">
                     <.input
@@ -151,7 +151,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-2">
                   <label for="mobile-tel" class="block text-sm font-medium text-gray-400">
-                    Mobile Phone
+                    Mobile Phone <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -207,7 +207,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-6">
                   <label for="address" class="block text-sm font-medium text-gray-400">
-                    Street Address
+                    Street Address <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -235,7 +235,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
 
                 <div class="sm:col-span-2">
                   <label for="city" class="block text-sm font-medium text-gray-400">
-                    City
+                    City <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -248,7 +248,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
 
                 <div class="sm:col-span-2">
                   <label for="state" class="block text-sm font-medium text-gray-400">
-                    State
+                    State <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -261,7 +261,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
 
                 <div class="sm:col-span-3">
                   <label for="zip-code" class="block text-sm font-medium text-gray-400">
-                    Zip Code
+                    Zip Code <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -299,7 +299,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-3">
                   <label for="status" class="block text-sm font-medium text-gray-400">
-                    Membership Status
+                    Membership Status <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -311,7 +311,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                         {"Honorific", :honorific},
                         {"Deceased", :deceased}
                       ]}
-                      class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                      class="block w-full h-[42px] px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
@@ -320,7 +320,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                   <label for="is-leader" class="block text-sm font-medium text-gray-400">
                     Role
                   </label>
-                  <div class="mt-1 flex items-center h-10">
+                  <div class="mt-1 flex items-center h-[42px]">
                     <label class="inline-flex items-center cursor-pointer">
                       <.input
                         field={@form[:is_leader]}

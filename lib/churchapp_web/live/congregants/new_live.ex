@@ -54,8 +54,8 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
           <.icon name="hero-arrow-left" class="mr-2 h-4 w-4" />
           Back to List
         </.link>
-        <h2 class="text-2xl font-bold text-white">Add New Member</h2>
-        <p class="mt-1 text-gray-500">Fill in the details to create a new church member record.</p>
+        <h2 class="text-2xl font-bold text-white">Add New Congregant</h2>
+        <p class="mt-1 text-gray-500">Fill in the details to create a new church congregant record.</p>
       </div>
 
       <div class="bg-dark-800 shadow-xl rounded-lg border border-dark-700 overflow-hidden">
@@ -70,7 +70,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-2">
                   <label for="first-name" class="block text-sm font-medium text-gray-400">
-                    First name
+                    First name <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -83,7 +83,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
 
                 <div class="sm:col-span-2">
                   <label for="last-name" class="block text-sm font-medium text-gray-400">
-                    Last name
+                    Last name <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -96,7 +96,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
 
                 <div class="sm:col-span-2">
                   <label for="member-id" class="block text-sm font-medium text-gray-400">
-                    Member ID
+                    Congregant ID
                   </label>
                   <div class="mt-1">
                     <input type="hidden" name={@form[:generated_member_id].name} value={@generated_id} />
@@ -149,7 +149,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-2">
                   <label for="mobile-tel" class="block text-sm font-medium text-gray-400">
-                    Mobile Phone
+                    Mobile Phone <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -205,7 +205,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-6">
                   <label for="address" class="block text-sm font-medium text-gray-400">
-                    Street Address
+                    Street Address <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -233,7 +233,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
 
                 <div class="sm:col-span-2">
                   <label for="city" class="block text-sm font-medium text-gray-400">
-                    City
+                    City <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -246,7 +246,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
 
                 <div class="sm:col-span-2">
                   <label for="state" class="block text-sm font-medium text-gray-400">
-                    State
+                    State <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -259,7 +259,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
 
                 <div class="sm:col-span-3">
                   <label for="zip-code" class="block text-sm font-medium text-gray-400">
-                    Zip Code
+                    Zip Code <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -297,7 +297,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-3">
                   <label for="status" class="block text-sm font-medium text-gray-400">
-                    Membership Status
+                    Congregant Status <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
                     <.input
@@ -309,7 +309,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                         {"Honorific", :honorific},
                         {"Deceased", :deceased}
                       ]}
-                      class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                      class="block w-full h-[42px] px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
@@ -318,7 +318,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                   <label for="is-leader" class="block text-sm font-medium text-gray-400">
                     Role
                   </label>
-                  <div class="mt-1 flex items-center h-10">
+                  <div class="mt-1 flex items-center h-[42px]">
                     <label class="inline-flex items-center cursor-pointer">
                       <.input
                         field={@form[:is_leader]}
@@ -344,7 +344,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
               type="submit"
               class="px-4 py-2 text-sm font-medium text-white bg-primary-500 border border-transparent rounded-md shadow-sm hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
             >
-              Save Member
+              Save Congregant
             </button>
           </div>
         </.form>

@@ -560,6 +560,28 @@ select option:checked:hover {
   background: #e5e7eb !important;
 }
 
+/* Form validation error styles */
+.text-error {
+  color: #ef4444 !important;
+}
+
+[data-theme="light"] .text-error {
+  color: #dc2626 !important;
+}
+
+/* Input error states */
+.input-error,
+.select-error,
+.textarea-error {
+  border-color: #ef4444 !important;
+}
+
+[data-theme="light"] .input-error,
+[data-theme="light"] .select-error,
+[data-theme="light"] .textarea-error {
+  border-color: #dc2626 !important;
+}
+
 /* Light theme flash messages */
 [data-theme="light"] .bg-primary-500 {
   background-color: #06b6d4 !important;
