@@ -307,18 +307,10 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                   aria-label="Select all"
                 />
               </th>
-              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Member
-              </th>
-              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Contact Info
-              </th>
-              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ministry
-              </th>
+          <.sort_header label="Member" key={:first_name} sort_by={@sort_by} sort_dir={@sort_dir} />
+          <.sort_header label="Contact Info" key={:address} sort_by={@sort_by} sort_dir={@sort_dir} />
+          <.sort_header label="Status" key={:status} sort_by={@sort_by} sort_dir={@sort_dir} />
+              <.sort_header label="Ministry" key={:is_leader} sort_by={@sort_by} sort_dir={@sort_dir} />
               <th scope="col" class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
@@ -619,6 +611,41 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
       <% end %>
     </div>
     """
+  end
+
+  defp sort_header(assigns) do
+    ~H"""
+    <th
+      scope="col"
+      class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-300 group select-none"
+      phx-click="sort"
+      phx-value-col={@key}
+    >
+      <div class="flex items-center gap-2">
+        {@label}
+        <.icon
+          name={sort_indicator_icon(@key, @sort_by, @sort_dir)}
+          class={"h-4 w-4 transition-colors " <> sort_indicator_class(@key, @sort_by)}
+        />
+      </div>
+    </th>
+    """
+  end
+
+  defp sort_indicator_icon(column, sort_by, sort_dir) do
+    if column == sort_by do
+      if sort_dir == :asc, do: "hero-chevron-up", else: "hero-chevron-down"
+    else
+      "hero-arrows-up-down"
+    end
+  end
+
+  defp sort_indicator_class(column, sort_by) do
+    if column == sort_by do
+      "text-primary-500"
+    else
+      "text-gray-700 group-hover:text-gray-500"
+    end
   end
 
   # Generate pagination range with ellipsis
