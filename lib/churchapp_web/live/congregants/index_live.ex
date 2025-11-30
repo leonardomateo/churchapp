@@ -14,6 +14,8 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
       |> assign(:selected_ids, MapSet.new())
       |> assign(:show_delete_confirm, false)
       |> assign(:delete_single_id, nil)
+      |> assign(:page, 1)
+      |> assign(:per_page, 10)
       |> fetch_congregants()
 
     {:ok, socket}
@@ -39,6 +41,15 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
   def handle_event("search", %{"query" => query}, socket) do
     socket
     |> assign(:search_query, query)
+    |> assign(:page, 1)
+    |> fetch_congregants()
+    |> then(&{:noreply, &1})
+  end
+
+  def handle_event("paginate", %{"page" => page}, socket) do
+    socket
+    |> assign(:page, String.to_integer(page))
+    |> assign(:selected_ids, MapSet.new())
     |> fetch_congregants()
     |> then(&{:noreply, &1})
   end
@@ -67,6 +78,10 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
       end
 
     {:noreply, assign(socket, :selected_ids, new_selected_ids)}
+  end
+
+  def handle_event("clear_selection", _params, socket) do
+    {:noreply, assign(socket, :selected_ids, MapSet.new())}
   end
 
   def handle_event("show_delete_confirm", _params, socket) do
@@ -162,8 +177,24 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
         query
       end
 
-    {:ok, congregants} = Chms.Church.list_congregants(query: query)
-    assign(socket, :congregants, congregants)
+    # Get total count for pagination
+    {:ok, all_congregants} = Chms.Church.list_congregants(query: query)
+    total_count = length(all_congregants)
+    total_pages = ceil(total_count / socket.assigns.per_page)
+
+    # Apply pagination
+    offset = (socket.assigns.page - 1) * socket.assigns.per_page
+    paginated_query =
+      query
+      |> Ash.Query.limit(socket.assigns.per_page)
+      |> Ash.Query.offset(offset)
+
+    {:ok, congregants} = Chms.Church.list_congregants(query: paginated_query)
+
+    socket
+    |> assign(:congregants, congregants)
+    |> assign(:total_count, total_count)
+    |> assign(:total_pages, total_pages)
   end
 
   def render(assigns) do
@@ -186,7 +217,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
 
       <%!-- Floating Action Bar for Selected Items --%>
       <%= if MapSet.size(@selected_ids) > 0 do %>
-        <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
+        <div class="fixed bottom-6 left-[40%] z-50 animate-slide-up">
           <div class="flex items-center gap-4 px-6 py-4 bg-dark-800 border-2 border-primary-500 rounded-full shadow-2xl shadow-primary-500/30">
             <div class="flex items-center gap-2">
               <.icon name="hero-check-circle" class="h-5 w-5 text-primary-500" />
@@ -195,14 +226,25 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
               </span>
             </div>
             <div class="h-6 w-px bg-dark-600"></div>
-            <button
-              type="button"
-              phx-click="show_delete_confirm"
-              class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full transition-colors"
-            >
-              <.icon name="hero-trash" class="mr-2 h-4 w-4" />
-              Delete Selected
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                phx-click="clear_selection"
+                class="floating-cancel-btn inline-flex items-center px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 rounded-full border border-dark-600"
+                aria-label="Clear selection"
+              >
+                <.icon name="hero-x-mark" class="mr-2 h-4 w-4" />
+                Cancel
+              </button>
+              <button
+                type="button"
+                phx-click="show_delete_confirm"
+                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full transition-colors"
+              >
+                <.icon name="hero-trash" class="mr-2 h-4 w-4" />
+                Delete Selected
+              </button>
+            </div>
           </div>
         </div>
       <% end %>
@@ -375,22 +417,68 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
             </tr>
           </tbody>
         </table>
-        <div class="px-6 py-4 flex items-center justify-between bg-dark-800 border-t border-dark-700">
+        <div class="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-dark-800 border-t border-dark-700">
           <div class="text-sm text-gray-500">
-            Showing 1 to {length(@congregants)} of {length(@congregants)} results
+            Showing {((@page - 1) * @per_page) + 1} to {min(@page * @per_page, @total_count)} of {@total_count} results
           </div>
-          <div class="flex space-x-2">
+          <div class="flex items-center gap-2">
+            <%!-- Previous Button --%>
             <button
-              disabled
-              class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              type="button"
+              phx-click="paginate"
+              phx-value-page={@page - 1}
+              disabled={@page == 1}
+              class={[
+                "relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                @page == 1 && "text-gray-500 cursor-not-allowed opacity-50",
+                @page > 1 && "text-gray-300 hover:text-white hover:bg-dark-700"
+              ]}
             >
+              <.icon name="hero-chevron-left" class="mr-1 h-4 w-4" />
               Previous
             </button>
+
+            <%!-- Page Numbers --%>
+            <div class="hidden sm:flex items-center gap-1">
+              <%= for page_num <- pagination_range(@page, @total_pages) do %>
+                <%= if page_num == :ellipsis do %>
+                  <span class="px-3 py-2 text-sm text-gray-500">...</span>
+                <% else %>
+                  <button
+                    type="button"
+                    phx-click="paginate"
+                    phx-value-page={page_num}
+                    class={[
+                      "px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                      page_num == @page && "bg-primary-500 text-white",
+                      page_num != @page && "text-gray-300 hover:text-white hover:bg-dark-700"
+                    ]}
+                  >
+                    {page_num}
+                  </button>
+                <% end %>
+              <% end %>
+            </div>
+
+            <%!-- Mobile Page Indicator --%>
+            <div class="sm:hidden text-sm text-gray-400">
+              Page {@page} of {@total_pages}
+            </div>
+
+            <%!-- Next Button --%>
             <button
-              disabled
-              class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              type="button"
+              phx-click="paginate"
+              phx-value-page={@page + 1}
+              disabled={@page >= @total_pages}
+              class={[
+                "relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                @page >= @total_pages && "text-gray-500 cursor-not-allowed opacity-50",
+                @page < @total_pages && "text-gray-300 hover:text-white hover:bg-dark-700"
+              ]}
             >
               Next
+              <.icon name="hero-chevron-right" class="ml-1 h-4 w-4" />
             </button>
           </div>
         </div>
@@ -507,6 +595,23 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
       <% end %>
     </div>
     """
+  end
+
+  # Generate pagination range with ellipsis
+  defp pagination_range(current_page, total_pages) do
+    cond do
+      total_pages <= 7 ->
+        Enum.to_list(1..total_pages)
+
+      current_page <= 4 ->
+        Enum.to_list(1..5) ++ [:ellipsis, total_pages]
+
+      current_page >= total_pages - 3 ->
+        [1, :ellipsis] ++ Enum.to_list((total_pages - 4)..total_pages)
+
+      true ->
+        [1, :ellipsis] ++ Enum.to_list((current_page - 1)..(current_page + 1)) ++ [:ellipsis, total_pages]
+    end
   end
 
   # Format phone number for display: (123) 456 - 7890
