@@ -49,39 +49,57 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
   end
 
   def handle_event("save", %{"form" => params}, socket) do
-    uploaded_files =
-      consume_uploaded_entries(socket, :image, fn %{path: temp_path}, entry ->
-        # Generate unique filename
-        extension = Path.extname(entry.client_name)
-        filename = "#{System.unique_integer([:positive])}#{extension}"
-        dest_path = Path.join(["priv/static/uploads/congregants", filename])
+    # Check if there are any uploaded files
+    case socket.assigns.uploads.image.entries do
+      [] ->
+        # No image uploaded, proceed without image
+        case Form.submit(socket.assigns.form, params: params) do
+          {:ok, congregant} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, "Congregant updated successfully")
+             |> push_navigate(to: ~p"/congregants/#{congregant}")}
 
-        # Ensure directory exists
-        File.mkdir_p!(Path.dirname(dest_path))
+          {:error, form} ->
+            {:noreply, assign(socket, :form, form)}
+        end
 
-        # Copy file to destination
-        File.cp!(temp_path, dest_path)
+      _ ->
+        # There are uploaded files, consume them
+         uploaded_files =
+           consume_uploaded_entries(socket, :image, fn %{path: temp_path}, entry ->
+             # Generate unique filename
+             extension = Path.extname(entry.client_name)
+             filename = "#{System.unique_integer([:positive])}#{extension}"
+             dest_path = Path.join(["priv/static/uploads/congregants", filename])
 
-        # Return the relative path for storage
-        "/uploads/congregants/#{filename}"
-      end)
+             # Ensure directory exists
+             File.mkdir_p!(Path.dirname(dest_path))
 
-    # Add image path to params if an image was uploaded
-    params =
-      case uploaded_files do
-        [image_path | _] -> Map.put(params, "image", image_path)
-        [] -> params
-      end
+             # Copy file to destination
+             File.cp!(temp_path, dest_path)
 
-    case Form.submit(socket.assigns.form, params: params) do
-      {:ok, congregant} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Congregant updated successfully")
-         |> push_navigate(to: ~p"/congregants/#{congregant}")}
+             # Return the relative path for storage wrapped in :ok tuple
+             {:ok, "/uploads/congregants/#{filename}"}
+           end)
 
-      {:error, form} ->
-        {:noreply, assign(socket, :form, form)}
+        # Add image path to params if an image was uploaded
+        params =
+          case uploaded_files do
+            [image_path | _] -> Map.put(params, "image", image_path)
+            [] -> params
+          end
+
+        case Form.submit(socket.assigns.form, params: params) do
+          {:ok, congregant} ->
+            {:noreply,
+             socket
+             |> put_flash(:info, "Congregant updated successfully")
+             |> push_navigate(to: ~p"/congregants/#{congregant}")}
+
+          {:error, form} ->
+            {:noreply, assign(socket, :form, form)}
+        end
     end
   end
 
@@ -218,6 +236,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                     <div
                       id="image-upload-dropzone"
                       phx-drop-target={@uploads.image.ref}
+                      phx-hook="ImageUpload"
                       class="relative border-2 border-dashed border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
                     >
                       <.live_file_input

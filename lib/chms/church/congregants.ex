@@ -159,7 +159,7 @@ defmodule Chms.Church.Congregants do
 
     def change(changeset, _opts, _context) do
       case Ash.Changeset.fetch_argument(changeset, :ministries_string) do
-        {:ok, ministries_string} when is_binary(ministries_string) ->
+        {:ok, ministries_string} when is_binary(ministries_string) and ministries_string != "" ->
           ministries =
             ministries_string
             |> String.split(",")
@@ -169,7 +169,26 @@ defmodule Chms.Church.Congregants do
           Ash.Changeset.force_change_attribute(changeset, :ministries, ministries)
 
         _ ->
-          changeset
+          # When no ministries_string provided or empty, set ministries to empty list
+          Ash.Changeset.force_change_attribute(changeset, :ministries, [])
+      end
+    end
+
+    # Implement atomic/3 to support atomic updates
+    def atomic(changeset, _opts, _context) do
+      case Ash.Changeset.fetch_argument(changeset, :ministries_string) do
+        {:ok, ministries_string} when is_binary(ministries_string) and ministries_string != "" ->
+          ministries =
+            ministries_string
+            |> String.split(",")
+            |> Enum.map(&String.trim/1)
+            |> Enum.reject(&(&1 == ""))
+
+          {:atomic, %{ministries: {:atomic, ministries}}}
+
+        _ ->
+          # When no ministries_string provided or empty, set ministries to empty list
+          {:atomic, %{ministries: {:atomic, []}}}
       end
     end
   end

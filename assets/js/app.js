@@ -158,7 +158,7 @@ const PhoneFormat = {
 const ImageUpload = {
   mounted() {
     this.dropzoneEl = document.getElementById("image-upload-dropzone")
-    this.inputEl = document.querySelector("input[type='file']")
+    this.inputEl = document.getElementById("image-upload-input")
     
     // Handle drag and drop on the dropzone
     if (this.dropzoneEl) {

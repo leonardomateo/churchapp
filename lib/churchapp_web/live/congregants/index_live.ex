@@ -306,7 +306,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
         </form>
       </div>
 
-      <div class="bg-dark-800 rounded-lg shadow-xl overflow-hidden">
+      <div class="bg-dark-800 rounded-lg shadow-xl overflow-x-auto overflow-y-visible">
         <table class="min-w-full">
           <thead>
             <tr class="border-b border-dark-700">
@@ -330,7 +330,6 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                 sort_dir={@sort_dir}
               />
               <.sort_header label="Status" key={:status} sort_by={@sort_by} sort_dir={@sort_dir} />
-              <.sort_header label="Ministry" key={:is_leader} sort_by={@sort_by} sort_dir={@sort_dir} />
               <th
                 scope="col"
                 class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -341,7 +340,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
           </thead>
           <tbody class="bg-dark-800">
             <tr
-              :for={congregant <- @congregants}
+              :for={{congregant, index} <- Enum.with_index(@congregants)}
               class={[
                 "border-b border-dark-700 hover:bg-dark-700/40 transition-all duration-200 group",
                 MapSet.member?(@selected_ids, congregant.id) && "bg-primary-900/20"
@@ -415,14 +414,8 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                   end}
                 </span>
               </td>
-              <td
-                class="px-6 py-5 text-sm text-gray-300 cursor-pointer"
-                phx-click={JS.navigate(~p"/congregants/#{congregant}")}
-              >
-                {if congregant.is_leader, do: "Worship Team, Kids Ministry", else: "—"}
-              </td>
-              <td class="px-6 py-5 text-right relative">
-                <div class="flex items-center justify-end">
+              <td class="px-6 py-5 text-right">
+                <div class="flex items-center justify-end relative group">
                   <button
                     type="button"
                     phx-click="toggle_menu"
@@ -433,11 +426,16 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                     <.icon name="hero-ellipsis-vertical" class="h-5 w-5" />
                   </button>
 
-                  <%!-- Dropdown Menu --%>
+                  <%!-- Dropdown Menu - opens upward for last 3 rows, downward otherwise --%>
                   <div
                     :if={@open_menu_id == congregant.id}
-                    class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-dark-700 ring-1 ring-dark-600 z-10"
-                    style="top: 100%;"
+                    class={[
+                      "absolute right-0 w-48 rounded-md shadow-lg bg-dark-700 ring-1 ring-dark-600 z-50",
+                      if(index >= length(@congregants) - 3,
+                        do: "bottom-full mb-2",
+                        else: "top-full mt-2"
+                      )
+                    ]}
                   >
                     <div class="py-1" role="menu" aria-orientation="vertical">
                       <.link

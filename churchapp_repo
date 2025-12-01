@@ -1,0 +1,314 @@
+--
+-- PostgreSQL database dump
+--
+
+\restrict 7TNJqXHpUXrRL8XrjUaOfJCc5zmN5egTPnTAdID1TdOXBnro96kEaZNwj5V1eQl
+
+-- Dumped from database version 18.0
+-- Dumped by pg_dump version 18.0
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: citext; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION citext; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION citext IS 'data type for case-insensitive character strings';
+
+
+--
+-- Name: ash_elixir_and(anycompatible, anycompatible); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.ash_elixir_and("left" anycompatible, "right" anycompatible, OUT f1 anycompatible) RETURNS anycompatible
+    LANGUAGE sql IMMUTABLE
+    SET search_path TO ''
+    AS $_$
+  SELECT CASE
+    WHEN $1 IS NOT NULL THEN $2
+    ELSE $1
+  END $_$;
+
+
+--
+-- Name: ash_elixir_and(boolean, anycompatible); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.ash_elixir_and("left" boolean, "right" anycompatible, OUT f1 anycompatible) RETURNS anycompatible
+    LANGUAGE sql IMMUTABLE
+    SET search_path TO ''
+    AS $_$
+  SELECT CASE
+    WHEN $1 IS TRUE THEN $2
+    ELSE $1
+  END $_$;
+
+
+--
+-- Name: ash_elixir_or(anycompatible, anycompatible); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.ash_elixir_or("left" anycompatible, "right" anycompatible, OUT f1 anycompatible) RETURNS anycompatible
+    LANGUAGE sql IMMUTABLE
+    SET search_path TO ''
+    AS $_$ SELECT COALESCE($1, $2) $_$;
+
+
+--
+-- Name: ash_elixir_or(boolean, anycompatible); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.ash_elixir_or("left" boolean, "right" anycompatible, OUT f1 anycompatible) RETURNS anycompatible
+    LANGUAGE sql IMMUTABLE
+    SET search_path TO ''
+    AS $_$ SELECT COALESCE(NULLIF($1, FALSE), $2) $_$;
+
+
+--
+-- Name: ash_raise_error(jsonb); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.ash_raise_error(json_data jsonb) RETURNS boolean
+    LANGUAGE plpgsql STABLE
+    SET search_path TO ''
+    AS $$
+BEGIN
+    -- Raise an error with the provided JSON data.
+    -- The JSON object is converted to text for inclusion in the error message.
+    RAISE EXCEPTION 'ash_error: %', json_data::text;
+    RETURN NULL;
+END;
+$$;
+
+
+--
+-- Name: ash_raise_error(jsonb, anycompatible); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.ash_raise_error(json_data jsonb, type_signal anycompatible) RETURNS anycompatible
+    LANGUAGE plpgsql STABLE
+    SET search_path TO ''
+    AS $$
+BEGIN
+    -- Raise an error with the provided JSON data.
+    -- The JSON object is converted to text for inclusion in the error message.
+    RAISE EXCEPTION 'ash_error: %', json_data::text;
+    RETURN NULL;
+END;
+$$;
+
+
+--
+-- Name: ash_trim_whitespace(text[]); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.ash_trim_whitespace(arr text[]) RETURNS text[]
+    LANGUAGE plpgsql IMMUTABLE
+    SET search_path TO ''
+    AS $$
+DECLARE
+    start_index INT = 1;
+    end_index INT = array_length(arr, 1);
+BEGIN
+    WHILE start_index <= end_index AND arr[start_index] = '' LOOP
+        start_index := start_index + 1;
+    END LOOP;
+
+    WHILE end_index >= start_index AND arr[end_index] = '' LOOP
+        end_index := end_index - 1;
+    END LOOP;
+
+    IF start_index > end_index THEN
+        RETURN ARRAY[]::text[];
+    ELSE
+        RETURN arr[start_index : end_index];
+    END IF;
+END; $$;
+
+
+--
+-- Name: timestamp_from_uuid_v7(uuid); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.timestamp_from_uuid_v7(_uuid uuid) RETURNS timestamp without time zone
+    LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+    SET search_path TO ''
+    AS $$
+  SELECT to_timestamp(('x0000' || substr(_uuid::TEXT, 1, 8) || substr(_uuid::TEXT, 10, 4))::BIT(64)::BIGINT::NUMERIC / 1000);
+$$;
+
+
+--
+-- Name: uuid_generate_v7(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.uuid_generate_v7() RETURNS uuid
+    LANGUAGE plpgsql
+    SET search_path TO ''
+    AS $$
+DECLARE
+  timestamp    TIMESTAMPTZ;
+  microseconds INT;
+BEGIN
+  timestamp    = clock_timestamp();
+  microseconds = (cast(extract(microseconds FROM timestamp)::INT - (floor(extract(milliseconds FROM timestamp))::INT * 1000) AS DOUBLE PRECISION) * 4.096)::INT;
+
+  RETURN encode(
+    set_byte(
+      set_byte(
+        overlay(uuid_send(gen_random_uuid()) placing substring(int8send(floor(extract(epoch FROM timestamp) * 1000)::BIGINT) FROM 3) FROM 1 FOR 6
+      ),
+      6, (b'0111' || (microseconds >> 8)::bit(4))::bit(8)::int
+    ),
+    7, microseconds::bit(8)::int
+  ),
+  'hex')::UUID;
+END
+$$;
+
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: congregants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.congregants (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    member_id bigint NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    address text NOT NULL,
+    city text NOT NULL,
+    state text NOT NULL,
+    suite text,
+    zip_code text NOT NULL,
+    country text,
+    mobile_tel text NOT NULL,
+    home_tel text,
+    work_tel text,
+    dob date,
+    member_since date DEFAULT CURRENT_DATE,
+    status text DEFAULT 'member'::text NOT NULL,
+    is_leader boolean DEFAULT false NOT NULL,
+    inserted_at timestamp without time zone DEFAULT (now() AT TIME ZONE 'utc'::text) NOT NULL,
+    updated_at timestamp without time zone DEFAULT (now() AT TIME ZONE 'utc'::text) NOT NULL,
+    ministries character varying(255)[] DEFAULT ARRAY[]::character varying[],
+    image text
+);
+
+
+--
+-- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.schema_migrations (
+    version bigint NOT NULL,
+    inserted_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: tokens; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.tokens (
+    jti text NOT NULL,
+    subject text NOT NULL,
+    expires_at timestamp(0) without time zone NOT NULL,
+    purpose text NOT NULL,
+    extra_data jsonb,
+    created_at timestamp without time zone DEFAULT (now() AT TIME ZONE 'utc'::text) NOT NULL,
+    updated_at timestamp without time zone DEFAULT (now() AT TIME ZONE 'utc'::text) NOT NULL
+);
+
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.users (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    email public.citext NOT NULL,
+    hashed_password text NOT NULL,
+    confirmed_at timestamp without time zone
+);
+
+
+--
+-- Name: congregants congregants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.congregants
+    ADD CONSTRAINT congregants_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.schema_migrations
+    ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: tokens tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tokens
+    ADD CONSTRAINT tokens_pkey PRIMARY KEY (jti);
+
+
+--
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: congregants_unique_member_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX congregants_unique_member_id_index ON public.congregants USING btree (member_id);
+
+
+--
+-- Name: users_unique_email_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX users_unique_email_index ON public.users USING btree (email);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict 7TNJqXHpUXrRL8XrjUaOfJCc5zmN5egTPnTAdID1TdOXBnro96kEaZNwj5V1eQl
+
+INSERT INTO public."schema_migrations" (version) VALUES (20251126042548);
+INSERT INTO public."schema_migrations" (version) VALUES (20251126042550);
+INSERT INTO public."schema_migrations" (version) VALUES (20251126052704);
+INSERT INTO public."schema_migrations" (version) VALUES (20251130005718);
+INSERT INTO public."schema_migrations" (version) VALUES (20251130223356);
+INSERT INTO public."schema_migrations" (version) VALUES (20251201005500);
