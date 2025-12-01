@@ -165,6 +165,7 @@ defmodule Chms.Church.Congregants do
             |> String.split(",")
             |> Enum.map(&String.trim/1)
             |> Enum.reject(&(&1 == ""))
+            |> Chms.Church.Ministries.filter_valid()
 
           Ash.Changeset.force_change_attribute(changeset, :ministries, ministries)
 
@@ -183,6 +184,7 @@ defmodule Chms.Church.Congregants do
             |> String.split(",")
             |> Enum.map(&String.trim/1)
             |> Enum.reject(&(&1 == ""))
+            |> Chms.Church.Ministries.filter_valid()
 
           {:atomic, %{ministries: {:atomic, ministries}}}
 

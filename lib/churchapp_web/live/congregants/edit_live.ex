@@ -1,6 +1,7 @@
 defmodule ChurchappWeb.CongregantsLive.EditLive do
   use ChurchappWeb, :live_view
 
+  alias Chms.Church.Ministries
   alias AshPhoenix.Form
 
   def mount(%{"id" => id}, _session, socket) do
@@ -26,6 +27,8 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
           |> assign(:congregant, congregant)
           |> assign(:form, form)
           |> assign(:uploaded_files, [])
+          |> assign(:ministries_options, Ministries.ministry_options())
+          |> assign(:selected_ministries, congregant.ministries || [])
           |> allow_upload(:image,
             accept: ~w(.jpg .jpeg .png .gif .webp),
             max_file_size: 5_000_000,
@@ -44,11 +47,52 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
   end
 
   def handle_event("validate", %{"form" => params}, socket) do
+    # Handle ministries array from checkboxes
+    {ministries_string, selected_ministries} =
+      case params["ministries"] do
+        ministries when is_list(ministries) ->
+          # Filter out empty strings from hidden input
+          filtered = Enum.reject(ministries, &(&1 == ""))
+          {Enum.join(filtered, ","), filtered}
+
+        ministries when is_binary(ministries) and ministries != "" ->
+          {ministries, [ministries]}
+
+        _ ->
+          {"", []}
+      end
+
+    params = Map.put(params, "ministries_string", ministries_string)
+
     form = Form.validate(socket.assigns.form, params)
-    {:noreply, assign(socket, :form, form)}
+    {:noreply,
+     socket
+     |> assign(:form, form)
+     |> assign(:selected_ministries, selected_ministries)}
   end
 
   def handle_event("save", %{"form" => params}, socket) do
+    # Handle ministries array from checkboxes
+    {ministries_string, filtered_ministries} =
+      case params["ministries"] do
+        ministries when is_list(ministries) ->
+          # Filter out empty strings from hidden input
+          filtered = Enum.reject(ministries, &(&1 == ""))
+          {Enum.join(filtered, ","), filtered}
+
+        ministries when is_binary(ministries) and ministries != "" ->
+          # Sometimes Phoenix sends a single value as string
+          {ministries, [ministries]}
+
+        _ ->
+          {"", []}
+      end
+
+    params =
+      params
+      |> Map.put("ministries_string", ministries_string)
+      |> Map.put("ministries", filtered_ministries)
+
     # Check if there are any uploaded files
     case socket.assigns.uploads.image.entries do
       [] ->
@@ -61,7 +105,10 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
              |> push_navigate(to: ~p"/congregants/#{congregant}")}
 
           {:error, form} ->
-            {:noreply, assign(socket, :form, form)}
+            {:noreply,
+             socket
+             |> assign(:form, form)
+             |> put_flash(:error, "Please check the form for errors")}
         end
 
       _ ->
@@ -98,7 +145,10 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
              |> push_navigate(to: ~p"/congregants/#{congregant}")}
 
           {:error, form} ->
-            {:noreply, assign(socket, :form, form)}
+            {:noreply,
+             socket
+             |> assign(:form, form)
+             |> put_flash(:error, "Please check the form for errors")}
         end
     end
   end
@@ -513,22 +563,37 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                   </div>
                 </div>
 
-                <div class="sm:col-span-6">
-                  <label for="ministries" class="block text-sm font-medium text-gray-400">
-                    Ministries
-                  </label>
-                  <div class="mt-1">
-                    <.input
-                      field={@form[:ministries_string]}
-                      type="text"
-                      placeholder="e.g., Worship, Youth, Outreach (comma separated)"
-                      class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
-                    />
-                    <p class="mt-1 text-xs text-gray-500">
-                      Enter ministries separated by commas (optional)
-                    </p>
+              </div>
+            </div>
+
+            <hr class="border-dark-700" />
+
+            <%!-- Ministries Section --%>
+            <div>
+              <h3 class="mb-4 flex items-center text-lg font-medium leading-6 text-white">
+                <.icon name="hero-user-group" class="mr-2 h-5 w-5 text-primary-500" />
+                Ministries
+              </h3>
+              <div>
+                <%!-- Hidden input to ensure ministries field is always present --%>
+                <input type="hidden" name="form[ministries][]" value="" />
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <div :for={{label, value} <- @ministries_options}>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="form[ministries][]"
+                        value={value}
+                        checked={value in @selected_ministries}
+                        class="h-4 w-4 text-primary-600 bg-dark-700 border-dark-600 rounded focus:ring-primary-500"
+                      />
+                      <span class="text-sm text-gray-300">{label}</span>
+                    </label>
                   </div>
                 </div>
+                <p class="mt-3 text-xs text-gray-500">
+                  Select all ministries that apply (optional)
+                </p>
               </div>
             </div>
           </div>

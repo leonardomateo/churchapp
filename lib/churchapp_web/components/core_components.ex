@@ -552,7 +552,10 @@ defmodule ChurchappWeb.CoreComponents do
         alt=""
         class="absolute inset-0 w-full h-full object-cover rounded-full"
       />
-      <div :if={!@has_image} class="absolute inset-0 w-full h-full rounded-full flex items-center justify-center select-none bg-gradient-to-br from-primary-500 to-primary-600 border-2 border-dark-600">
+      <div
+        :if={!@has_image}
+        class="absolute inset-0 w-full h-full rounded-full flex items-center justify-center select-none bg-gradient-to-br from-primary-500 to-primary-600 border-2 border-dark-600"
+      >
         <span class="font-bold text-white">
           {@initials}
         </span>
