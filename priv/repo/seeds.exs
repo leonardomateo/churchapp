@@ -245,7 +245,9 @@ Enum.each(congregants, fn attrs ->
        |> Ash.Changeset.for_create(:create, attrs)
        |> Ash.create() do
     {:ok, congregant} ->
-      IO.puts("✓ Created congregant: #{congregant.first_name} #{congregant.last_name} (ID: #{congregant.member_id})")
+      IO.puts(
+        "✓ Created congregant: #{congregant.first_name} #{congregant.last_name} (ID: #{congregant.member_id})"
+      )
 
     {:error, changeset} ->
       IO.puts("✗ Failed to create congregant: #{attrs.first_name} #{attrs.last_name}")

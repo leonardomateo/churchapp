@@ -154,11 +154,80 @@ const PhoneFormat = {
   }
 }
 
+// Image Upload Hook - handles drag-and-drop for the dropzone
+const ImageUpload = {
+  mounted() {
+    this.dropzoneEl = document.getElementById("image-upload-dropzone")
+    this.inputEl = document.querySelector("input[type='file']")
+    
+    // Handle drag and drop on the dropzone
+    if (this.dropzoneEl) {
+      this.dropzoneEl.addEventListener("dragover", this.handleDragOver.bind(this))
+      this.dropzoneEl.addEventListener("dragleave", this.handleDragLeave.bind(this))
+      this.dropzoneEl.addEventListener("drop", this.handleDrop.bind(this))
+    }
+  },
+
+  handleDragOver(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    this.dropzoneEl.classList.add("border-primary-500", "bg-primary-500/10")
+  },
+
+  handleDragLeave(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    this.dropzoneEl.classList.remove("border-primary-500", "bg-primary-500/10")
+  },
+
+  handleDrop(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    this.dropzoneEl.classList.remove("border-primary-500", "bg-primary-500/10")
+    
+    const files = e.dataTransfer.files
+    if (files.length > 0) {
+      const file = files[0]
+      
+      // Check file size (5MB limit)
+      if (file.size > 5_000_000) {
+        alert("File size must be less than 5MB")
+        return
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        alert("File must be an image")
+        return
+      }
+      
+      // Set the file to the hidden input
+      if (this.inputEl) {
+        const dataTransfer = new DataTransfer()
+        dataTransfer.items.add(file)
+        this.inputEl.files = dataTransfer.files
+        
+        // Trigger the change event to notify LiveView
+        const event = new Event("change", { bubbles: true })
+        this.inputEl.dispatchEvent(event)
+      }
+    }
+  },
+
+  destroyed() {
+    if (this.dropzoneEl) {
+      this.dropzoneEl.removeEventListener("dragover", this.handleDragOver.bind(this))
+      this.dropzoneEl.removeEventListener("dragleave", this.handleDragLeave.bind(this))
+      this.dropzoneEl.removeEventListener("drop", this.handleDrop.bind(this))
+    }
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload},
 })
 
 // Show progress bar on live navigation and form submits

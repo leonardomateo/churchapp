@@ -21,6 +21,13 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
       |> assign(:page_title, "New Congregant")
       |> assign(:form, form)
       |> assign(:generated_id, generated_id)
+      |> assign(:uploaded_files, [])
+      |> allow_upload(:image,
+        accept: ~w(.jpg .jpeg .png .gif .webp),
+        max_file_size: 5_000_000,
+        max_entries: 1,
+        auto_upload: false
+      )
 
     {:ok, socket}
   end
@@ -31,6 +38,29 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
   end
 
   def handle_event("save", %{"form" => params}, socket) do
+    uploaded_files = consume_uploaded_entries(socket, :image, fn %{path: temp_path}, entry ->
+      # Generate unique filename
+      extension = Path.extname(entry.client_name)
+      filename = "#{System.unique_integer([:positive])}#{extension}"
+      dest_path = Path.join(["priv/static/uploads/congregants", filename])
+
+      # Ensure directory exists
+      File.mkdir_p!(Path.dirname(dest_path))
+
+      # Copy file to destination
+      File.cp!(temp_path, dest_path)
+
+      # Return the relative path for storage
+      "/uploads/congregants/#{filename}"
+    end)
+
+    # Add image path to params if an image was uploaded
+    params =
+      case uploaded_files do
+        [image_path | _] -> Map.put(params, "image", image_path)
+        [] -> params
+      end
+
     case Form.submit(socket.assigns.form, params: params) do
       {:ok, _congregant} ->
         {:noreply,
@@ -43,6 +73,10 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
     end
   end
 
+  def handle_event("cancel-upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :image, ref)}
+  end
+
   def render(assigns) do
     ~H"""
     <div class="max-w-4xl mx-auto">
@@ -51,11 +85,12 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
           navigate={~p"/congregants"}
           class="flex items-center mb-4 text-gray-400 hover:text-white transition-colors"
         >
-          <.icon name="hero-arrow-left" class="mr-2 h-4 w-4" />
-          Back to List
+          <.icon name="hero-arrow-left" class="mr-2 h-4 w-4" /> Back to List
         </.link>
         <h2 class="text-2xl font-bold text-white">Add New Congregant</h2>
-        <p class="mt-1 text-gray-500">Fill in the details to create a new church congregant record.</p>
+        <p class="mt-1 text-gray-500">
+          Fill in the details to create a new church congregant record.
+        </p>
       </div>
 
       <div class="bg-dark-800 shadow-xl rounded-lg border border-dark-700 overflow-hidden">
@@ -64,8 +99,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
             <%!-- Personal Information Section --%>
             <div>
               <h3 class="mb-4 flex items-center text-lg font-medium leading-6 text-white">
-                <.icon name="hero-user" class="mr-2 h-5 w-5 text-primary-500" />
-                Personal Information
+                <.icon name="hero-user" class="mr-2 h-5 w-5 text-primary-500" /> Personal Information
               </h3>
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-2">
@@ -99,7 +133,11 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                     Congregant ID
                   </label>
                   <div class="mt-1">
-                    <input type="hidden" name={@form[:generated_member_id].name} value={@generated_id} />
+                    <input
+                      type="hidden"
+                      name={@form[:generated_member_id].name}
+                      value={@generated_id}
+                    />
                     <.input
                       name="member_id_display"
                       type="text"
@@ -135,6 +173,53 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                     />
                   </div>
                 </div>
+
+                <div class="sm:col-span-6">
+                  <label for="image" class="block text-sm font-medium text-gray-400">
+                    Profile Image
+                  </label>
+                  <div class="mt-1">
+                    <div
+                      id="image-upload-dropzone"
+                      phx-drop-target={@uploads.image.ref}
+                      class="relative border-2 border-dashed border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
+                    >
+                      <.live_file_input upload={@uploads.image} class="hidden" id="image-upload-input" />
+
+                      <label for={@uploads.image.ref} class="cursor-pointer block">
+                        <div class="space-y-4">
+                          <div class="mx-auto w-16 h-16 rounded-full bg-dark-700 flex items-center justify-center">
+                            <.icon name="hero-photo" class="h-8 w-8 text-gray-400" />
+                          </div>
+
+                          <div class="text-sm text-gray-400">
+                            <p class="font-medium">Click to upload or drag and drop</p>
+                            <p class="text-xs">PNG, JPG, GIF up to 5MB</p>
+                          </div>
+                        </div>
+                      </label>
+
+                      <!-- Preview uploaded image -->
+                      <div :for={entry <- @uploads.image.entries} class="mt-4">
+                        <div class="relative inline-block">
+                          <.live_img_preview entry={entry} class="w-24 h-24 rounded-full object-cover border-2 border-dark-600" />
+                          <button
+                            type="button"
+                            phx-click="cancel-upload"
+                            phx-value-ref={entry.ref}
+                            class="absolute -top-2 -right-2 bg-red-600 rounded-full p-1 hover:bg-red-700 transition-colors"
+                          >
+                            <.icon name="hero-x-mark" class="h-4 w-4 text-white" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p class="mt-2 text-xs text-gray-500">
+                      Upload a profile image for the congregant
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -143,8 +228,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
             <%!-- Contact Information Section --%>
             <div>
               <h3 class="mb-4 flex items-center text-lg font-medium leading-6 text-white">
-                <.icon name="hero-phone" class="mr-2 h-5 w-5 text-primary-500" />
-                Contact Information
+                <.icon name="hero-phone" class="mr-2 h-5 w-5 text-primary-500" /> Contact Information
               </h3>
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-2">
@@ -199,8 +283,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
             <%!-- Address Section --%>
             <div>
               <h3 class="mb-4 flex items-center text-lg font-medium leading-6 text-white">
-                <.icon name="hero-map-pin" class="mr-2 h-5 w-5 text-primary-500" />
-                Address
+                <.icon name="hero-map-pin" class="mr-2 h-5 w-5 text-primary-500" /> Address
               </h3>
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-6">

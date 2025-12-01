@@ -177,10 +177,21 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
         case Integer.parse(socket.assigns.search_query) do
           {id, ""} ->
             search_term = String.downcase(socket.assigns.search_query)
-            Ash.Query.filter(query, member_id == ^id or contains(string_downcase(first_name), ^search_term) or contains(string_downcase(last_name), ^search_term))
+
+            Ash.Query.filter(
+              query,
+              member_id == ^id or contains(string_downcase(first_name), ^search_term) or
+                contains(string_downcase(last_name), ^search_term)
+            )
+
           _ ->
             search_term = String.downcase(socket.assigns.search_query)
-            Ash.Query.filter(query, contains(string_downcase(first_name), ^search_term) or contains(string_downcase(last_name), ^search_term))
+
+            Ash.Query.filter(
+              query,
+              contains(string_downcase(first_name), ^search_term) or
+                contains(string_downcase(last_name), ^search_term)
+            )
         end
       else
         query
@@ -201,6 +212,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
 
     # Apply pagination
     offset = (socket.assigns.page - 1) * socket.assigns.per_page
+
     paginated_query =
       query
       |> Ash.Query.limit(socket.assigns.per_page)
@@ -226,8 +238,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
             navigate={~p"/congregants/new"}
             class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md shadow-lg shadow-primary-500/20 transition-colors"
           >
-            <.icon name="hero-plus" class="mr-2 h-4 w-4" />
-            Add New Congregant
+            <.icon name="hero-plus" class="mr-2 h-4 w-4" /> Add New Congregant
           </.link>
         </div>
       </div>
@@ -250,16 +261,14 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                 class="floating-cancel-btn inline-flex items-center px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 rounded-full border border-dark-600"
                 aria-label="Clear selection"
               >
-                <.icon name="hero-x-mark" class="mr-2 h-4 w-4" />
-                Cancel
+                <.icon name="hero-x-mark" class="mr-2 h-4 w-4" /> Cancel
               </button>
               <button
                 type="button"
                 phx-click="show_delete_confirm"
                 class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full transition-colors"
               >
-                <.icon name="hero-trash" class="mr-2 h-4 w-4" />
-                Delete Selected
+                <.icon name="hero-trash" class="mr-2 h-4 w-4" /> Delete Selected
               </button>
             </div>
           </div>
@@ -268,7 +277,10 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
 
       <div class="mb-6 flex flex-col sm:flex-row gap-4">
         <div class="relative flex-1">
-          <.icon name="hero-magnifying-glass" class="absolute left-3 top-1/2 h-4 w-4 text-gray-500 transform -translate-y-1/2" />
+          <.icon
+            name="hero-magnifying-glass"
+            class="absolute left-3 top-1/2 h-4 w-4 text-gray-500 transform -translate-y-1/2"
+          />
           <form phx-change="search" phx-submit="search" onsubmit="return false;">
             <input
               type="text"
@@ -302,16 +314,27 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                 <input
                   type="checkbox"
                   phx-click="toggle_select_all"
-                  checked={MapSet.size(@selected_ids) > 0 && MapSet.size(@selected_ids) == length(@congregants)}
+                  checked={
+                    MapSet.size(@selected_ids) > 0 &&
+                      MapSet.size(@selected_ids) == length(@congregants)
+                  }
                   class="h-4 w-4 text-primary-600 bg-dark-700 border-dark-600 rounded focus:ring-primary-500 focus:ring-offset-dark-800 cursor-pointer"
                   aria-label="Select all"
                 />
               </th>
-          <.sort_header label="Member" key={:first_name} sort_by={@sort_by} sort_dir={@sort_dir} />
-          <.sort_header label="Contact Info" key={:address} sort_by={@sort_by} sort_dir={@sort_dir} />
-          <.sort_header label="Status" key={:status} sort_by={@sort_by} sort_dir={@sort_dir} />
+              <.sort_header label="Member" key={:first_name} sort_by={@sort_by} sort_dir={@sort_dir} />
+              <.sort_header
+                label="Contact Info"
+                key={:address}
+                sort_by={@sort_by}
+                sort_dir={@sort_dir}
+              />
+              <.sort_header label="Status" key={:status} sort_by={@sort_by} sort_dir={@sort_dir} />
               <.sort_header label="Ministry" key={:is_leader} sort_by={@sort_by} sort_dir={@sort_dir} />
-              <th scope="col" class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Actions
               </th>
             </tr>
@@ -334,10 +357,18 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                   aria-label={"Select #{congregant.first_name} #{congregant.last_name}"}
                 />
               </td>
-              <td class="px-6 py-5 cursor-pointer" phx-click={JS.navigate(~p"/congregants/#{congregant}")}>
+              <td
+                class="px-6 py-5 cursor-pointer"
+                phx-click={JS.navigate(~p"/congregants/#{congregant}")}
+              >
                 <div class="flex items-center">
                   <img
-                    src={"https://ui-avatars.com/api/?name=#{URI.encode(congregant.first_name <> "+" <> congregant.last_name)}&background=404040&color=D1D5DB&bold=true"}
+                    src={
+                      if congregant.image && congregant.image != "",
+                        do: congregant.image,
+                        else:
+                          "https://ui-avatars.com/api/?name=#{URI.encode(congregant.first_name <> "+" <> congregant.last_name)}&background=404040&color=D1D5DB&bold=true"
+                    }
                     alt=""
                     class="h-12 w-12 rounded-full object-cover"
                   />
@@ -346,12 +377,17 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                       {congregant.first_name} {congregant.last_name}
                     </div>
                     <div class="text-sm text-gray-500">
-                      Joined {if congregant.member_since, do: Calendar.strftime(congregant.member_since, "%b %Y"), else: "N/A"}
+                      Joined {if congregant.member_since,
+                        do: Calendar.strftime(congregant.member_since, "%b %Y"),
+                        else: "N/A"}
                     </div>
                   </div>
                 </div>
               </td>
-              <td class="px-6 py-5 cursor-pointer" phx-click={JS.navigate(~p"/congregants/#{congregant}")}>
+              <td
+                class="px-6 py-5 cursor-pointer"
+                phx-click={JS.navigate(~p"/congregants/#{congregant}")}
+              >
                 <div class="text-sm text-gray-300">
                   {if congregant.address, do: congregant.address, else: "—"}
                 </div>
@@ -359,7 +395,10 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                   {format_phone(congregant.mobile_tel)}
                 </div>
               </td>
-              <td class="px-6 py-5 cursor-pointer" phx-click={JS.navigate(~p"/congregants/#{congregant}")}>
+              <td
+                class="px-6 py-5 cursor-pointer"
+                phx-click={JS.navigate(~p"/congregants/#{congregant}")}
+              >
                 <span class={[
                   "px-3 py-1 inline-flex text-sm font-medium rounded-full",
                   congregant.status == :member && "bg-green-900/60 text-green-400",
@@ -376,7 +415,10 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                   end}
                 </span>
               </td>
-              <td class="px-6 py-5 text-sm text-gray-300 cursor-pointer" phx-click={JS.navigate(~p"/congregants/#{congregant}")}>
+              <td
+                class="px-6 py-5 text-sm text-gray-300 cursor-pointer"
+                phx-click={JS.navigate(~p"/congregants/#{congregant}")}
+              >
                 {if congregant.is_leader, do: "Worship Team, Kids Ministry", else: "—"}
               </td>
               <td class="px-6 py-5 text-right relative">
@@ -403,8 +445,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                         class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-dark-600 hover:text-white transition-colors"
                         role="menuitem"
                       >
-                        <.icon name="hero-eye" class="mr-3 h-4 w-4" />
-                        View Details
+                        <.icon name="hero-eye" class="mr-3 h-4 w-4" /> View Details
                       </.link>
 
                       <.link
@@ -412,8 +453,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                         class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-dark-600 hover:text-white transition-colors"
                         role="menuitem"
                       >
-                        <.icon name="hero-pencil-square" class="mr-3 h-4 w-4" />
-                        Edit Congregant
+                        <.icon name="hero-pencil-square" class="mr-3 h-4 w-4" /> Edit Congregant
                       </.link>
 
                       <button
@@ -423,8 +463,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                         class="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-dark-600 hover:text-red-300 transition-colors text-left"
                         role="menuitem"
                       >
-                        <.icon name="hero-trash" class="mr-3 h-4 w-4" />
-                        Delete Congregant
+                        <.icon name="hero-trash" class="mr-3 h-4 w-4" /> Delete Congregant
                       </button>
                     </div>
                   </div>
@@ -435,7 +474,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
         </table>
         <div class="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-dark-800 border-t border-dark-700">
           <div class="text-sm text-gray-500">
-            Showing {((@page - 1) * @per_page) + 1} to {min(@page * @per_page, @total_count)} of {@total_count} results
+            Showing {(@page - 1) * @per_page + 1} to {min(@page * @per_page, @total_count)} of {@total_count} results
           </div>
           <div class="flex items-center gap-2">
             <%!-- Previous Button --%>
@@ -450,8 +489,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                 @page > 1 && "text-gray-300 hover:text-white hover:bg-dark-700"
               ]}
             >
-              <.icon name="hero-chevron-left" class="mr-1 h-4 w-4" />
-              Previous
+              <.icon name="hero-chevron-left" class="mr-1 h-4 w-4" /> Previous
             </button>
 
             <%!-- Page Numbers --%>
@@ -493,8 +531,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                 @page < @total_pages && "text-gray-300 hover:text-white hover:bg-dark-700"
               ]}
             >
-              Next
-              <.icon name="hero-chevron-right" class="ml-1 h-4 w-4" />
+              Next <.icon name="hero-chevron-right" class="ml-1 h-4 w-4" />
             </button>
           </div>
         </div>
@@ -661,21 +698,25 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
         [1, :ellipsis] ++ Enum.to_list((total_pages - 4)..total_pages)
 
       true ->
-        [1, :ellipsis] ++ Enum.to_list((current_page - 1)..(current_page + 1)) ++ [:ellipsis, total_pages]
+        [1, :ellipsis] ++
+          Enum.to_list((current_page - 1)..(current_page + 1)) ++ [:ellipsis, total_pages]
     end
   end
 
   # Format phone number for display: (123) 456 - 7890
   defp format_phone(nil), do: "—"
   defp format_phone(""), do: "—"
+
   defp format_phone(phone) do
     digits = String.replace(phone, ~r/\D/, "")
 
     case String.length(digits) do
       10 ->
         "(#{String.slice(digits, 0, 3)}) #{String.slice(digits, 3, 3)} - #{String.slice(digits, 6, 4)}"
+
       _ ->
-        phone  # Return as-is if not 10 digits
+        # Return as-is if not 10 digits
+        phone
     end
   end
 end

@@ -30,7 +30,8 @@ defmodule Chms.Church.Congregants do
         :dob,
         :member_since,
         :status,
-        :is_leader
+        :is_leader,
+        :image
       ]
 
       change {Chms.Church.Congregants.Changes.AssignMemberId, []}
@@ -52,13 +53,10 @@ defmodule Chms.Church.Congregants do
         :dob,
         :member_since,
         :status,
-        :is_leader
+        :is_leader,
+        :image
       ]
     end
-  end
-
-  identities do
-    identity :unique_member_id, [:member_id]
   end
 
   attributes do
@@ -106,6 +104,7 @@ defmodule Chms.Church.Congregants do
     attribute :work_tel, :string
 
     attribute :dob, :date
+
     attribute :member_since, :date do
       default &Date.utc_today/0
     end
@@ -121,8 +120,14 @@ defmodule Chms.Church.Congregants do
       allow_nil? false
     end
 
+    attribute :image, :string
+
     create_timestamp :inserted_at
     update_timestamp :updated_at
+  end
+
+  identities do
+    identity :unique_member_id, [:member_id]
   end
 
   defmodule Changes.AssignMemberId do

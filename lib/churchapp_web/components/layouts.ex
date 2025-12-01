@@ -87,24 +87,21 @@ defmodule ChurchappWeb.Layouts do
             class="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
             onclick="window.setTheme('light'); document.getElementById('theme-menu').classList.add('hidden');"
           >
-            <.icon name="hero-sun" class="size-4 mr-3" />
-            Light
+            <.icon name="hero-sun" class="size-4 mr-3" /> Light
           </button>
           <button
             type="button"
             class="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
             onclick="window.setTheme('dark'); document.getElementById('theme-menu').classList.add('hidden');"
           >
-            <.icon name="hero-moon" class="size-4 mr-3" />
-            Dark
+            <.icon name="hero-moon" class="size-4 mr-3" /> Dark
           </button>
           <button
             type="button"
             class="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
             onclick="window.setTheme('system'); document.getElementById('theme-menu').classList.add('hidden');"
           >
-            <.icon name="hero-computer-desktop" class="size-4 mr-3" />
-            System
+            <.icon name="hero-computer-desktop" class="size-4 mr-3" /> System
           </button>
         </div>
       </div>

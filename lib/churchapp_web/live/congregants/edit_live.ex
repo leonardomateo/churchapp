@@ -16,6 +16,13 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
           |> assign(:page_title, "Edit Congregant")
           |> assign(:congregant, congregant)
           |> assign(:form, form)
+          |> assign(:uploaded_files, [])
+          |> allow_upload(:image,
+            accept: ~w(.jpg .jpeg .png .gif .webp),
+            max_file_size: 5_000_000,
+            max_entries: 1,
+            auto_upload: false
+          )
 
         {:ok, socket}
 
@@ -33,12 +40,60 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
   end
 
   def handle_event("save", %{"form" => params}, socket) do
+    uploaded_files = consume_uploaded_entries(socket, :image, fn %{path: temp_path}, entry ->
+      # Generate unique filename
+      extension = Path.extname(entry.client_name)
+      filename = "#{System.unique_integer([:positive])}#{extension}"
+      dest_path = Path.join(["priv/static/uploads/congregants", filename])
+
+      # Ensure directory exists
+      File.mkdir_p!(Path.dirname(dest_path))
+
+      # Copy file to destination
+      File.cp!(temp_path, dest_path)
+
+      # Return the relative path for storage
+      "/uploads/congregants/#{filename}"
+    end)
+
+    # Add image path to params if an image was uploaded
+    params =
+      case uploaded_files do
+        [image_path | _] -> Map.put(params, "image", image_path)
+        [] -> params
+      end
+
     case Form.submit(socket.assigns.form, params: params) do
       {:ok, congregant} ->
         {:noreply,
          socket
          |> put_flash(:info, "Congregant updated successfully")
          |> push_navigate(to: ~p"/congregants/#{congregant}")}
+
+      {:error, form} ->
+        {:noreply, assign(socket, :form, form)}
+    end
+  end
+
+  def handle_event("cancel-upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :image, ref)}
+  end
+
+  def handle_event("remove-image", _params, socket) do
+    # Update the congregant to remove the image
+    case Form.submit(socket.assigns.form, params: %{"image" => nil}) do
+      {:ok, congregant} ->
+        # Rebuild the form with the updated congregant
+        form =
+          congregant
+          |> Form.for_update(:update, api: Chms.Church)
+          |> to_form()
+
+        {:noreply,
+         socket
+         |> assign(:congregant, congregant)
+         |> assign(:form, form)
+         |> put_flash(:info, "Profile image removed")}
 
       {:error, form} ->
         {:noreply, assign(socket, :form, form)}
@@ -53,8 +108,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
           navigate={~p"/congregants/#{@congregant}"}
           class="flex items-center mb-4 text-gray-400 hover:text-white transition-colors"
         >
-          <.icon name="hero-arrow-left" class="mr-2 h-4 w-4" />
-          Back to Details
+          <.icon name="hero-arrow-left" class="mr-2 h-4 w-4" /> Back to Details
         </.link>
         <h2 class="text-2xl font-bold text-white">Edit Congregant</h2>
         <p class="mt-1 text-gray-500">
@@ -68,8 +122,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
             <%!-- Personal Information Section --%>
             <div>
               <h3 class="mb-4 flex items-center text-lg font-medium leading-6 text-white">
-                <.icon name="hero-user" class="mr-2 h-5 w-5 text-primary-500" />
-                Personal Information
+                <.icon name="hero-user" class="mr-2 h-5 w-5 text-primary-500" /> Personal Information
               </h3>
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-2">
@@ -137,6 +190,81 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                     />
                   </div>
                 </div>
+
+                <div class="sm:col-span-6">
+                  <label for="image" class="block text-sm font-medium text-gray-400">
+                    Profile Image
+                  </label>
+                  <div class="mt-1">
+                    <div
+                      id="image-upload-dropzone"
+                      phx-drop-target={@uploads.image.ref}
+                      class="relative border-2 border-dashed border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
+                    >
+                      <.live_file_input upload={@uploads.image} class="hidden" id="image-upload-input" />
+
+                      <%= cond do %>
+                        <% !Enum.empty?(@uploads.image.entries) -> %>
+                          <!-- New image being uploaded -->
+                          <div :for={entry <- @uploads.image.entries}>
+                            <p class="text-xs text-gray-500 mb-3">New Image Preview</p>
+                            <.live_img_preview entry={entry} class="w-24 h-24 mx-auto rounded-full object-cover border-2 border-primary-500" />
+                            <div class="mt-3 flex items-center justify-center gap-3">
+                              <label for={@uploads.image.ref} class="text-sm text-primary-500 hover:text-primary-400 cursor-pointer">
+                                Change image
+                              </label>
+                              <span class="text-gray-600">|</span>
+                              <button
+                                type="button"
+                                phx-click="cancel-upload"
+                                phx-value-ref={entry.ref}
+                                class="text-sm text-red-500 hover:text-red-400"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+
+                        <% @congregant.image && @congregant.image != "" -> %>
+                          <!-- Has existing image -->
+                          <div>
+                            <label for={@uploads.image.ref} class="cursor-pointer inline-block">
+                              <img
+                                src={@congregant.image}
+                                alt=""
+                                class="w-24 h-24 mx-auto rounded-full object-cover border-2 border-dark-600 hover:border-primary-500 transition-colors"
+                              />
+                            </label>
+                            <div class="mt-3 flex items-center justify-center gap-3">
+                              <label for={@uploads.image.ref} class="text-sm text-primary-500 hover:text-primary-400 cursor-pointer">
+                                Change image
+                              </label>
+                              <span class="text-gray-600">|</span>
+                              <button
+                                type="button"
+                                phx-click="remove-image"
+                                class="text-sm text-red-500 hover:text-red-400"
+                              >
+                                Remove image
+                              </button>
+                            </div>
+                          </div>
+
+                        <% true -> %>
+                          <!-- No image - show upload prompt -->
+                          <label for={@uploads.image.ref} class="cursor-pointer block">
+                            <div class="mx-auto w-16 h-16 rounded-full bg-dark-700 flex items-center justify-center">
+                              <.icon name="hero-photo" class="h-8 w-8 text-gray-400" />
+                            </div>
+                            <div class="mt-4 text-sm text-gray-400">
+                              <p class="font-medium">Click to upload or drag and drop</p>
+                              <p class="text-xs">PNG, JPG, GIF up to 5MB</p>
+                            </div>
+                          </label>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -145,8 +273,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
             <%!-- Contact Information Section --%>
             <div>
               <h3 class="mb-4 flex items-center text-lg font-medium leading-6 text-white">
-                <.icon name="hero-phone" class="mr-2 h-5 w-5 text-primary-500" />
-                Contact Information
+                <.icon name="hero-phone" class="mr-2 h-5 w-5 text-primary-500" /> Contact Information
               </h3>
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-2">
@@ -201,8 +328,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
             <%!-- Address Section --%>
             <div>
               <h3 class="mb-4 flex items-center text-lg font-medium leading-6 text-white">
-                <.icon name="hero-map-pin" class="mr-2 h-5 w-5 text-primary-500" />
-                Address
+                <.icon name="hero-map-pin" class="mr-2 h-5 w-5 text-primary-500" /> Address
               </h3>
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-6">
