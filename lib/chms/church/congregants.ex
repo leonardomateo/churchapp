@@ -14,6 +14,7 @@ defmodule Chms.Church.Congregants do
 
     create :create do
       argument :generated_member_id, :integer
+      argument :ministries_string, :string
 
       accept [
         :first_name,
@@ -31,13 +32,17 @@ defmodule Chms.Church.Congregants do
         :member_since,
         :status,
         :is_leader,
-        :image
+        :image,
+        :ministries
       ]
 
       change {Chms.Church.Congregants.Changes.AssignMemberId, []}
+      change {Chms.Church.Congregants.Changes.ParseMinistries, []}
     end
 
     update :update do
+      argument :ministries_string, :string
+
       accept [
         :first_name,
         :last_name,
@@ -54,8 +59,11 @@ defmodule Chms.Church.Congregants do
         :member_since,
         :status,
         :is_leader,
-        :image
+        :image,
+        :ministries
       ]
+
+      change {Chms.Church.Congregants.Changes.ParseMinistries, []}
     end
   end
 
@@ -122,6 +130,8 @@ defmodule Chms.Church.Congregants do
 
     attribute :image, :string
 
+    attribute :ministries, {:array, :string}
+
     create_timestamp :inserted_at
     update_timestamp :updated_at
   end
@@ -141,6 +151,26 @@ defmodule Chms.Church.Congregants do
         end
 
       Ash.Changeset.force_change_attribute(changeset, :member_id, member_id)
+    end
+  end
+
+  defmodule Changes.ParseMinistries do
+    use Ash.Resource.Change
+
+    def change(changeset, _opts, _context) do
+      case Ash.Changeset.fetch_argument(changeset, :ministries_string) do
+        {:ok, ministries_string} when is_binary(ministries_string) ->
+          ministries =
+            ministries_string
+            |> String.split(",")
+            |> Enum.map(&String.trim/1)
+            |> Enum.reject(&(&1 == ""))
+
+          Ash.Changeset.force_change_attribute(changeset, :ministries, ministries)
+
+        _ ->
+          changeset
+      end
     end
   end
 end

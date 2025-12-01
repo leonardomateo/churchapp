@@ -96,8 +96,8 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
             <h3 class="mb-6 ml-6 flex items-center text-lg font-medium leading-6 text-white">
               <.icon name="hero-user" class="mr-2 h-5 w-5 text-primary-500" /> Personal Information
             </h3>
-            <dl class="ml-6 grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
-              <div>
+            <dl class="ml-6 grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-3">
+              <div class="flex flex-col h-full">
                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date of Birth
                 </dt>
@@ -108,9 +108,29 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
                 </dd>
               </div>
 
-              <div>
+              <div class="flex flex-col h-full">
                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
+                  Ministries
+                </dt>
+                <dd class="mt-2 text-sm text-white">
+                  <%= if @congregant.ministries && @congregant.ministries != [] do %>
+                    <div class="flex flex-wrap gap-2">
+                      <span
+                        :for={ministry <- @congregant.ministries}
+                        class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-900/30 text-primary-400 border border-primary-800"
+                      >
+                        {ministry}
+                      </span>
+                    </div>
+                  <% else %>
+                    <span class="text-gray-500 italic">No ministries assigned</span>
+                  <% end %>
+                </dd>
+              </div>
+
+              <div class="flex flex-col h-full">
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
                 </dt>
                 <dd class="mt-2 text-sm text-white">
                   <%= if @congregant.is_leader do %>
@@ -126,6 +146,7 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
           </div>
 
           <hr class="border-dark-700" />
+
 
           <%!-- Contact Information --%>
           <div class="py-8">

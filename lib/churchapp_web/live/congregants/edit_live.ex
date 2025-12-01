@@ -6,9 +6,18 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
   def mount(%{"id" => id}, _session, socket) do
     case Chms.Church.get_congregant_by_id(id) do
       {:ok, congregant} ->
+        # Convert ministries array to comma-separated string for form display
+        ministries_string =
+          if congregant.ministries && congregant.ministries != [] do
+            Enum.join(congregant.ministries, ", ")
+          else
+            ""
+          end
+
         form =
           congregant
           |> Form.for_update(:update, api: Chms.Church)
+          |> Form.validate(%{"ministries_string" => ministries_string})
           |> to_form()
 
         socket =
@@ -40,21 +49,22 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
   end
 
   def handle_event("save", %{"form" => params}, socket) do
-    uploaded_files = consume_uploaded_entries(socket, :image, fn %{path: temp_path}, entry ->
-      # Generate unique filename
-      extension = Path.extname(entry.client_name)
-      filename = "#{System.unique_integer([:positive])}#{extension}"
-      dest_path = Path.join(["priv/static/uploads/congregants", filename])
+    uploaded_files =
+      consume_uploaded_entries(socket, :image, fn %{path: temp_path}, entry ->
+        # Generate unique filename
+        extension = Path.extname(entry.client_name)
+        filename = "#{System.unique_integer([:positive])}#{extension}"
+        dest_path = Path.join(["priv/static/uploads/congregants", filename])
 
-      # Ensure directory exists
-      File.mkdir_p!(Path.dirname(dest_path))
+        # Ensure directory exists
+        File.mkdir_p!(Path.dirname(dest_path))
 
-      # Copy file to destination
-      File.cp!(temp_path, dest_path)
+        # Copy file to destination
+        File.cp!(temp_path, dest_path)
 
-      # Return the relative path for storage
-      "/uploads/congregants/#{filename}"
-    end)
+        # Return the relative path for storage
+        "/uploads/congregants/#{filename}"
+      end)
 
     # Add image path to params if an image was uploaded
     params =
@@ -80,6 +90,14 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
   end
 
   def handle_event("remove-image", _params, socket) do
+    # Get current ministries value to preserve it
+    ministries_string =
+      if socket.assigns.congregant.ministries && socket.assigns.congregant.ministries != [] do
+        Enum.join(socket.assigns.congregant.ministries, ", ")
+      else
+        ""
+      end
+
     # Update the congregant to remove the image
     case Form.submit(socket.assigns.form, params: %{"image" => nil}) do
       {:ok, congregant} ->
@@ -87,6 +105,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
         form =
           congregant
           |> Form.for_update(:update, api: Chms.Church)
+          |> Form.validate(%{"ministries_string" => ministries_string})
           |> to_form()
 
         {:noreply,
@@ -201,16 +220,26 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                       phx-drop-target={@uploads.image.ref}
                       class="relative border-2 border-dashed border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
                     >
-                      <.live_file_input upload={@uploads.image} class="hidden" id="image-upload-input" />
+                      <.live_file_input
+                        upload={@uploads.image}
+                        class="hidden"
+                        id="image-upload-input"
+                      />
 
                       <%= cond do %>
                         <% !Enum.empty?(@uploads.image.entries) -> %>
                           <!-- New image being uploaded -->
                           <div :for={entry <- @uploads.image.entries}>
                             <p class="text-xs text-gray-500 mb-3">New Image Preview</p>
-                            <.live_img_preview entry={entry} class="w-24 h-24 mx-auto rounded-full object-cover border-2 border-primary-500" />
+                            <.live_img_preview
+                              entry={entry}
+                              class="w-24 h-24 mx-auto rounded-full object-cover border-2 border-primary-500"
+                            />
                             <div class="mt-3 flex items-center justify-center gap-3">
-                              <label for={@uploads.image.ref} class="text-sm text-primary-500 hover:text-primary-400 cursor-pointer">
+                              <label
+                                for={@uploads.image.ref}
+                                class="text-sm text-primary-500 hover:text-primary-400 cursor-pointer"
+                              >
                                 Change image
                               </label>
                               <span class="text-gray-600">|</span>
@@ -224,7 +253,6 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                               </button>
                             </div>
                           </div>
-
                         <% @congregant.image && @congregant.image != "" -> %>
                           <!-- Has existing image -->
                           <div>
@@ -236,7 +264,10 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                               />
                             </label>
                             <div class="mt-3 flex items-center justify-center gap-3">
-                              <label for={@uploads.image.ref} class="text-sm text-primary-500 hover:text-primary-400 cursor-pointer">
+                              <label
+                                for={@uploads.image.ref}
+                                class="text-sm text-primary-500 hover:text-primary-400 cursor-pointer"
+                              >
                                 Change image
                               </label>
                               <span class="text-gray-600">|</span>
@@ -249,7 +280,6 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                               </button>
                             </div>
                           </div>
-
                         <% true -> %>
                           <!-- No image - show upload prompt -->
                           <label for={@uploads.image.ref} class="cursor-pointer block">
@@ -455,6 +485,23 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                       />
                       <span class="ml-2 text-sm text-gray-300">Is a Leader</span>
                     </label>
+                  </div>
+                </div>
+
+                <div class="sm:col-span-6">
+                  <label for="ministries" class="block text-sm font-medium text-gray-400">
+                    Ministries
+                  </label>
+                  <div class="mt-1">
+                    <.input
+                      field={@form[:ministries_string]}
+                      type="text"
+                      placeholder="e.g., Worship, Youth, Outreach (comma separated)"
+                      class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                    />
+                    <p class="mt-1 text-xs text-gray-500">
+                      Enter ministries separated by commas (optional)
+                    </p>
                   </div>
                 </div>
               </div>

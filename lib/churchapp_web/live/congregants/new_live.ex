@@ -38,21 +38,22 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
   end
 
   def handle_event("save", %{"form" => params}, socket) do
-    uploaded_files = consume_uploaded_entries(socket, :image, fn %{path: temp_path}, entry ->
-      # Generate unique filename
-      extension = Path.extname(entry.client_name)
-      filename = "#{System.unique_integer([:positive])}#{extension}"
-      dest_path = Path.join(["priv/static/uploads/congregants", filename])
+    uploaded_files =
+      consume_uploaded_entries(socket, :image, fn %{path: temp_path}, entry ->
+        # Generate unique filename
+        extension = Path.extname(entry.client_name)
+        filename = "#{System.unique_integer([:positive])}#{extension}"
+        dest_path = Path.join(["priv/static/uploads/congregants", filename])
 
-      # Ensure directory exists
-      File.mkdir_p!(Path.dirname(dest_path))
+        # Ensure directory exists
+        File.mkdir_p!(Path.dirname(dest_path))
 
-      # Copy file to destination
-      File.cp!(temp_path, dest_path)
+        # Copy file to destination
+        File.cp!(temp_path, dest_path)
 
-      # Return the relative path for storage
-      "/uploads/congregants/#{filename}"
-    end)
+        # Return the relative path for storage
+        "/uploads/congregants/#{filename}"
+      end)
 
     # Add image path to params if an image was uploaded
     params =
@@ -184,35 +185,48 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                       phx-drop-target={@uploads.image.ref}
                       class="relative border-2 border-dashed border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
                     >
-                      <.live_file_input upload={@uploads.image} class="hidden" id="image-upload-input" />
+                      <.live_file_input
+                        upload={@uploads.image}
+                        class="hidden"
+                        id="image-upload-input"
+                      />
 
-                      <label for={@uploads.image.ref} class="cursor-pointer block">
-                        <div class="space-y-4">
-                          <div class="mx-auto w-16 h-16 rounded-full bg-dark-700 flex items-center justify-center">
-                            <.icon name="hero-photo" class="h-8 w-8 text-gray-400" />
+                      <%= cond do %>
+                        <% !Enum.empty?(@uploads.image.entries) -> %>
+                          <!-- New image being uploaded -->
+                          <div :for={entry <- @uploads.image.entries}>
+                            <p class="text-xs text-gray-500 mb-3 text-center">New Image Preview</p>
+                            <.live_img_preview entry={entry} class="w-24 h-24 mx-auto rounded-full object-cover border-2 border-primary-500" />
+                            <div class="mt-3 flex items-center justify-center gap-3">
+                              <label for={@uploads.image.ref} class="text-sm text-primary-500 hover:text-primary-400 cursor-pointer">
+                                Change image
+                              </label>
+                              <span class="text-gray-600">|</span>
+                              <button
+                                type="button"
+                                phx-click="cancel-upload"
+                                phx-value-ref={entry.ref}
+                                class="text-sm text-red-500 hover:text-red-400"
+                              >
+                                Remove
+                              </button>
+                            </div>
                           </div>
 
-                          <div class="text-sm text-gray-400">
-                            <p class="font-medium">Click to upload or drag and drop</p>
-                            <p class="text-xs">PNG, JPG, GIF up to 5MB</p>
-                          </div>
-                        </div>
-                      </label>
-
-                      <!-- Preview uploaded image -->
-                      <div :for={entry <- @uploads.image.entries} class="mt-4">
-                        <div class="relative inline-block">
-                          <.live_img_preview entry={entry} class="w-24 h-24 rounded-full object-cover border-2 border-dark-600" />
-                          <button
-                            type="button"
-                            phx-click="cancel-upload"
-                            phx-value-ref={entry.ref}
-                            class="absolute -top-2 -right-2 bg-red-600 rounded-full p-1 hover:bg-red-700 transition-colors"
-                          >
-                            <.icon name="hero-x-mark" class="h-4 w-4 text-white" />
-                          </button>
-                        </div>
-                      </div>
+                        <% true -> %>
+                          <!-- No image - show upload prompt -->
+                          <label for={@uploads.image.ref} class="cursor-pointer block">
+                            <div class="space-y-4">
+                              <div class="mx-auto w-16 h-16 rounded-full bg-dark-700 flex items-center justify-center">
+                                <.icon name="hero-photo" class="h-8 w-8 text-gray-400" />
+                              </div>
+                              <div class="text-sm text-gray-400">
+                                <p class="font-medium">Click to upload or drag and drop</p>
+                                <p class="text-xs">PNG, JPG, GIF up to 5MB</p>
+                              </div>
+                            </div>
+                          </label>
+                      <% end %>
                     </div>
 
                     <p class="mt-2 text-xs text-gray-500">
@@ -410,6 +424,23 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                       />
                       <span class="ml-2 text-sm text-gray-300">Is a Leader</span>
                     </label>
+                  </div>
+                </div>
+
+                <div class="sm:col-span-6">
+                  <label for="ministries" class="block text-sm font-medium text-gray-400">
+                    Ministries
+                  </label>
+                  <div class="mt-1">
+                    <.input
+                      field={@form[:ministries_string]}
+                      type="text"
+                      placeholder="e.g., Worship, Youth, Outreach (comma separated)"
+                      class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                    />
+                    <p class="mt-1 text-xs text-gray-500">
+                      Enter ministries separated by commas (optional)
+                    </p>
                   </div>
                 </div>
               </div>
