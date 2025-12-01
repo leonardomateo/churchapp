@@ -361,15 +361,11 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
                 phx-click={JS.navigate(~p"/congregants/#{congregant}")}
               >
                 <div class="flex items-center">
-                  <img
-                    src={
-                      if congregant.image && congregant.image != "",
-                        do: congregant.image,
-                        else:
-                          "https://ui-avatars.com/api/?name=#{URI.encode(congregant.first_name <> "+" <> congregant.last_name)}&background=404040&color=D1D5DB&bold=true"
-                    }
-                    alt=""
-                    class="h-12 w-12 rounded-full object-cover"
+                  <.avatar
+                    image={congregant.image}
+                    first_name={congregant.first_name}
+                    last_name={congregant.last_name}
+                    size="md"
                   />
                   <div class="ml-4">
                     <div class="text-base font-medium text-white">

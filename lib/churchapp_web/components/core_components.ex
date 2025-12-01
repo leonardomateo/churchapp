@@ -474,4 +474,90 @@ defmodule ChurchappWeb.CoreComponents do
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
   end
+
+  @doc """
+  Generates initials from first and last name.
+
+  ## Examples
+
+      iex> generate_initials("John", "Doe")
+      "JD"
+
+      iex> generate_initials("Mary", "Anne Smith")
+      "MA"
+  """
+  def generate_initials(first_name, last_name) do
+    first_initial =
+      first_name
+      |> String.trim()
+      |> String.first()
+      |> String.upcase()
+
+    last_initial =
+      last_name
+      |> String.trim()
+      |> String.first()
+      |> String.upcase()
+
+    "#{first_initial}#{last_initial}"
+  end
+
+  @doc """
+  Renders an avatar component that displays either an image or initials when no image is available.
+
+  ## Examples
+
+      <.avatar
+        image={@congregant.image}
+        first_name={@congregant.first_name}
+        last_name={@congregant.last_name}
+        size="md"
+      />
+  """
+  attr :image, :any, default: nil
+  attr :first_name, :string, required: true
+  attr :last_name, :string, required: true
+  attr :size, :string, default: "md", values: ~w(sm md lg xl)
+  attr :class, :string, default: nil
+  attr :rest, :global
+
+  def avatar(assigns) do
+    assigns =
+      assigns
+      |> assign_new(:initials, fn -> generate_initials(assigns.first_name, assigns.last_name) end)
+      |> assign_new(:size_classes, fn ->
+        case assigns.size do
+          "sm" -> "h-8 w-8 text-xs"
+          "md" -> "h-12 w-12 text-sm"
+          "lg" -> "h-16 w-16 text-base"
+          "xl" -> "h-24 w-24 text-lg"
+          _ -> "h-12 w-12 text-sm"
+        end
+      end)
+      |> assign_new(:has_image, fn -> assigns.image && assigns.image != "" end)
+
+    ~H"""
+    <div
+      class={[
+        "relative rounded-full overflow-hidden",
+        @size_classes,
+        @has_image && "bg-gray-200",
+        @class
+      ]}
+      {@rest}
+    >
+      <img
+        :if={@has_image}
+        src={@image}
+        alt=""
+        class="absolute inset-0 w-full h-full object-cover rounded-full"
+      />
+      <div :if={!@has_image} class="absolute inset-0 w-full h-full rounded-full flex items-center justify-center select-none bg-gradient-to-br from-primary-500 to-primary-600 border-2 border-dark-600">
+        <span class="font-bold text-white">
+          {@initials}
+        </span>
+      </div>
+    </div>
+    """
+  end
 end

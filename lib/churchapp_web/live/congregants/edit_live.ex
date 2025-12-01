@@ -66,22 +66,22 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
 
       _ ->
         # There are uploaded files, consume them
-         uploaded_files =
-           consume_uploaded_entries(socket, :image, fn %{path: temp_path}, entry ->
-             # Generate unique filename
-             extension = Path.extname(entry.client_name)
-             filename = "#{System.unique_integer([:positive])}#{extension}"
-             dest_path = Path.join(["priv/static/uploads/congregants", filename])
+        uploaded_files =
+          consume_uploaded_entries(socket, :image, fn %{path: temp_path}, entry ->
+            # Generate unique filename
+            extension = Path.extname(entry.client_name)
+            filename = "#{System.unique_integer([:positive])}#{extension}"
+            dest_path = Path.join(["priv/static/uploads/congregants", filename])
 
-             # Ensure directory exists
-             File.mkdir_p!(Path.dirname(dest_path))
+            # Ensure directory exists
+            File.mkdir_p!(Path.dirname(dest_path))
 
-             # Copy file to destination
-             File.cp!(temp_path, dest_path)
+            # Copy file to destination
+            File.cp!(temp_path, dest_path)
 
-             # Return the relative path for storage wrapped in :ok tuple
-             {:ok, "/uploads/congregants/#{filename}"}
-           end)
+            # Return the relative path for storage wrapped in :ok tuple
+            {:ok, "/uploads/congregants/#{filename}"}
+          end)
 
         # Add image path to params if an image was uploaded
         params =
@@ -276,10 +276,12 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                           <!-- Has existing image -->
                           <div>
                             <label for={@uploads.image.ref} class="cursor-pointer inline-block">
-                              <img
-                                src={@congregant.image}
-                                alt=""
-                                class="w-24 h-24 mx-auto rounded-full object-cover border-2 border-dark-600 hover:border-primary-500 transition-colors"
+                              <.avatar
+                                image={@congregant.image}
+                                first_name={@congregant.first_name}
+                                last_name={@congregant.last_name}
+                                size="lg"
+                                class="mx-auto border-2 border-dark-600 hover:border-primary-500 transition-colors"
                               />
                             </label>
                             <div class="mt-3 flex items-center justify-center gap-3">
@@ -300,11 +302,15 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                             </div>
                           </div>
                         <% true -> %>
-                          <!-- No image - show upload prompt -->
+                          <!-- No image - show avatar preview with upload prompt -->
                           <label for={@uploads.image.ref} class="cursor-pointer block">
-                            <div class="mx-auto w-16 h-16 rounded-full bg-dark-700 flex items-center justify-center">
-                              <.icon name="hero-photo" class="h-8 w-8 text-gray-400" />
-                            </div>
+                            <.avatar
+                              image={nil}
+                              first_name={@congregant.first_name}
+                              last_name={@congregant.last_name}
+                              size="lg"
+                              class="mx-auto"
+                            />
                             <div class="mt-4 text-sm text-gray-400">
                               <p class="font-medium">Click to upload or drag and drop</p>
                               <p class="text-xs">PNG, JPG, GIF up to 5MB</p>

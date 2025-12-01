@@ -41,15 +41,12 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
         <%!-- Member Header --%>
         <div class="px-6 py-8 border-b border-dark-700">
           <div class="flex items-center gap-6">
-            <img
-              src={
-                if @congregant.image && @congregant.image != "",
-                  do: @congregant.image,
-                  else:
-                    "https://ui-avatars.com/api/?name=#{URI.encode(@congregant.first_name <> "+" <> @congregant.last_name)}&background=404040&color=D1D5DB&bold=true&size=256"
-              }
-              alt=""
-              class="h-24 w-24 rounded-full object-cover border-2 border-dark-600"
+            <.avatar
+              image={@congregant.image}
+              first_name={@congregant.first_name}
+              last_name={@congregant.last_name}
+              size="xl"
+              class="border-2 border-dark-600"
             />
 
             <div class="flex-1">
@@ -146,7 +143,6 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
           </div>
 
           <hr class="border-dark-700" />
-
 
           <%!-- Contact Information --%>
           <div class="py-8">
