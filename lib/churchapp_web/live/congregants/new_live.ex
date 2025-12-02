@@ -419,10 +419,11 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                     State <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
-                    <.input
+                    <.live_component
+                      module={ChurchappWeb.StateSelector}
+                      id="state-selector-new"
                       field={@form[:state]}
-                      type="text"
-                      class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                      form={@form}
                     />
                   </div>
                 </div>
