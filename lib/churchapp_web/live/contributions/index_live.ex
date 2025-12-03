@@ -16,6 +16,8 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
       |> assign(:show_advanced_filters, false)
       |> assign(:open_menu_id, nil)
       |> assign(:delete_single_id, nil)
+      |> assign(:selected_ids, MapSet.new())
+      |> assign(:show_delete_confirm, false)
       |> assign(:page, 1)
       |> assign(:per_page, 10)
       |> fetch_contributions()
@@ -81,6 +83,63 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
   def handle_event("paginate", %{"page" => page}, socket) do
     socket
     |> assign(:page, String.to_integer(page))
+    |> assign(:selected_ids, MapSet.new())
+    |> fetch_contributions()
+    |> then(&{:noreply, &1})
+  end
+
+  def handle_event("toggle_select", %{"id" => id}, socket) do
+    selected_ids = socket.assigns.selected_ids
+
+    new_selected_ids =
+      if MapSet.member?(selected_ids, id) do
+        MapSet.delete(selected_ids, id)
+      else
+        MapSet.put(selected_ids, id)
+      end
+
+    {:noreply, assign(socket, :selected_ids, new_selected_ids)}
+  end
+
+  def handle_event("toggle_select_all", _params, socket) do
+    all_ids = Enum.map(socket.assigns.contributions, & &1.id) |> MapSet.new()
+
+    new_selected_ids =
+      if MapSet.equal?(socket.assigns.selected_ids, all_ids) do
+        MapSet.new()
+      else
+        all_ids
+      end
+
+    {:noreply, assign(socket, :selected_ids, new_selected_ids)}
+  end
+
+  def handle_event("clear_selection", _params, socket) do
+    {:noreply, assign(socket, :selected_ids, MapSet.new())}
+  end
+
+  def handle_event("show_delete_confirm", _params, socket) do
+    {:noreply, assign(socket, :show_delete_confirm, true)}
+  end
+
+  def handle_event("cancel_delete", _params, socket) do
+    {:noreply, assign(socket, :show_delete_confirm, false)}
+  end
+
+  def handle_event("confirm_delete_selected", _params, socket) do
+    count = MapSet.size(socket.assigns.selected_ids)
+
+    Enum.each(socket.assigns.selected_ids, fn id ->
+      case Chms.Church.get_contribution_by_id(id) do
+        {:ok, contribution} -> Chms.Church.destroy_contribution(contribution)
+        _ -> :ok
+      end
+    end)
+
+    socket
+    |> put_flash(:info, "Successfully deleted #{count} contribution(s)")
+    |> assign(:selected_ids, MapSet.new())
+    |> assign(:show_delete_confirm, false)
     |> fetch_contributions()
     |> then(&{:noreply, &1})
   end
@@ -257,6 +316,38 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
   def render(assigns) do
     ~H"""
     <div class="view-container active" phx-click="close_menu">
+      <%!-- Floating Action Bar for Bulk Selection --%>
+      <%= if MapSet.size(@selected_ids) > 0 do %>
+        <div class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
+          <div class="floating-action-bar shadow-2xl rounded-full px-6 py-3 flex items-center gap-6 bg-dark-800 border border-dark-600">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-check-circle" class="h-5 w-5 text-primary-500" />
+              <span class="text-sm font-medium text-white">
+                {MapSet.size(@selected_ids)} selected
+              </span>
+            </div>
+            <div class="h-6 w-px bg-dark-600"></div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                phx-click="clear_selection"
+                class="floating-cancel-btn inline-flex items-center px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 rounded-full border border-dark-600"
+                aria-label="Clear selection"
+              >
+                <.icon name="hero-x-mark" class="mr-2 h-4 w-4" /> Cancel
+              </button>
+              <button
+                type="button"
+                phx-click="show_delete_confirm"
+                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full transition-colors"
+              >
+                <.icon name="hero-trash" class="mr-2 h-4 w-4" /> Delete Selected
+              </button>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
       <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
         <div class="flex items-center gap-4">
           <h2 class="text-2xl font-bold text-white">Contributions</h2>
@@ -445,6 +536,18 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
         <table class="min-w-full">
           <thead>
             <tr class="border-b border-dark-700">
+              <th scope="col" class="px-6 py-4 w-12">
+                <input
+                  type="checkbox"
+                  phx-click="toggle_select_all"
+                  checked={
+                    MapSet.size(@selected_ids) > 0 &&
+                      MapSet.size(@selected_ids) == length(@contributions)
+                  }
+                  class="h-4 w-4 text-primary-600 bg-dark-700 border-dark-600 rounded focus:ring-primary-500 focus:ring-offset-dark-800 cursor-pointer"
+                  aria-label="Select all"
+                />
+              </th>
               <th
                 scope="col"
                 class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -480,8 +583,21 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
           <tbody class="bg-dark-800">
             <tr
               :for={{contribution, index} <- Enum.with_index(@contributions)}
-              class="border-b border-dark-700 hover:bg-dark-700/40 transition-all duration-200 group"
+              class={[
+                "border-b border-dark-700 hover:bg-dark-700/40 transition-all duration-200 group",
+                MapSet.member?(@selected_ids, contribution.id) && "bg-primary-900/20"
+              ]}
             >
+              <td class="px-6 py-5 w-12">
+                <input
+                  type="checkbox"
+                  phx-click="toggle_select"
+                  phx-value-id={contribution.id}
+                  checked={MapSet.member?(@selected_ids, contribution.id)}
+                  class="h-4 w-4 text-primary-600 bg-dark-700 border-dark-600 rounded focus:ring-primary-500 focus:ring-offset-dark-800 cursor-pointer"
+                  aria-label={"Select contribution from #{contribution.congregant.first_name} #{contribution.congregant.last_name}"}
+                />
+              </td>
               <td
                 class="px-6 py-5 whitespace-nowrap text-sm text-gray-300 cursor-pointer"
                 phx-click={JS.navigate(~p"/contributions/#{contribution}")}
@@ -677,6 +793,61 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
                   class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
                 >
                   Delete Contribution
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%!-- Bulk Delete Confirmation Modal --%>
+      <%= if @show_delete_confirm do %>
+        <div
+          class="fixed inset-0 z-[100] overflow-y-auto"
+          aria-labelledby="modal-title"
+          role="dialog"
+          aria-modal="true"
+        >
+          <%!-- Background overlay --%>
+          <div class="fixed inset-0 modal-backdrop transition-opacity"></div>
+
+          <%!-- Modal panel --%>
+          <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative transform overflow-hidden rounded-lg bg-dark-800 border border-dark-700 shadow-2xl transition-all w-full max-w-lg">
+              <%!-- Modal content --%>
+              <div class="p-6">
+                <div class="flex items-start gap-4">
+                  <div class="flex-shrink-0">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-900/20">
+                      <.icon name="hero-exclamation-triangle" class="h-6 w-6 text-red-500" />
+                    </div>
+                  </div>
+                  <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-white mb-2" id="modal-title">
+                      Delete Contributions
+                    </h3>
+                    <p class="text-sm text-gray-300">
+                      Are you sure you want to delete {MapSet.size(@selected_ids)} contribution(s)? This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <%!-- Modal actions --%>
+              <div class="px-6 py-4 bg-dark-700/50 flex justify-end gap-3">
+                <button
+                  type="button"
+                  phx-click="cancel_delete"
+                  class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 hover:bg-dark-600 rounded-md border border-dark-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  phx-click="confirm_delete_selected"
+                  class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                >
+                  Delete Contributions
                 </button>
               </div>
             </div>
