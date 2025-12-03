@@ -1,122 +1,438 @@
 defmodule ChurchappWeb.ContributionsLive.IndexLive do
   use ChurchappWeb, :live_view
 
-  def mount(_params, _session, socket) do
-    contributions =
-      Chms.Church.Contributions
-      |> Ash.Query.load([:congregant])
-      |> Ash.Query.sort(contribution_date: :desc)
-      |> Ash.read!()
+  require Ash.Query
 
-    {:ok,
-     socket
-     |> assign(:page_title, "Contributions")
-     |> stream(:contributions, contributions)}
+  def mount(_params, _session, socket) do
+    socket =
+      socket
+      |> assign(:page_title, "Contributions")
+      |> assign(:search_query, "")
+      |> assign(:type_filter, "")
+      |> assign(:open_menu_id, nil)
+      |> assign(:delete_single_id, nil)
+      |> assign(:page, 1)
+      |> assign(:per_page, 10)
+      |> fetch_contributions()
+
+    {:ok, socket}
   end
 
-  def handle_event("delete", %{"id" => id}, socket) do
-    contribution = Ash.get!(Chms.Church.Contributions, id)
+  def handle_event("search", %{"query" => query}, socket) do
+    socket
+    |> assign(:search_query, query)
+    |> assign(:page, 1)
+    |> fetch_contributions()
+    |> then(&{:noreply, &1})
+  end
+
+  def handle_event("filter_type", %{"type" => type}, socket) do
+    socket
+    |> assign(:type_filter, type)
+    |> assign(:page, 1)
+    |> fetch_contributions()
+    |> then(&{:noreply, &1})
+  end
+
+  def handle_event("paginate", %{"page" => page}, socket) do
+    socket
+    |> assign(:page, String.to_integer(page))
+    |> fetch_contributions()
+    |> then(&{:noreply, &1})
+  end
+
+  def handle_event("toggle_menu", %{"id" => id}, socket) do
+    new_menu_id = if socket.assigns.open_menu_id == id, do: nil, else: id
+    {:noreply, assign(socket, :open_menu_id, new_menu_id)}
+  end
+
+  def handle_event("close_menu", _params, socket) do
+    {:noreply, assign(socket, :open_menu_id, nil)}
+  end
+
+  def handle_event("show_delete_single", %{"id" => id}, socket) do
+    {:noreply, assign(socket, delete_single_id: id, open_menu_id: nil)}
+  end
+
+  def handle_event("cancel_delete_single", _params, socket) do
+    {:noreply, assign(socket, :delete_single_id, nil)}
+  end
+
+  def handle_event("confirm_delete_single", _params, socket) do
+    contribution = Ash.get!(Chms.Church.Contributions, socket.assigns.delete_single_id)
 
     case Ash.destroy(contribution) do
       :ok ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Contribution deleted successfully")
-         |> stream_delete(:contributions, contribution)}
+        socket
+        |> put_flash(:info, "Contribution deleted successfully")
+        |> assign(:delete_single_id, nil)
+        |> fetch_contributions()
+        |> then(&{:noreply, &1})
 
       {:error, _error} ->
-        {:noreply, put_flash(socket, :error, "Failed to delete contribution")}
+        {:noreply,
+         socket
+         |> put_flash(:error, "Failed to delete contribution")
+         |> assign(:delete_single_id, nil)}
     end
+  end
+
+  defp fetch_contributions(socket) do
+    query =
+      Chms.Church.Contributions
+      |> Ash.Query.load([:congregant])
+      |> Ash.Query.sort(contribution_date: :desc)
+
+    query =
+      if socket.assigns.search_query != "" do
+        search_term = String.downcase(socket.assigns.search_query)
+
+        Ash.Query.filter(
+          query,
+          contains(string_downcase(contribution_type), ^search_term) or
+            contains(string_downcase(congregant.first_name), ^search_term) or
+            contains(string_downcase(congregant.last_name), ^search_term)
+        )
+      else
+        query
+      end
+
+    query =
+      if socket.assigns.type_filter != "" do
+        Ash.Query.filter(query, contribution_type == ^socket.assigns.type_filter)
+      else
+        query
+      end
+
+    # Get total count for pagination
+    all_contributions = Ash.read!(query)
+    total_count = length(all_contributions)
+    total_pages = ceil(total_count / socket.assigns.per_page)
+
+    # Apply pagination
+    offset = (socket.assigns.page - 1) * socket.assigns.per_page
+
+    paginated_query =
+      query
+      |> Ash.Query.limit(socket.assigns.per_page)
+      |> Ash.Query.offset(offset)
+
+    contributions = Ash.read!(paginated_query)
+
+    socket
+    |> assign(:contributions, contributions)
+    |> assign(:total_count, total_count)
+    |> assign(:total_pages, total_pages)
   end
 
   def render(assigns) do
     ~H"""
-    <div class="max-w-7xl mx-auto">
-      <div class="mb-6 flex items-center justify-between">
-        <div>
+    <div class="view-container active" phx-click="close_menu">
+      <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+        <div class="flex items-center gap-4">
           <h2 class="text-2xl font-bold text-white">Contributions</h2>
-          <p class="mt-1 text-gray-400">
-            Manage church contributions, tithes, offerings, and expenses.
-          </p>
         </div>
-        <.link
-          navigate={~p"/contributions/new"}
-          class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md shadow-lg shadow-primary-500/20 transition-colors"
-        >
-          <.icon name="hero-plus" class="mr-2 w-5 h-5" /> New Contribution
-        </.link>
+        <div class="flex items-center gap-3">
+          <.link
+            navigate={~p"/contributions/new"}
+            class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md shadow-lg shadow-primary-500/20 transition-colors"
+          >
+            <.icon name="hero-plus" class="mr-2 h-4 w-4" /> New Contribution
+          </.link>
+        </div>
       </div>
 
-      <div class="bg-dark-800 shadow-xl rounded-lg border border-dark-700 overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-dark-700">
-            <thead class="bg-dark-700/50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Date
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Congregant
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Type
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Notes
-                </th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody id="contributions" phx-update="stream" class="divide-y divide-dark-700">
-              <tr
-                :for={{id, contribution} <- @streams.contributions}
-                id={id}
-                class="hover:bg-dark-700/30 transition-colors"
+      <div class="mb-6 flex flex-col sm:flex-row gap-4">
+        <div class="relative flex-1">
+          <.icon
+            name="hero-magnifying-glass"
+            class="absolute left-3 top-1/2 h-4 w-4 text-gray-500 transform -translate-y-1/2"
+          />
+          <form phx-change="search" phx-submit="search" onsubmit="return false;">
+            <input
+              type="text"
+              name="query"
+              value={@search_query}
+              placeholder="Search by type or congregant name..."
+              class="w-full pl-10 pr-4 py-2 text-gray-200 placeholder-gray-500 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </form>
+        </div>
+        <form phx-change="filter_type">
+          <select
+            name="type"
+            value={@type_filter}
+            class="h-[42px] px-4 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent hover:bg-dark-700 hover:border-dark-600 transition-colors cursor-pointer"
+          >
+            <option value="">All Types</option>
+            <%= for type <- Chms.Church.ContributionTypes.all_types() do %>
+              <option value={type}>{type}</option>
+            <% end %>
+          </select>
+        </form>
+      </div>
+
+      <div class="bg-dark-800 rounded-lg shadow-xl overflow-x-auto overflow-y-visible">
+        <table class="min-w-full">
+          <thead>
+            <tr class="border-b border-dark-700">
+              <th
+                scope="col"
+                class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               >
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                  {Calendar.strftime(contribution.contribution_date, "%b %d, %Y")}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-white">
-                  {contribution.congregant.first_name} {contribution.congregant.last_name}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-500/10 text-primary-500 border border-primary-500/20">
-                    {contribution.contribution_type}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-400">
-                  ${Decimal.to_string(contribution.revenue, :normal)}
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-400 max-w-xs truncate">
-                  {contribution.notes || "-"}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <.link
-                    navigate={~p"/contributions/#{contribution}/edit"}
-                    class="text-primary-500 hover:text-primary-600 mr-4"
-                  >
-                    Edit
-                  </.link>
+                Date
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Congregant
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Type
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Amount
+              </th>
+              <th
+                scope="col"
+                class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-dark-800">
+            <tr
+              :for={{contribution, index} <- Enum.with_index(@contributions)}
+              class="border-b border-dark-700 hover:bg-dark-700/40 transition-all duration-200 group"
+            >
+              <td
+                class="px-6 py-5 whitespace-nowrap text-sm text-gray-300 cursor-pointer"
+                phx-click={JS.navigate(~p"/contributions/#{contribution}")}
+              >
+                {Calendar.strftime(contribution.contribution_date, "%b %d, %Y")}
+              </td>
+              <td
+                class="px-6 py-5 whitespace-nowrap text-sm text-white cursor-pointer"
+                phx-click={JS.navigate(~p"/contributions/#{contribution}")}
+              >
+                {contribution.congregant.first_name} {contribution.congregant.last_name}
+              </td>
+              <td
+                class="px-6 py-5 whitespace-nowrap cursor-pointer"
+                phx-click={JS.navigate(~p"/contributions/#{contribution}")}
+              >
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-500/10 text-primary-500 border border-primary-500/20">
+                  {contribution.contribution_type}
+                </span>
+              </td>
+              <td
+                class="px-6 py-5 whitespace-nowrap text-sm font-medium text-green-400 cursor-pointer"
+                phx-click={JS.navigate(~p"/contributions/#{contribution}")}
+              >
+                ${Decimal.to_string(contribution.revenue, :normal)}
+              </td>
+              <td class="px-6 py-5 text-right">
+                <div class="flex items-center justify-end relative group">
                   <button
-                    phx-click="delete"
+                    type="button"
+                    phx-click="toggle_menu"
                     phx-value-id={contribution.id}
-                    data-confirm="Are you sure you want to delete this contribution?"
-                    class="text-red-500 hover:text-red-600"
+                    class="p-2 text-gray-400 hover:text-white rounded-md hover:bg-dark-700 transition-colors"
+                    aria-label="Actions menu"
                   >
-                    Delete
+                    <.icon name="hero-ellipsis-vertical" class="h-5 w-5" />
                   </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+
+                  <%!-- Dropdown Menu - opens upward for last 3 rows, downward otherwise --%>
+                  <div
+                    :if={@open_menu_id == contribution.id}
+                    class={[
+                      "absolute right-0 w-48 rounded-md shadow-lg bg-dark-700 ring-1 ring-dark-600 z-50",
+                      if(index >= length(@contributions) - 3,
+                        do: "bottom-full mb-2",
+                        else: "top-full mt-2"
+                      )
+                    ]}
+                  >
+                    <div class="py-1" role="menu" aria-orientation="vertical">
+                      <.link
+                        navigate={~p"/contributions/#{contribution}"}
+                        class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-dark-600 hover:text-white transition-colors"
+                        role="menuitem"
+                      >
+                        <.icon name="hero-eye" class="mr-3 h-4 w-4" /> View Details
+                      </.link>
+
+                      <.link
+                        navigate={~p"/contributions/#{contribution}/edit"}
+                        class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-dark-600 hover:text-white transition-colors"
+                        role="menuitem"
+                      >
+                        <.icon name="hero-pencil-square" class="mr-3 h-4 w-4" /> Edit Contribution
+                      </.link>
+
+                      <button
+                        type="button"
+                        phx-click="show_delete_single"
+                        phx-value-id={contribution.id}
+                        class="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-dark-600 hover:text-red-300 transition-colors text-left"
+                        role="menuitem"
+                      >
+                        <.icon name="hero-trash" class="mr-3 h-4 w-4" /> Delete Contribution
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-dark-800 border-t border-dark-700">
+          <div class="text-sm text-gray-500">
+            Showing {(@page - 1) * @per_page + 1} to {min(@page * @per_page, @total_count)} of {@total_count} results
+          </div>
+          <div class="flex items-center gap-2">
+            <%!-- Previous Button --%>
+            <button
+              type="button"
+              phx-click="paginate"
+              phx-value-page={@page - 1}
+              disabled={@page == 1}
+              class={[
+                "relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                @page == 1 && "text-gray-500 cursor-not-allowed opacity-50",
+                @page > 1 && "text-gray-300 hover:text-white hover:bg-dark-700"
+              ]}
+            >
+              <.icon name="hero-chevron-left" class="mr-1 h-4 w-4" /> Previous
+            </button>
+
+            <%!-- Page Numbers --%>
+            <div class="hidden sm:flex items-center gap-1">
+              <%= for page_num <- pagination_range(@page, @total_pages) do %>
+                <%= if page_num == :ellipsis do %>
+                  <span class="px-3 py-2 text-sm text-gray-500">...</span>
+                <% else %>
+                  <button
+                    type="button"
+                    phx-click="paginate"
+                    phx-value-page={page_num}
+                    class={[
+                      "px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                      page_num == @page && "bg-primary-500 text-white",
+                      page_num != @page && "text-gray-300 hover:text-white hover:bg-dark-700"
+                    ]}
+                  >
+                    {page_num}
+                  </button>
+                <% end %>
+              <% end %>
+            </div>
+
+            <%!-- Mobile Page Indicator --%>
+            <div class="sm:hidden text-sm text-gray-400">
+              Page {@page} of {@total_pages}
+            </div>
+
+            <%!-- Next Button --%>
+            <button
+              type="button"
+              phx-click="paginate"
+              phx-value-page={@page + 1}
+              disabled={@page >= @total_pages}
+              class={[
+                "relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                @page >= @total_pages && "text-gray-500 cursor-not-allowed opacity-50",
+                @page < @total_pages && "text-gray-300 hover:text-white hover:bg-dark-700"
+              ]}
+            >
+              Next <.icon name="hero-chevron-right" class="ml-1 h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
+
+      <%!-- Single Delete Confirmation Modal --%>
+      <%= if @delete_single_id do %>
+        <div
+          class="fixed inset-0 z-[100] overflow-y-auto"
+          aria-labelledby="modal-title-single"
+          role="dialog"
+          aria-modal="true"
+        >
+          <%!-- Background overlay --%>
+          <div class="fixed inset-0 modal-backdrop transition-opacity"></div>
+
+          <%!-- Modal panel --%>
+          <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative transform overflow-hidden rounded-lg bg-dark-800 border border-dark-700 shadow-2xl transition-all w-full max-w-lg">
+              <%!-- Modal content --%>
+              <div class="p-6">
+                <div class="flex items-start gap-4">
+                  <div class="flex-shrink-0">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-900/20">
+                      <.icon name="hero-exclamation-triangle" class="h-6 w-6 text-red-500" />
+                    </div>
+                  </div>
+                  <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-white mb-2" id="modal-title-single">
+                      Delete Contribution
+                    </h3>
+                    <p class="text-sm text-gray-300">
+                      Are you sure you want to delete this contribution? This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <%!-- Modal actions --%>
+              <div class="px-6 py-4 bg-dark-700/50 flex justify-end gap-3">
+                <button
+                  type="button"
+                  phx-click="cancel_delete_single"
+                  class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 hover:bg-dark-600 rounded-md border border-dark-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  phx-click="confirm_delete_single"
+                  class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                >
+                  Delete Contribution
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
     """
+  end
+
+  # Generate pagination range with ellipsis
+  defp pagination_range(current_page, total_pages) do
+    cond do
+      total_pages <= 7 ->
+        Enum.to_list(1..total_pages)
+
+      current_page <= 4 ->
+        Enum.to_list(1..5) ++ [:ellipsis, total_pages]
+
+      current_page >= total_pages - 3 ->
+        [1, :ellipsis] ++ Enum.to_list((total_pages - 4)..total_pages)
+
+      true ->
+        [1, :ellipsis] ++
+          Enum.to_list((current_page - 1)..(current_page + 1)) ++ [:ellipsis, total_pages]
+    end
   end
 end
