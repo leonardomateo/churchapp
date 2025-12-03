@@ -212,7 +212,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                   </div>
                 </div>
 
-                <div class="sm:col-span-3">
+                <div class="sm:col-span-2">
                   <label for="dob" class="block text-sm font-medium text-gray-400">
                     Date of Birth
                   </label>
@@ -225,7 +225,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                   </div>
                 </div>
 
-                <div class="sm:col-span-3">
+                <div class="sm:col-span-2">
                   <label for="member-since" class="block text-sm font-medium text-gray-400">
                     Member Since
                   </label>
@@ -235,6 +235,34 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                       type="date"
                       class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
+                  </div>
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label class="block text-sm font-medium text-gray-400">
+                    Gender
+                  </label>
+                  <div class="mt-1 flex items-center space-x-4 h-[38px]">
+                    <label class="inline-flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name={@form[:gender].name}
+                        value="male"
+                        checked={to_string(@form[:gender].value) == "male"}
+                        class="h-4 w-4 text-primary-600 bg-dark-700 border-dark-600 focus:ring-primary-500"
+                      />
+                      <span class="ml-2 text-sm text-gray-300">Male</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name={@form[:gender].name}
+                        value="female"
+                        checked={to_string(@form[:gender].value) == "female"}
+                        class="h-4 w-4 text-primary-600 bg-dark-700 border-dark-600 focus:ring-primary-500"
+                      />
+                      <span class="ml-2 text-sm text-gray-300">Female</span>
+                    </label>
                   </div>
                 </div>
 
@@ -530,7 +558,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                   </div>
                 </div>
                 <p class="mt-3 text-xs text-gray-500">
-                  Select all ministries that apply (optional)
+                  Select all ministries that apply
                 </p>
               </div>
             </div>

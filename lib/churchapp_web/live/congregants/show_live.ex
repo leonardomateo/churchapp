@@ -96,6 +96,15 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
             <dl class="ml-6 grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-3">
               <div class="flex flex-col h-full">
                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Gender
+                </dt>
+                <dd class="mt-2 text-sm text-white">
+                  {if @congregant.gender, do: Phoenix.Naming.humanize(@congregant.gender), else: "Not provided"}
+                </dd>
+              </div>
+
+              <div class="flex flex-col h-full">
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date of Birth
                 </dt>
                 <dd class="mt-2 text-sm text-white">

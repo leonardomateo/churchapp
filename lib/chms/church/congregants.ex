@@ -19,6 +19,7 @@ defmodule Chms.Church.Congregants do
       accept [
         :first_name,
         :last_name,
+        :gender,
         :address,
         :city,
         :state,
@@ -46,6 +47,7 @@ defmodule Chms.Church.Congregants do
       accept [
         :first_name,
         :last_name,
+        :gender,
         :address,
         :city,
         :state,
@@ -78,6 +80,11 @@ defmodule Chms.Church.Congregants do
 
     attribute :first_name, :string do
       allow_nil? false
+    end
+
+    attribute :gender, :atom do
+      constraints one_of: [:male, :female]
+      allow_nil? true
     end
 
     attribute :last_name, :string do

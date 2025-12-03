@@ -13,6 +13,7 @@ defmodule Churchapp.Repo.Migrations.AddCongregants do
       add :member_id, :bigint
       add :first_name, :text, null: false
       add :last_name, :text, null: false
+      add :gender, :text
       add :address, :text
       add :city, :text
       add :state, :text
