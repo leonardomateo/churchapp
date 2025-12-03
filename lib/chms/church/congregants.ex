@@ -143,6 +143,12 @@ defmodule Chms.Church.Congregants do
     update_timestamp :updated_at
   end
 
+  relationships do
+    has_many :contributions, Chms.Church.Contributions do
+      destination_attribute :congregant_id
+    end
+  end
+
   identities do
     identity :unique_member_id, [:member_id]
   end

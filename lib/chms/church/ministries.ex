@@ -27,7 +27,7 @@ defmodule Chms.Church.Ministries do
     "Ushers",
     "Youth",
     "General Secretary",
-    "Trustees",
+    "Trustees"
   ]
 
   @doc """

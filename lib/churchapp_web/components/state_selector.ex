@@ -6,7 +6,10 @@ defmodule ChurchappWeb.StateSelector do
 
   def update(%{field: field, form: form} = assigns, socket) do
     current_value = field.value
-    selected_state = if current_value, do: USStates.get_state_by_abbr(current_value) || USStates.get_state_by_name(current_value)
+
+    selected_state =
+      if current_value,
+        do: USStates.get_state_by_abbr(current_value) || USStates.get_state_by_name(current_value)
 
     socket =
       socket
@@ -39,7 +42,9 @@ defmodule ChurchappWeb.StateSelector do
   # Handle all keyboard input
   def handle_event("handle_key", %{"key" => "ArrowDown", "value" => _value}, socket) do
     if socket.assigns.show_dropdown do
-      new_index = min(socket.assigns.focused_index + 1, length(socket.assigns.filtered_states) - 1)
+      new_index =
+        min(socket.assigns.focused_index + 1, length(socket.assigns.filtered_states) - 1)
+
       {:noreply, assign(socket, :focused_index, new_index)}
     else
       {:noreply, socket}
@@ -95,7 +100,6 @@ defmodule ChurchappWeb.StateSelector do
      |> assign(:query, "")
      |> assign(:show_dropdown, false)}
   end
-
 
   def render(assigns) do
     ~H"""

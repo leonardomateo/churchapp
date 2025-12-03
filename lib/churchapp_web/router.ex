@@ -48,6 +48,10 @@ defmodule ChurchappWeb.Router do
     live "/congregants/:id", CongregantsLive.ShowLive, :show
     live "/congregants/:id/edit", CongregantsLive.EditLive, :edit
 
+    live "/contributions", ContributionsLive.IndexLive, :index
+    live "/contributions/new", ContributionsLive.NewLive, :new
+    live "/contributions/:id/edit", ContributionsLive.EditLive, :edit
+
     auth_routes AuthController, Churchapp.Accounts.User, path: "/auth"
     sign_out_route AuthController
 

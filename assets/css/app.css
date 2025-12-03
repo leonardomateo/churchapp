@@ -479,6 +479,35 @@ button[disabled] {
   animation: slide-in-right 0.3s ease-out;
 }
 
+/* Modal animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+
 /* Floating action bar animation */
 @keyframes slide-up {
   from {
@@ -597,4 +626,21 @@ select option:checked:hover {
 
 [data-theme="light"] .border-red-700 {
   border-color: #b91c1c !important;
+}
+
+/* Number input spinner arrows - Dark mode (white arrows) */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
+  cursor: pointer;
+}
+
+/* Make the arrows white in dark mode using filter */
+input[type="number"]::-webkit-inner-spin-button {
+  filter: invert(1);
+}
+
+/* Light theme - darker arrows for better visibility */
+[data-theme="light"] input[type="number"]::-webkit-inner-spin-button {
+  filter: none;
 }

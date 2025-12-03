@@ -65,6 +65,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
     params = Map.put(params, "ministries_string", ministries_string)
 
     form = Form.validate(socket.assigns.form, params)
+
     {:noreply,
      socket
      |> assign(:form, form)
@@ -282,7 +283,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                   <label class="block text-sm font-medium text-gray-400">
                     Gender
                   </label>
-                  <div class="mt-1 flex items-center space-x-4 h-[38px]">
+                  <div class="mt-1 flex items-center space-x-4 h-[42px]">
                     <label class="inline-flex items-center cursor-pointer">
                       <input
                         type="radio"
@@ -591,7 +592,6 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                     </label>
                   </div>
                 </div>
-
               </div>
             </div>
 
@@ -600,8 +600,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
             <%!-- Ministries Section --%>
             <div>
               <h3 class="mb-4 flex items-center text-lg font-medium leading-6 text-white">
-                <.icon name="hero-user-group" class="mr-2 h-5 w-5 text-primary-500" />
-                Ministries
+                <.icon name="hero-user-group" class="mr-2 h-5 w-5 text-primary-500" /> Ministries
               </h3>
               <div>
                 <%!-- Hidden input to ensure ministries field is always present --%>

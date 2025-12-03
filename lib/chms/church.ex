@@ -16,5 +16,13 @@ defmodule Chms.Church do
       define :get_congregant_by_id, action: :read, get_by: [:id]
       define :get_congregant_by_member_id, action: :read, get_by: [:member_id]
     end
+
+    resource Chms.Church.Contributions do
+      define :create_contribution, action: :create
+      define :list_contributions, action: :read
+      define :update_contribution, action: :update
+      define :destroy_contribution, action: :destroy
+      define :get_contribution_by_id, action: :read, get_by: [:id]
+    end
   end
 end

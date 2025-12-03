@@ -72,7 +72,7 @@ defmodule ChurchappWeb.Utils.USStates do
     states()
     |> Enum.filter(fn {name, code} ->
       String.contains?(String.downcase(name), query) or
-      String.contains?(String.downcase(code), query)
+        String.contains?(String.downcase(code), query)
     end)
   end
 end

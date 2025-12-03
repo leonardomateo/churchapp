@@ -99,7 +99,9 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
                   Gender
                 </dt>
                 <dd class="mt-2 text-sm text-white">
-                  {if @congregant.gender, do: Phoenix.Naming.humanize(@congregant.gender), else: "Not provided"}
+                  {if @congregant.gender,
+                    do: Phoenix.Naming.humanize(@congregant.gender),
+                    else: "Not provided"}
                 </dd>
               </div>
 

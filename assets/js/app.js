@@ -223,11 +223,38 @@ const ImageUpload = {
   }
 }
 
+// AutoFocus Hook - automatically focuses an input element when mounted
+const AutoFocus = {
+  mounted() {
+    // Small delay to ensure modal animation completes
+    setTimeout(() => {
+      this.el.focus()
+      this.el.select()
+    }, 100)
+  }
+}
+
+// DatePicker Hook - closes the date picker when a date is selected
+const DatePicker = {
+  mounted() {
+    this.el.addEventListener("change", this.handleChange.bind(this))
+  },
+
+  handleChange() {
+    // Blur the input to close the date picker
+    this.el.blur()
+  },
+
+  destroyed() {
+    this.el.removeEventListener("change", this.handleChange.bind(this))
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker},
 })
 
 // Show progress bar on live navigation and form submits
