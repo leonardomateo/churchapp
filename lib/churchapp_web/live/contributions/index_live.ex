@@ -9,6 +9,11 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
       |> assign(:page_title, "Contributions")
       |> assign(:search_query, "")
       |> assign(:type_filter, "")
+      |> assign(:date_from, "")
+      |> assign(:date_to, "")
+      |> assign(:amount_min, "")
+      |> assign(:amount_max, "")
+      |> assign(:show_advanced_filters, false)
       |> assign(:open_menu_id, nil)
       |> assign(:delete_single_id, nil)
       |> assign(:page, 1)
@@ -29,6 +34,45 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
   def handle_event("filter_type", %{"type" => type}, socket) do
     socket
     |> assign(:type_filter, type)
+    |> assign(:page, 1)
+    |> fetch_contributions()
+    |> then(&{:noreply, &1})
+  end
+
+  def handle_event("filter_date", %{"date_from" => date_from, "date_to" => date_to}, socket) do
+    socket
+    |> assign(:date_from, date_from)
+    |> assign(:date_to, date_to)
+    |> assign(:page, 1)
+    |> fetch_contributions()
+    |> then(&{:noreply, &1})
+  end
+
+  def handle_event(
+        "filter_amount",
+        %{"amount_min" => amount_min, "amount_max" => amount_max},
+        socket
+      ) do
+    socket
+    |> assign(:amount_min, amount_min)
+    |> assign(:amount_max, amount_max)
+    |> assign(:page, 1)
+    |> fetch_contributions()
+    |> then(&{:noreply, &1})
+  end
+
+  def handle_event("toggle_advanced_filters", _params, socket) do
+    {:noreply, assign(socket, :show_advanced_filters, !socket.assigns.show_advanced_filters)}
+  end
+
+  def handle_event("clear_filters", _params, socket) do
+    socket
+    |> assign(:search_query, "")
+    |> assign(:type_filter, "")
+    |> assign(:date_from, "")
+    |> assign(:date_to, "")
+    |> assign(:amount_min, "")
+    |> assign(:amount_max, "")
     |> assign(:page, 1)
     |> fetch_contributions()
     |> then(&{:noreply, &1})
@@ -86,13 +130,44 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
     query =
       if socket.assigns.search_query != "" do
         search_term = String.downcase(socket.assigns.search_query)
+        # Split into parts for full name search
+        parts = String.split(search_term, " ", trim: true)
 
-        Ash.Query.filter(
-          query,
-          contains(string_downcase(contribution_type), ^search_term) or
-            contains(string_downcase(congregant.first_name), ^search_term) or
-            contains(string_downcase(congregant.last_name), ^search_term)
-        )
+        case parts do
+          [] ->
+            # Empty search after trimming
+            query
+
+          [single_word] ->
+            # Single word search - search in all fields
+            Ash.Query.filter(
+              query,
+              contains(string_downcase(contribution_type), ^single_word) or
+                contains(string_downcase(congregant.first_name), ^single_word) or
+                contains(string_downcase(congregant.last_name), ^single_word)
+            )
+
+          [first_part, last_part] ->
+            # Search for "first last" pattern
+            Ash.Query.filter(
+              query,
+              (contains(string_downcase(congregant.first_name), ^first_part) and
+                 contains(string_downcase(congregant.last_name), ^last_part)) or
+                contains(string_downcase(contribution_type), ^first_part) or
+                contains(string_downcase(contribution_type), ^last_part)
+            )
+
+          _ ->
+            # Multiple words - search each word in any field
+            trimmed_term = String.trim(search_term)
+
+            Ash.Query.filter(
+              query,
+              contains(string_downcase(contribution_type), ^trimmed_term) or
+                contains(string_downcase(congregant.first_name), ^trimmed_term) or
+                contains(string_downcase(congregant.last_name), ^trimmed_term)
+            )
+        end
       else
         query
       end
@@ -100,6 +175,60 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
     query =
       if socket.assigns.type_filter != "" do
         Ash.Query.filter(query, contribution_type == ^socket.assigns.type_filter)
+      else
+        query
+      end
+
+    # Filter by date range
+    query =
+      if socket.assigns.date_from != "" and socket.assigns.date_from != nil do
+        case Date.from_iso8601(socket.assigns.date_from) do
+          {:ok, date} ->
+            Ash.Query.filter(query, contribution_date >= ^date)
+
+          _ ->
+            query
+        end
+      else
+        query
+      end
+
+    query =
+      if socket.assigns.date_to != "" and socket.assigns.date_to != nil do
+        case Date.from_iso8601(socket.assigns.date_to) do
+          {:ok, date} ->
+            Ash.Query.filter(query, contribution_date <= ^date)
+
+          _ ->
+            query
+        end
+      else
+        query
+      end
+
+    # Filter by amount range
+    query =
+      if socket.assigns.amount_min != "" and socket.assigns.amount_min != nil do
+        case Decimal.parse(socket.assigns.amount_min) do
+          {amount, _} ->
+            Ash.Query.filter(query, revenue >= ^amount)
+
+          :error ->
+            query
+        end
+      else
+        query
+      end
+
+    query =
+      if socket.assigns.amount_max != "" and socket.assigns.amount_max != nil do
+        case Decimal.parse(socket.assigns.amount_max) do
+          {amount, _} ->
+            Ash.Query.filter(query, revenue <= ^amount)
+
+          :error ->
+            query
+        end
       else
         query
       end
@@ -142,34 +271,174 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
         </div>
       </div>
 
-      <div class="mb-6 flex flex-col sm:flex-row gap-4">
-        <div class="relative flex-1">
-          <.icon
-            name="hero-magnifying-glass"
-            class="absolute left-3 top-1/2 h-4 w-4 text-gray-500 transform -translate-y-1/2"
-          />
-          <form phx-change="search" phx-submit="search" onsubmit="return false;">
-            <input
-              type="text"
-              name="query"
-              value={@search_query}
-              placeholder="Search by type or congregant name..."
-              class="w-full pl-10 pr-4 py-2 text-gray-200 placeholder-gray-500 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+      <div class="mb-6 space-y-4">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <div class="relative flex-1">
+            <.icon
+              name="hero-magnifying-glass"
+              class="absolute left-3 top-1/2 h-4 w-4 text-gray-500 transform -translate-y-1/2"
             />
+            <form phx-change="search" phx-submit="search" onsubmit="return false;">
+              <input
+                type="text"
+                name="query"
+                value={@search_query}
+                placeholder="Search by type, name, or full name (e.g., John Smith)..."
+                class="w-full pl-10 pr-4 py-2 text-gray-200 placeholder-gray-500 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </form>
+          </div>
+          <form phx-change="filter_type">
+            <select
+              name="type"
+              value={@type_filter}
+              class="h-[42px] px-4 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent hover:bg-dark-700 hover:border-dark-600 transition-colors cursor-pointer"
+            >
+              <option value="">All Types</option>
+              <%= for type <- Chms.Church.ContributionTypes.all_types() do %>
+                <option value={type}>{type}</option>
+              <% end %>
+            </select>
           </form>
-        </div>
-        <form phx-change="filter_type">
-          <select
-            name="type"
-            value={@type_filter}
-            class="h-[42px] px-4 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent hover:bg-dark-700 hover:border-dark-600 transition-colors cursor-pointer"
+          <button
+            type="button"
+            phx-click="toggle_advanced_filters"
+            class="inline-flex items-center h-[42px] px-4 py-2 text-sm font-medium text-gray-300 bg-dark-800 border border-dark-700 rounded-md hover:bg-dark-700 hover:border-dark-600 transition-colors whitespace-nowrap"
           >
-            <option value="">All Types</option>
-            <%= for type <- Chms.Church.ContributionTypes.all_types() do %>
-              <option value={type}>{type}</option>
-            <% end %>
-          </select>
-        </form>
+            <.icon name="hero-funnel" class="mr-2 h-4 w-4" />
+            {if @show_advanced_filters, do: "Hide Filters", else: "More Filters"}
+          </button>
+        </div>
+
+        <%!-- Advanced Filters Section --%>
+        <%= if @show_advanced_filters do %>
+          <div class="bg-dark-800 border border-dark-700 rounded-lg p-4 space-y-4 animate-fade-in">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-medium text-white flex items-center">
+                <.icon name="hero-adjustments-horizontal" class="mr-2 h-4 w-4 text-primary-500" />
+                Advanced Filters
+              </h3>
+              <button
+                type="button"
+                phx-click="clear_filters"
+                class="text-xs text-gray-400 hover:text-primary-500 transition-colors"
+              >
+                Clear All Filters
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <%!-- Date Range Filter --%>
+              <div class="space-y-2">
+                <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Date Range
+                </label>
+                <form phx-change="filter_date" class="grid grid-cols-2 gap-2">
+                  <div>
+                    <input
+                      type="date"
+                      id="filter-date-from"
+                      name="date_from"
+                      value={@date_from}
+                      phx-hook="DatePicker"
+                      placeholder="From"
+                      class="w-full px-3 py-2 text-sm text-white bg-dark-900 border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="date"
+                      id="filter-date-to"
+                      name="date_to"
+                      value={@date_to}
+                      phx-hook="DatePicker"
+                      placeholder="To"
+                      class="w-full px-3 py-2 text-sm text-white bg-dark-900 border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+                </form>
+              </div>
+
+              <%!-- Amount Range Filter --%>
+              <div class="space-y-2">
+                <label class="block text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Amount Range
+                </label>
+                <form phx-change="filter_amount" class="grid grid-cols-2 gap-2">
+                  <div class="relative">
+                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      name="amount_min"
+                      value={@amount_min}
+                      step="0.01"
+                      min="0"
+                      placeholder="Min"
+                      class="w-full pl-7 pr-3 py-2 text-sm text-white bg-dark-900 border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div class="relative">
+                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      name="amount_max"
+                      value={@amount_max}
+                      step="0.01"
+                      min="0"
+                      placeholder="Max"
+                      class="w-full pl-7 pr-3 py-2 text-sm text-white bg-dark-900 border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <%!-- Active Filters Display --%>
+            <div
+              :if={
+                @date_from != "" or @date_to != "" or @amount_min != "" or @amount_max != "" or
+                  @type_filter != ""
+              }
+              class="flex flex-wrap gap-2 pt-2 border-t border-dark-700"
+            >
+              <span class="text-xs text-gray-400">Active filters:</span>
+              <span
+                :if={@type_filter != ""}
+                class="inline-flex items-center px-2 py-1 text-xs bg-primary-500/10 text-primary-500 rounded-md border border-primary-500/20"
+              >
+                Type: {@type_filter}
+              </span>
+              <span
+                :if={@date_from != ""}
+                class="inline-flex items-center px-2 py-1 text-xs bg-primary-500/10 text-primary-500 rounded-md border border-primary-500/20"
+              >
+                From: {@date_from}
+              </span>
+              <span
+                :if={@date_to != ""}
+                class="inline-flex items-center px-2 py-1 text-xs bg-primary-500/10 text-primary-500 rounded-md border border-primary-500/20"
+              >
+                To: {@date_to}
+              </span>
+              <span
+                :if={@amount_min != ""}
+                class="inline-flex items-center px-2 py-1 text-xs bg-primary-500/10 text-primary-500 rounded-md border border-primary-500/20"
+              >
+                Min: ${@amount_min}
+              </span>
+              <span
+                :if={@amount_max != ""}
+                class="inline-flex items-center px-2 py-1 text-xs bg-primary-500/10 text-primary-500 rounded-md border border-primary-500/20"
+              >
+                Max: ${@amount_max}
+              </span>
+            </div>
+          </div>
+        <% end %>
       </div>
 
       <div class="bg-dark-800 rounded-lg shadow-xl overflow-x-auto overflow-y-visible">

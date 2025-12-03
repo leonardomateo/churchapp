@@ -240,20 +240,103 @@ congregants = [
   }
 ]
 
-Enum.each(congregants, fn attrs ->
-  case Chms.Church.Congregants
+created_congregants =
+  Enum.map(congregants, fn attrs ->
+    case Chms.Church.Congregants
+         |> Ash.Changeset.for_create(:create, attrs)
+         |> Ash.create() do
+      {:ok, congregant} ->
+        IO.puts(
+          "✓ Created congregant: #{congregant.first_name} #{congregant.last_name} (ID: #{congregant.member_id})"
+        )
+
+        congregant
+
+      {:error, changeset} ->
+        IO.puts("✗ Failed to create congregant: #{attrs.first_name} #{attrs.last_name}")
+        IO.inspect(changeset.errors)
+        nil
+    end
+  end)
+  |> Enum.reject(&is_nil/1)
+
+IO.puts("\nTotal congregants created: #{length(created_congregants)}")
+
+# Seed Contributions
+IO.puts("\nSeeding contributions...")
+
+# Contribution types to use
+contribution_types = [
+  "Tithes",
+  "General Offering",
+  "Mission",
+  "Building Fund",
+  "Special Offering"
+]
+
+# Generate contributions for each congregant
+contributions =
+  created_congregants
+  |> Enum.flat_map(fn congregant ->
+    # Generate 3-8 random contributions per congregant
+    num_contributions = Enum.random(3..8)
+
+    Enum.map(1..num_contributions, fn _ ->
+      # Random date within the last 2 years
+      days_ago = Enum.random(1..730)
+      contribution_date = Date.add(Date.utc_today(), -days_ago)
+
+      # Random amount between $10 and $500
+      amount = Decimal.new(Enum.random(10..500))
+
+      # Random contribution type
+      contribution_type = Enum.random(contribution_types)
+
+      # 30% chance of having notes
+      notes =
+        if Enum.random(1..10) <= 3 do
+          [
+            "Thank you for your faithful giving",
+            "God bless you",
+            "Special donation for church anniversary",
+            "Monthly tithe",
+            "Extra offering for missions",
+            "In memory of loved one",
+            "Thanksgiving offering"
+          ]
+          |> Enum.random()
+        else
+          nil
+        end
+
+      %{
+        congregant_id: congregant.id,
+        contribution_type: contribution_type,
+        revenue: amount,
+        contribution_date: contribution_date,
+        notes: notes
+      }
+    end)
+  end)
+
+Enum.each(contributions, fn attrs ->
+  case Chms.Church.Contributions
        |> Ash.Changeset.for_create(:create, attrs)
        |> Ash.create() do
-    {:ok, congregant} ->
+    {:ok, contribution} ->
       IO.puts(
-        "✓ Created congregant: #{congregant.first_name} #{congregant.last_name} (ID: #{congregant.member_id})"
+        "✓ Created contribution: #{contribution.contribution_type} - $#{Decimal.to_string(contribution.revenue, :normal)} on #{Date.to_string(contribution.contribution_date)}"
       )
 
     {:error, changeset} ->
-      IO.puts("✗ Failed to create congregant: #{attrs.first_name} #{attrs.last_name}")
+      IO.puts(
+        "✗ Failed to create contribution: #{attrs.contribution_type} - #{attrs.contribution_date}"
+      )
+
       IO.inspect(changeset.errors)
   end
 end)
 
 IO.puts("\nSeeding complete!")
-IO.puts("Total congregants created: #{length(congregants)}")
+IO.puts("Total congregants created: #{length(created_congregants)}")
+IO.puts("Total contributions created: #{length(contributions)}")
