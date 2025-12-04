@@ -87,6 +87,8 @@ defmodule ChurchappWeb do
       import Phoenix.HTML
       # Core UI components
       import ChurchappWeb.CoreComponents
+      # Auth UI components
+      import ChurchappWeb.AuthComponents
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

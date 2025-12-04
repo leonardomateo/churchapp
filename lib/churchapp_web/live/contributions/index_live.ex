@@ -127,11 +127,12 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
   end
 
   def handle_event("confirm_delete_selected", _params, socket) do
+    actor = socket.assigns.current_user
     count = MapSet.size(socket.assigns.selected_ids)
 
     Enum.each(socket.assigns.selected_ids, fn id ->
-      case Chms.Church.get_contribution_by_id(id) do
-        {:ok, contribution} -> Chms.Church.destroy_contribution(contribution)
+      case Ash.get(Chms.Church.Contributions, id, actor: actor) do
+        {:ok, contribution} -> Ash.destroy(contribution, actor: actor)
         _ -> :ok
       end
     end)
@@ -162,9 +163,12 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
   end
 
   def handle_event("confirm_delete_single", _params, socket) do
-    contribution = Ash.get!(Chms.Church.Contributions, socket.assigns.delete_single_id)
+    actor = socket.assigns.current_user
 
-    case Ash.destroy(contribution) do
+    contribution =
+      Ash.get!(Chms.Church.Contributions, socket.assigns.delete_single_id, actor: actor)
+
+    case Ash.destroy(contribution, actor: actor) do
       :ok ->
         socket
         |> put_flash(:info, "Contribution deleted successfully")
@@ -181,8 +185,11 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
   end
 
   defp fetch_contributions(socket) do
+    actor = socket.assigns[:current_user]
+
     query =
       Chms.Church.Contributions
+      |> Ash.Query.for_read(:read, %{}, actor: actor)
       |> Ash.Query.load([:congregant])
       |> Ash.Query.sort(contribution_date: :desc)
 
@@ -297,7 +304,7 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
       end
 
     # Get total count for pagination
-    all_contributions = Ash.read!(query)
+    all_contributions = Ash.read!(query, actor: actor)
     total_count = length(all_contributions)
     total_pages = ceil(total_count / socket.assigns.per_page)
 
@@ -309,7 +316,7 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
       |> Ash.Query.limit(socket.assigns.per_page)
       |> Ash.Query.offset(offset)
 
-    contributions = Ash.read!(paginated_query)
+    contributions = Ash.read!(paginated_query, actor: actor)
 
     socket
     |> assign(:contributions, contributions)

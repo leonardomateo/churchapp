@@ -34,16 +34,30 @@
       
 <!-- User Profile / Footer -->
       <div class="p-4 border-t border-dark-700 flex-shrink-0">
-        <div class="flex items-center">
-          <img
-            class="h-9 w-9 rounded-full object-cover border-2 border-dark-700 flex-shrink-0"
-            src="https://i.pravatar.cc/150?img=3"
-            alt="Admin Profile"
-          />
-          <div class="ml-3 min-w-0">
-            <p class="text-sm font-medium text-white truncate">Admin User</p>
-            <p class="text-xs text-gray-500">View Profile</p>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center min-w-0 flex-1">
+            <img
+              class="h-9 w-9 rounded-full object-cover border-2 border-dark-700 flex-shrink-0"
+              src="https://i.pravatar.cc/150?img=3"
+              alt={if @current_user, do: @current_user.email, else: "User Profile"}
+            />
+            <div class="ml-3 min-w-0 flex-1">
+              <p class="text-sm font-medium text-white truncate">
+                {if @current_user, do: to_string(@current_user.email) |> String.split("@") |> List.first(), else: "User"}
+              </p>
+              <%= if @current_user do %>
+                <.role_badge role={@current_user.role} class="mt-1" />
+              <% end %>
+            </div>
           </div>
+          <a
+            href={~p"/sign-out"}
+            data-method="delete"
+            class="p-2 rounded-md text-gray-400 hover:text-white hover:bg-dark-700 transition-colors flex-shrink-0"
+            title="Sign out"
+          >
+            <.icon name="hero-arrow-right-on-rectangle" class="h-5 w-5" />
+          </a>
         </div>
       </div>
     </div>
@@ -105,16 +119,30 @@
       
 <!-- User Profile / Footer -->
       <div class="p-4 border-t border-dark-700">
-        <div class="flex items-center">
-          <img
-            class="h-9 w-9 rounded-full object-cover border-2 border-dark-700"
-            src="https://i.pravatar.cc/150?img=3"
-            alt="Admin Profile"
-          />
-          <div class="ml-3">
-            <p class="text-sm font-medium text-white">Admin User</p>
-            <p class="text-xs text-gray-500">View Profile</p>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center flex-1 min-w-0">
+            <img
+              class="h-9 w-9 rounded-full object-cover border-2 border-dark-700 flex-shrink-0"
+              src="https://i.pravatar.cc/150?img=3"
+              alt={if @current_user, do: @current_user.email, else: "User Profile"}
+            />
+            <div class="ml-3 min-w-0 flex-1">
+              <p class="text-sm font-medium text-white truncate">
+                {if @current_user, do: to_string(@current_user.email) |> String.split("@") |> List.first(), else: "User"}
+              </p>
+              <%= if @current_user do %>
+                <.role_badge role={@current_user.role} class="mt-1" />
+              <% end %>
+            </div>
           </div>
+          <a
+            href={~p"/sign-out"}
+            data-method="delete"
+            class="p-2 rounded-md text-gray-400 hover:text-white hover:bg-dark-700 transition-colors flex-shrink-0"
+            title="Sign out"
+          >
+            <.icon name="hero-arrow-right-on-rectangle" class="h-5 w-5" />
+          </a>
         </div>
       </div>
     </aside>

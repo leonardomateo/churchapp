@@ -2,7 +2,10 @@ defmodule Chms.Church.Congregants do
   use Ash.Resource,
     otp_app: :churchapp,
     domain: Chms.Church,
-    data_layer: AshPostgres.DataLayer
+    data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
+
+  alias Churchapp.Authorization.Checks
 
   postgres do
     table "congregants"
@@ -66,6 +69,25 @@ defmodule Chms.Church.Congregants do
       ]
 
       change {Chms.Church.Congregants.Changes.ParseMinistries, []}
+    end
+  end
+
+  policies do
+    # Super admins can do anything
+    policy action_type([:create, :read, :update, :destroy]) do
+      authorize_if {Checks.IsSuperAdmin, []}
+    end
+
+    # Admins and staff can manage congregants
+    policy action_type([:create, :update, :destroy]) do
+      authorize_if {Checks.HasRole, role: [:admin, :staff]}
+      authorize_if {Checks.HasPermission, permission: :manage_congregants}
+    end
+
+    # Leaders and members can view congregants
+    policy action_type(:read) do
+      authorize_if {Checks.HasRole, role: [:admin, :staff, :leader, :member]}
+      authorize_if {Checks.HasPermission, permission: :view_congregants}
     end
   end
 

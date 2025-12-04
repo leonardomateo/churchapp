@@ -1,4 +1,4 @@
-defmodule Churchapp.Repo.Migrations.MigrateResources1 do
+defmodule Churchapp.Repo.Migrations.AddUserRolesAndPermissions do
   @moduledoc """
   Updates resources based on their most recent snapshots.
 
@@ -8,6 +8,11 @@ defmodule Churchapp.Repo.Migrations.MigrateResources1 do
   use Ecto.Migration
 
   def up do
+    alter table(:users) do
+      add :role, :text, null: false, default: "member"
+      add :permissions, {:array, :text}, default: []
+    end
+
     alter table(:contributions) do
       modify :contribution_date, :utc_datetime_usec,
         default: fragment("(now() AT TIME ZONE 'utc')")
@@ -17,6 +22,11 @@ defmodule Churchapp.Repo.Migrations.MigrateResources1 do
   def down do
     alter table(:contributions) do
       modify :contribution_date, :date, default: fragment("CURRENT_DATE")
+    end
+
+    alter table(:users) do
+      remove :permissions
+      remove :role
     end
   end
 end

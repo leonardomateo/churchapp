@@ -10,6 +10,99 @@
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
 
+# Seed Users with different roles
+IO.puts("Seeding users...")
+
+# Create super admin user
+_super_admin =
+  Churchapp.Accounts.User
+  |> Ash.Changeset.for_create(:register_with_password, %{
+    email: "superadmin@church.org",
+    password: "SuperAdmin123!",
+    password_confirmation: "SuperAdmin123!",
+    role: :super_admin,
+    permissions: [
+      :manage_congregants,
+      :view_congregants,
+      :manage_contributions,
+      :view_contributions,
+      :manage_ministries,
+      :view_reports,
+      :manage_users
+    ]
+  })
+  |> Ash.create!(authorize?: false)
+
+IO.puts("✓ Created super admin user: superadmin@church.org")
+
+# Create admin user
+_admin =
+  Churchapp.Accounts.User
+  |> Ash.Changeset.for_create(:register_with_password, %{
+    email: "admin@church.org",
+    password: "Admin123!",
+    password_confirmation: "Admin123!",
+    role: :admin,
+    permissions: [
+      :manage_congregants,
+      :view_congregants,
+      :manage_contributions,
+      :view_contributions,
+      :manage_ministries,
+      :view_reports
+    ]
+  })
+  |> Ash.create!(authorize?: false)
+
+IO.puts("✓ Created admin user: admin@church.org")
+
+# Create staff user
+_staff =
+  Churchapp.Accounts.User
+  |> Ash.Changeset.for_create(:register_with_password, %{
+    email: "staff@church.org",
+    password: "Staff123!",
+    password_confirmation: "Staff123!",
+    role: :staff,
+    permissions: [
+      :manage_congregants,
+      :view_congregants,
+      :view_contributions
+    ]
+  })
+  |> Ash.create!(authorize?: false)
+
+IO.puts("✓ Created staff user: staff@church.org")
+
+# Create leader user
+_leader =
+  Churchapp.Accounts.User
+  |> Ash.Changeset.for_create(:register_with_password, %{
+    email: "leader@church.org",
+    password: "Leader123!",
+    password_confirmation: "Leader123!",
+    role: :leader,
+    permissions: [:view_congregants, :view_contributions]
+  })
+  |> Ash.create!(authorize?: false)
+
+IO.puts("✓ Created leader user: leader@church.org")
+
+# Create regular member
+_member =
+  Churchapp.Accounts.User
+  |> Ash.Changeset.for_create(:register_with_password, %{
+    email: "member@church.org",
+    password: "Member123!",
+    password_confirmation: "Member123!",
+    role: :member,
+    permissions: [:view_congregants]
+  })
+  |> Ash.create!(authorize?: false)
+
+IO.puts("✓ Created member user: member@church.org")
+IO.puts("")
+
 # Seed Congregants
 IO.puts("Seeding congregants...")
 

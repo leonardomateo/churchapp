@@ -24,39 +24,18 @@ defmodule ChurchappWeb.Router do
   scope "/", ChurchappWeb do
     pipe_through :browser
 
-    ash_authentication_live_session :authenticated_routes do
-      # in each liveview, add one of the following at the top of the module:
-      #
-      # If an authenticated user must be present:
-      # on_mount {ChurchappWeb.LiveUserAuth, :live_user_required}
-      #
-      # If an authenticated user *may* be present:
-      # on_mount {ChurchappWeb.LiveUserAuth, :live_user_optional}
-      #
-      # If an authenticated user must *not* be present:
-      # on_mount {ChurchappWeb.LiveUserAuth, :live_no_user}
-    end
+    # Public routes
+    get "/", PageController, :home
+
+    # Controller-based auth routes (callbacks, sign-out)
+    auth_routes AuthController, Churchapp.Accounts.User, path: "/auth"
+    sign_out_route AuthController
   end
 
+  # LiveView auth routes - must be in separate scope
   scope "/", ChurchappWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
-
-    live "/congregants", CongregantsLive.IndexLive, :index
-    live "/congregants/new", CongregantsLive.NewLive, :new
-    live "/congregants/:id", CongregantsLive.ShowLive, :show
-    live "/congregants/:id/edit", CongregantsLive.EditLive, :edit
-
-    live "/contributions", ContributionsLive.IndexLive, :index
-    live "/contributions/new", ContributionsLive.NewLive, :new
-    live "/contributions/:id", ContributionsLive.ShowLive, :show
-    live "/contributions/:id/edit", ContributionsLive.EditLive, :edit
-
-    auth_routes AuthController, Churchapp.Accounts.User, path: "/auth"
-    sign_out_route AuthController
-
-    # Remove these if you'd like to use your own authentication views
     sign_in_route register_path: "/register",
                   reset_path: "/reset",
                   auth_routes_prefix: "/auth",
@@ -66,23 +45,40 @@ defmodule ChurchappWeb.Router do
                     Elixir.AshAuthentication.Phoenix.Overrides.DaisyUI
                   ]
 
-    # Remove this if you do not want to use the reset password feature
     reset_route auth_routes_prefix: "/auth",
                 overrides: [
                   ChurchappWeb.AuthOverrides,
                   Elixir.AshAuthentication.Phoenix.Overrides.DaisyUI
                 ]
 
-    # Remove this if you do not use the confirmation strategy
     confirm_route Churchapp.Accounts.User, :confirm_new_user,
       auth_routes_prefix: "/auth",
       overrides: [ChurchappWeb.AuthOverrides, Elixir.AshAuthentication.Phoenix.Overrides.DaisyUI]
 
-    # Remove this if you do not use the magic link strategy.
     magic_sign_in_route(Churchapp.Accounts.User, :magic_link,
       auth_routes_prefix: "/auth",
       overrides: [ChurchappWeb.AuthOverrides, Elixir.AshAuthentication.Phoenix.Overrides.DaisyUI]
     )
+  end
+
+  # Protected routes - require authentication
+  scope "/", ChurchappWeb do
+    pipe_through :browser
+
+    ash_authentication_live_session :authenticated,
+      on_mount: [
+        {ChurchappWeb.LiveUserAuth, :live_user_required}
+      ] do
+      live "/congregants", CongregantsLive.IndexLive, :index
+      live "/congregants/new", CongregantsLive.NewLive, :new
+      live "/congregants/:id", CongregantsLive.ShowLive, :show
+      live "/congregants/:id/edit", CongregantsLive.EditLive, :edit
+
+      live "/contributions", ContributionsLive.IndexLive, :index
+      live "/contributions/new", ContributionsLive.NewLive, :new
+      live "/contributions/:id", ContributionsLive.ShowLive, :show
+      live "/contributions/:id/edit", ContributionsLive.EditLive, :edit
+    end
   end
 
   # Other scopes may use custom stacks.

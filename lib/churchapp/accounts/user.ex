@@ -137,6 +137,7 @@ defmodule Churchapp.Accounts.User do
 
     create :register_with_password do
       description "Register a new user with a email and password."
+      accept [:role, :permissions]
 
       argument :email, :ci_string do
         allow_nil? false
@@ -226,6 +227,16 @@ defmodule Churchapp.Accounts.User do
     bypass AshAuthentication.Checks.AshAuthenticationInteraction do
       authorize_if always()
     end
+
+    # Users can read their own profile
+    policy action_type(:read) do
+      authorize_if expr(id == ^actor(:id))
+    end
+
+    # Super admins and admins can manage all users
+    policy action_type([:read, :update, :destroy]) do
+      authorize_if expr(^actor(:role) in [:super_admin, :admin])
+    end
   end
 
   attributes do
@@ -242,6 +253,31 @@ defmodule Churchapp.Accounts.User do
     end
 
     attribute :confirmed_at, :utc_datetime_usec
+
+    attribute :role, :atom do
+      allow_nil? false
+      default :member
+      constraints one_of: [:super_admin, :admin, :staff, :leader, :member]
+      public? true
+    end
+
+    attribute :permissions, {:array, :atom} do
+      default []
+
+      constraints items: [
+                    one_of: [
+                      :manage_congregants,
+                      :view_congregants,
+                      :manage_contributions,
+                      :view_contributions,
+                      :manage_ministries,
+                      :view_reports,
+                      :manage_users
+                    ]
+                  ]
+
+      public? true
+    end
   end
 
   identities do
