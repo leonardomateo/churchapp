@@ -243,7 +243,9 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
       if socket.assigns.date_from != "" and socket.assigns.date_from != nil do
         case Date.from_iso8601(socket.assigns.date_from) do
           {:ok, date} ->
-            Ash.Query.filter(query, contribution_date >= ^date)
+            # Convert date to datetime at start of day (00:00:00)
+            datetime = DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
+            Ash.Query.filter(query, contribution_date >= ^datetime)
 
           _ ->
             query
@@ -256,7 +258,9 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
       if socket.assigns.date_to != "" and socket.assigns.date_to != nil do
         case Date.from_iso8601(socket.assigns.date_to) do
           {:ok, date} ->
-            Ash.Query.filter(query, contribution_date <= ^date)
+            # Convert date to datetime at end of day (23:59:59)
+            datetime = DateTime.new!(date, ~T[23:59:59.999999], "Etc/UTC")
+            Ash.Query.filter(query, contribution_date <= ^datetime)
 
           _ ->
             query
@@ -602,7 +606,7 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
                 class="px-6 py-5 whitespace-nowrap text-sm text-gray-300 cursor-pointer"
                 phx-click={JS.navigate(~p"/contributions/#{contribution}")}
               >
-                {Calendar.strftime(contribution.contribution_date, "%b %d, %Y")}
+                {Calendar.strftime(contribution.contribution_date, "%B %d, %Y")}
               </td>
               <td
                 class="px-6 py-5 whitespace-nowrap text-sm text-white cursor-pointer"

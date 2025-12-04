@@ -140,8 +140,7 @@ defmodule ChurchappWeb.ContributionsLive.NewLive do
                   <div class="mt-1">
                     <.input
                       field={@form[:contribution_date]}
-                      type="date"
-                      phx-hook="DatePicker"
+                      type="datetime-local"
                       class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
@@ -258,7 +257,7 @@ defmodule ChurchappWeb.ContributionsLive.NewLive do
           <div class="flex min-h-screen items-center justify-center p-4">
             <%!-- Backdrop --%>
             <div
-              class="fixed inset-0 bg-black bg-opacity-75 transition-opacity duration-300"
+              class="fixed inset-0 modal-backdrop transition-opacity"
               phx-click="close_modal"
             >
             </div>

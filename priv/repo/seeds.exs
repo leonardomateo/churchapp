@@ -282,9 +282,18 @@ contributions =
     num_contributions = Enum.random(3..8)
 
     Enum.map(1..num_contributions, fn _ ->
-      # Random date within the last 2 years
+      # Random datetime within the last 2 years
       days_ago = Enum.random(1..730)
-      contribution_date = Date.add(Date.utc_today(), -days_ago)
+      hours_ago = Enum.random(0..23)
+      minutes_ago = Enum.random(0..59)
+
+      contribution_date =
+        DateTime.utc_now()
+        |> DateTime.add(
+          -days_ago * 24 * 60 * 60 - hours_ago * 60 * 60 - minutes_ago * 60,
+          :second
+        )
+        |> DateTime.truncate(:second)
 
       # Random amount between $10 and $500
       amount = Decimal.new(Enum.random(10..500))
@@ -325,7 +334,7 @@ Enum.each(contributions, fn attrs ->
        |> Ash.create() do
     {:ok, contribution} ->
       IO.puts(
-        "✓ Created contribution: #{contribution.contribution_type} - $#{Decimal.to_string(contribution.revenue, :normal)} on #{Date.to_string(contribution.contribution_date)}"
+        "✓ Created contribution: #{contribution.contribution_type} - $#{Decimal.to_string(contribution.revenue, :normal)} on #{Calendar.strftime(contribution.contribution_date, "%b %d, %Y at %I:%M %p")}"
       )
 
     {:error, changeset} ->

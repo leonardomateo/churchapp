@@ -13,7 +13,10 @@ defmodule Churchapp.Repo.Migrations.AddContributions do
       add :contribution_type, :text, null: false
       add :revenue, :decimal, precision: 10, scale: 2, null: false
       add :notes, :text
-      add :contribution_date, :date, null: false, default: fragment("CURRENT_DATE")
+
+      add :contribution_date, :utc_datetime_usec,
+        null: false,
+        default: fragment("(now() AT TIME ZONE 'utc')")
 
       add :inserted_at, :utc_datetime_usec,
         null: false,

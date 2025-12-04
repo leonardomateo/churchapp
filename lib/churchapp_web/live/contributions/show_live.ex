@@ -101,7 +101,9 @@ defmodule ChurchappWeb.ContributionsLive.ShowLive do
     monthly_contributions =
       contributions
       |> Enum.filter(fn c ->
-        c.contribution_date.month == month and c.contribution_date.year == year
+        # Handle DateTime by checking month and year
+        date = DateTime.to_date(c.contribution_date)
+        date.month == month and date.year == year
       end)
 
     total =
@@ -168,7 +170,7 @@ defmodule ChurchappWeb.ContributionsLive.ShowLive do
               <div class="flex flex-wrap items-center gap-4 text-sm text-gray-400">
                 <span class="flex items-center gap-1.5">
                   <.icon name="hero-calendar" class="h-4 w-4" />
-                  {Calendar.strftime(@contribution.contribution_date, "%B %d, %Y")}
+                  {Calendar.strftime(@contribution.contribution_date, "%B %d, %Y at %I:%M %p")}
                 </span>
                 <span class="flex items-center gap-1.5">
                   <.icon name="hero-user" class="h-4 w-4" />
@@ -210,10 +212,10 @@ defmodule ChurchappWeb.ContributionsLive.ShowLive do
 
               <div class="flex flex-col h-full">
                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  Date & Time
                 </dt>
                 <dd class="mt-2 text-sm text-white">
-                  {Calendar.strftime(@contribution.contribution_date, "%B %d, %Y")}
+                  {Calendar.strftime(@contribution.contribution_date, "%B %d, %Y at %I:%M %p")}
                 </dd>
               </div>
             </dl>
@@ -429,7 +431,10 @@ defmodule ChurchappWeb.ContributionsLive.ShowLive do
                     class="hover:bg-dark-700/30 transition-colors"
                   >
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                      {Calendar.strftime(related_contribution.contribution_date, "%b %d, %Y")}
+                      {Calendar.strftime(
+                        related_contribution.contribution_date,
+                        "%b %d, %Y at %I:%M %p"
+                      )}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-500/10 text-primary-500 border border-primary-500/20">
