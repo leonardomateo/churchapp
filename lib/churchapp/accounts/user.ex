@@ -52,7 +52,12 @@ defmodule Churchapp.Accounts.User do
   end
 
   actions do
-    defaults [:read]
+    defaults [:read, :destroy]
+
+    # Admin action to update user roles and permissions
+    update :update_role_and_permissions do
+      accept [:role, :permissions]
+    end
 
     read :get_by_subject do
       description "Get a user by the subject claim in a JWT"
@@ -228,14 +233,14 @@ defmodule Churchapp.Accounts.User do
       authorize_if always()
     end
 
+    # Super admins and admins can manage all users (bypass so they can see everyone)
+    bypass action_type([:read, :update, :destroy]) do
+      authorize_if expr(^actor(:role) in [:super_admin, :admin])
+    end
+
     # Users can read their own profile
     policy action_type(:read) do
       authorize_if expr(id == ^actor(:id))
-    end
-
-    # Super admins and admins can manage all users
-    policy action_type([:read, :update, :destroy]) do
-      authorize_if expr(^actor(:role) in [:super_admin, :admin])
     end
   end
 

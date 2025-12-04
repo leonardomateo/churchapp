@@ -81,6 +81,21 @@ defmodule ChurchappWeb.Router do
     end
   end
 
+  # Admin-only routes - require admin or super_admin role
+  scope "/admin", ChurchappWeb do
+    pipe_through :browser
+
+    ash_authentication_live_session :admin,
+      on_mount: [
+        {ChurchappWeb.LiveUserAuth, :live_user_required},
+        {ChurchappWeb.LiveUserAuth, :require_admin}
+      ] do
+      live "/users", UsersLive.IndexLive, :index
+      live "/users/new", UsersLive.NewLive, :new
+      live "/users/:id/edit", UsersLive.EditLive, :edit
+    end
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", ChurchappWeb do
   #   pipe_through :api
