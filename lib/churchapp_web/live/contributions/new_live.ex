@@ -6,11 +6,15 @@ defmodule ChurchappWeb.ContributionsLive.NewLive do
   alias AshPhoenix.Form
 
   def mount(_params, _session, socket) do
+    # Get the current user for authorization
+    actor = socket.assigns[:current_user]
+
     form =
       Contributions
       |> Form.for_create(:create,
         api: Chms.Church,
-        forms: [auto?: true]
+        forms: [auto?: true],
+        actor: actor
       )
       |> to_form()
 

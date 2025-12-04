@@ -73,21 +73,21 @@ defmodule Chms.Church.Congregants do
   end
 
   policies do
-    # Super admins can do anything
-    policy action_type([:create, :read, :update, :destroy]) do
+    # Super admins bypass all policies
+    bypass action_type([:create, :read, :update, :destroy]) do
       authorize_if {Checks.IsSuperAdmin, []}
     end
 
-    # Admins and staff can manage congregants
-    policy action_type([:create, :update, :destroy]) do
-      authorize_if {Checks.HasRole, role: [:admin, :staff]}
-      authorize_if {Checks.HasPermission, permission: :manage_congregants}
-    end
-
-    # Leaders and members can view congregants
+    # Read policy - who can view congregants
     policy action_type(:read) do
       authorize_if {Checks.HasRole, role: [:admin, :staff, :leader, :member]}
       authorize_if {Checks.HasPermission, permission: :view_congregants}
+    end
+
+    # Write policies - who can manage congregants
+    policy action_type([:create, :update, :destroy]) do
+      authorize_if {Checks.HasRole, role: [:admin, :staff]}
+      authorize_if {Checks.HasPermission, permission: :manage_congregants}
     end
   end
 

@@ -3,13 +3,13 @@ defmodule ChurchappWeb.AuthController do
   use AshAuthentication.Phoenix.Controller
 
   def success(conn, activity, user, _token) do
-    return_to = get_session(conn, :return_to) || ~p"/"
+    return_to = get_session(conn, :return_to) || ~p"/congregants"
 
     message =
       case activity do
         {:confirm_new_user, :confirm} -> "Your email address has now been confirmed"
         {:password, :reset} -> "Your password has successfully been reset"
-        _ -> "You are now signed in"
+        _ -> "Welcome back! You are now signed in"
       end
 
     conn

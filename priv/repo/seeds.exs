@@ -13,10 +13,36 @@
 # Seed Users with different roles
 IO.puts("Seeding users...")
 
+# Helper function to create or skip existing users
+create_user = fn attrs ->
+  case Churchapp.Accounts.User
+       |> Ash.Changeset.for_create(:register_with_password, attrs)
+       |> Ash.create(authorize?: false) do
+    {:ok, user} ->
+      IO.puts("✓ Created user: #{attrs.email}")
+      user
+
+    {:error, %{errors: errors}} ->
+      already_exists? =
+        Enum.any?(errors, fn e ->
+          is_map(e) and Map.get(e, :field) == :email and
+            Map.get(e, :message) == "has already been taken"
+        end)
+
+      if already_exists? do
+        IO.puts("⊙ User already exists: #{attrs.email}")
+        nil
+      else
+        IO.puts("✗ Failed to create user: #{attrs.email}")
+        IO.inspect(errors)
+        nil
+      end
+  end
+end
+
 # Create super admin user
 _super_admin =
-  Churchapp.Accounts.User
-  |> Ash.Changeset.for_create(:register_with_password, %{
+  create_user.(%{
     email: "superadmin@church.org",
     password: "SuperAdmin123!",
     password_confirmation: "SuperAdmin123!",
@@ -31,14 +57,10 @@ _super_admin =
       :manage_users
     ]
   })
-  |> Ash.create!(authorize?: false)
-
-IO.puts("✓ Created super admin user: superadmin@church.org")
 
 # Create admin user
 _admin =
-  Churchapp.Accounts.User
-  |> Ash.Changeset.for_create(:register_with_password, %{
+  create_user.(%{
     email: "admin@church.org",
     password: "Admin123!",
     password_confirmation: "Admin123!",
@@ -52,14 +74,10 @@ _admin =
       :view_reports
     ]
   })
-  |> Ash.create!(authorize?: false)
-
-IO.puts("✓ Created admin user: admin@church.org")
 
 # Create staff user
 _staff =
-  Churchapp.Accounts.User
-  |> Ash.Changeset.for_create(:register_with_password, %{
+  create_user.(%{
     email: "staff@church.org",
     password: "Staff123!",
     password_confirmation: "Staff123!",
@@ -70,37 +88,27 @@ _staff =
       :view_contributions
     ]
   })
-  |> Ash.create!(authorize?: false)
-
-IO.puts("✓ Created staff user: staff@church.org")
 
 # Create leader user
 _leader =
-  Churchapp.Accounts.User
-  |> Ash.Changeset.for_create(:register_with_password, %{
+  create_user.(%{
     email: "leader@church.org",
     password: "Leader123!",
     password_confirmation: "Leader123!",
     role: :leader,
     permissions: [:view_congregants, :view_contributions]
   })
-  |> Ash.create!(authorize?: false)
-
-IO.puts("✓ Created leader user: leader@church.org")
 
 # Create regular member
 _member =
-  Churchapp.Accounts.User
-  |> Ash.Changeset.for_create(:register_with_password, %{
+  create_user.(%{
     email: "member@church.org",
     password: "Member123!",
     password_confirmation: "Member123!",
     role: :member,
     permissions: [:view_congregants]
   })
-  |> Ash.create!(authorize?: false)
 
-IO.puts("✓ Created member user: member@church.org")
 IO.puts("")
 
 # Seed Congregants
@@ -335,19 +343,53 @@ congregants = [
 
 created_congregants =
   Enum.map(congregants, fn attrs ->
-    case Chms.Church.Congregants
-         |> Ash.Changeset.for_create(:create, attrs)
-         |> Ash.create() do
+    # Check if congregant already exists by name and phone
+    existing =
+      case Chms.Church.Congregants
+           |> Ash.Query.for_read(:read)
+           |> Ash.read(authorize?: false) do
+        {:ok, all_congregants} ->
+          found =
+            Enum.find(all_congregants, fn c ->
+              c.first_name == attrs.first_name and c.last_name == attrs.last_name and
+                c.mobile_tel == attrs.mobile_tel
+            end)
+
+          {:ok, found}
+
+        error ->
+          error
+      end
+
+    case existing do
+      {:ok, nil} ->
+        # Doesn't exist, create it
+        case Chms.Church.Congregants
+             |> Ash.Changeset.for_create(:create, attrs)
+             |> Ash.create(authorize?: false) do
+          {:ok, congregant} ->
+            IO.puts(
+              "✓ Created congregant: #{congregant.first_name} #{congregant.last_name} (ID: #{congregant.member_id})"
+            )
+
+            congregant
+
+          {:error, changeset} ->
+            IO.puts("✗ Failed to create congregant: #{attrs.first_name} #{attrs.last_name}")
+            IO.inspect(changeset.errors)
+            nil
+        end
+
       {:ok, congregant} ->
         IO.puts(
-          "✓ Created congregant: #{congregant.first_name} #{congregant.last_name} (ID: #{congregant.member_id})"
+          "⊙ Congregant already exists: #{congregant.first_name} #{congregant.last_name} (ID: #{congregant.member_id})"
         )
 
         congregant
 
-      {:error, changeset} ->
-        IO.puts("✗ Failed to create congregant: #{attrs.first_name} #{attrs.last_name}")
-        IO.inspect(changeset.errors)
+      {:error, error} ->
+        IO.puts("✗ Error checking for existing congregant: #{attrs.first_name} #{attrs.last_name}")
+        IO.inspect(error)
         nil
     end
   end)
@@ -367,9 +409,30 @@ contribution_types = [
   "Special Offering"
 ]
 
+# Only create contributions for newly created congregants to avoid duplicates
+# Filter out congregants that already existed
+newly_created_congregants =
+  created_congregants
+  |> Enum.filter(fn congregant ->
+    # Check if this congregant has any contributions already
+    case Chms.Church.Contributions
+         |> Ash.Query.for_read(:read)
+         |> Ash.read(authorize?: false) do
+      {:ok, contributions} ->
+        !Enum.any?(contributions, fn c -> c.congregant_id == congregant.id end)
+
+      _ ->
+        true
+    end
+  end)
+
+IO.puts(
+  "Creating contributions for #{length(newly_created_congregants)} congregants (skipping #{length(created_congregants) - length(newly_created_congregants)} that already have contributions)..."
+)
+
 # Generate contributions for each congregant
 contributions =
-  created_congregants
+  newly_created_congregants
   |> Enum.flat_map(fn congregant ->
     # Generate 3-8 random contributions per congregant
     num_contributions = Enum.random(3..8)
@@ -424,7 +487,7 @@ contributions =
 Enum.each(contributions, fn attrs ->
   case Chms.Church.Contributions
        |> Ash.Changeset.for_create(:create, attrs)
-       |> Ash.create() do
+       |> Ash.create(authorize?: false) do
     {:ok, contribution} ->
       IO.puts(
         "✓ Created contribution: #{contribution.contribution_type} - $#{Decimal.to_string(contribution.revenue, :normal)} on #{Calendar.strftime(contribution.contribution_date, "%b %d, %Y at %I:%M %p")}"
@@ -440,5 +503,26 @@ Enum.each(contributions, fn attrs ->
 end)
 
 IO.puts("\nSeeding complete!")
-IO.puts("Total congregants created: #{length(created_congregants)}")
+IO.puts("Total congregants available: #{length(created_congregants)}")
 IO.puts("Total contributions created: #{length(contributions)}")
+
+# Show overall statistics
+total_congregants =
+  case Chms.Church.Congregants
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, all_congregants} -> length(all_congregants)
+    _ -> 0
+  end
+
+total_contributions =
+  case Chms.Church.Contributions
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, all_contributions} -> length(all_contributions)
+    _ -> 0
+  end
+
+IO.puts("\n--- Database Totals ---")
+IO.puts("Total congregants in database: #{total_congregants}")
+IO.puts("Total contributions in database: #{total_contributions}")

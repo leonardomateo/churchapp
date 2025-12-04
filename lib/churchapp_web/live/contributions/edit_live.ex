@@ -5,13 +5,17 @@ defmodule ChurchappWeb.ContributionsLive.EditLive do
   alias AshPhoenix.Form
 
   def mount(%{"id" => id}, _session, socket) do
-    case Chms.Church.get_contribution_by_id(id) do
+    # Get the current user for authorization
+    actor = socket.assigns[:current_user]
+
+    case Chms.Church.get_contribution_by_id(id, actor: actor) do
       {:ok, contribution} ->
         form =
           contribution
           |> Form.for_update(:update,
             api: Chms.Church,
-            forms: [auto?: true]
+            forms: [auto?: true],
+            actor: actor
           )
           |> to_form()
 

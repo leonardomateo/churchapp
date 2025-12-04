@@ -5,7 +5,10 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
   alias AshPhoenix.Form
 
   def mount(%{"id" => id}, _session, socket) do
-    case Chms.Church.get_congregant_by_id(id) do
+    # Get the current user for authorization
+    actor = socket.assigns[:current_user]
+
+    case Chms.Church.get_congregant_by_id(id, actor: actor) do
       {:ok, congregant} ->
         # Convert ministries array to comma-separated string for form display
         ministries_string =
@@ -17,7 +20,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
 
         form =
           congregant
-          |> Form.for_update(:update, api: Chms.Church)
+          |> Form.for_update(:update, api: Chms.Church, actor: actor)
           |> Form.validate(%{"ministries_string" => ministries_string})
           |> to_form()
 
@@ -26,6 +29,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
           |> assign(:page_title, "Edit Congregant")
           |> assign(:congregant, congregant)
           |> assign(:form, form)
+          |> assign(:actor, actor)
           |> assign(:uploaded_files, [])
           |> assign(:ministries_options, Ministries.ministry_options())
           |> assign(:selected_ministries, congregant.ministries || [])
@@ -173,7 +177,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
         # Rebuild the form with the updated congregant
         form =
           congregant
-          |> Form.for_update(:update, api: Chms.Church)
+          |> Form.for_update(:update, api: Chms.Church, actor: socket.assigns.actor)
           |> Form.validate(%{"ministries_string" => ministries_string})
           |> to_form()
 

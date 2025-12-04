@@ -4,7 +4,10 @@ defmodule ChurchappWeb.ContributionsLive.ShowLive do
   require Ash.Query
 
   def mount(%{"id" => id}, _session, socket) do
-    contribution = Ash.get!(Chms.Church.Contributions, id, load: [:congregant])
+    # Get the current user for authorization
+    actor = socket.assigns[:current_user]
+
+    contribution = Ash.get!(Chms.Church.Contributions, id, load: [:congregant], actor: actor)
 
     # Get the congregant ID for filtering
     congregant_id = contribution.congregant_id
@@ -14,7 +17,7 @@ defmodule ChurchappWeb.ContributionsLive.ShowLive do
       Chms.Church.Contributions
       |> Ash.Query.filter(congregant_id == ^congregant_id)
       |> Ash.Query.sort(contribution_date: :desc)
-      |> Ash.read!()
+      |> Ash.read!(actor: actor)
 
     # Calculate summary statistics
     total_amount =

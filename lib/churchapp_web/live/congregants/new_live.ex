@@ -8,11 +8,15 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
   def mount(_params, _session, socket) do
     generated_id = Enum.random(1_000_000..9_999_999)
 
+    # Get the current user for authorization
+    actor = socket.assigns[:current_user]
+
     form =
       Congregants
       |> Form.for_create(:create,
         api: Chms.Church,
-        forms: [auto?: true]
+        forms: [auto?: true],
+        actor: actor
       )
       |> Form.validate(%{"generated_member_id" => generated_id})
       |> to_form()

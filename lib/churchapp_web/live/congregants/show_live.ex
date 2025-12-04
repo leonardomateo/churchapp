@@ -2,7 +2,10 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
   use ChurchappWeb, :live_view
 
   def mount(%{"id" => id}, _session, socket) do
-    case Chms.Church.get_congregant_by_id(id) do
+    # Get the current user for authorization
+    actor = socket.assigns[:current_user]
+
+    case Chms.Church.get_congregant_by_id(id, actor: actor) do
       {:ok, congregant} ->
         {:ok,
          socket

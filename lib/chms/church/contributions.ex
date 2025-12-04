@@ -37,21 +37,21 @@ defmodule Chms.Church.Contributions do
   end
 
   policies do
-    # Super admins can do anything
-    policy action_type([:create, :read, :update, :destroy]) do
+    # Super admins bypass all policies
+    bypass action_type([:create, :read, :update, :destroy]) do
       authorize_if {Checks.IsSuperAdmin, []}
     end
 
-    # Admins and authorized staff can manage contributions
-    policy action_type([:create, :update, :destroy]) do
-      authorize_if {Checks.HasRole, role: [:admin, :staff]}
-      authorize_if {Checks.HasPermission, permission: :manage_contributions}
-    end
-
-    # Staff and leaders can view contributions
+    # Read policy - who can view contributions
     policy action_type(:read) do
       authorize_if {Checks.HasRole, role: [:admin, :staff, :leader]}
       authorize_if {Checks.HasPermission, permission: :view_contributions}
+    end
+
+    # Write policies - who can manage contributions
+    policy action_type([:create, :update, :destroy]) do
+      authorize_if {Checks.HasRole, role: [:admin, :staff]}
+      authorize_if {Checks.HasPermission, permission: :manage_contributions}
     end
   end
 

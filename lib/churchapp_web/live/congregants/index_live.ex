@@ -205,8 +205,11 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
         query
       end
 
+    # Get the current user for authorization
+    actor = socket.assigns[:current_user]
+
     # Get total count for pagination
-    {:ok, all_congregants} = Chms.Church.list_congregants(query: query)
+    {:ok, all_congregants} = Chms.Church.list_congregants(query: query, actor: actor)
     total_count = length(all_congregants)
     total_pages = ceil(total_count / socket.assigns.per_page)
 
@@ -218,7 +221,7 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
       |> Ash.Query.limit(socket.assigns.per_page)
       |> Ash.Query.offset(offset)
 
-    {:ok, congregants} = Chms.Church.list_congregants(query: paginated_query)
+    {:ok, congregants} = Chms.Church.list_congregants(query: paginated_query, actor: actor)
 
     socket
     |> assign(:congregants, congregants)
