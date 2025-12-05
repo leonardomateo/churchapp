@@ -33,7 +33,6 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
     {:ok, total_contributions} = Statistics.get_total_contributions(actor)
     {:ok, total_revenue} = Statistics.get_total_revenue(actor)
     {:ok, contribution_type_stats} = Statistics.get_contribution_counts_by_type(actor)
-    {:ok, revenue_by_type_stats} = Statistics.get_revenue_by_type(actor)
 
     socket
     |> assign(:loading, false)
@@ -50,8 +49,6 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
     |> assign(:total_revenue, total_revenue)
     |> assign(:contribution_type_stats, contribution_type_stats)
     |> assign(:contribution_type_stats_json, Jason.encode!(contribution_type_stats))
-    |> assign(:revenue_by_type_stats, revenue_by_type_stats)
-    |> assign(:revenue_by_type_stats_json, Jason.encode!(revenue_by_type_stats))
   end
 
   def render(assigns) do
@@ -213,7 +210,7 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
 
           <%!-- Country Distribution Chart --%>
           <div class="chart-container">
-            <h4 class="text-lg font-medium text-white mb-4">Top 10 Countries</h4>
+            <h4 class="text-lg font-medium text-white mb-4">Country Distribution</h4>
             <canvas
               id="country-chart"
               phx-hook="BarChart"
@@ -233,28 +230,16 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
           Contribution Statistics
         </h3>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <%!-- Contribution Type Count Chart --%>
+        <div class="grid grid-cols-1 gap-6">
+          <%!-- Contribution Count by Type Chart --%>
           <div class="chart-container">
-            <h4 class="text-lg font-medium text-white mb-4">Contributions by Type</h4>
+            <h4 class="text-lg font-medium text-white mb-4">Contributions by Type ({@current_month})</h4>
             <canvas
               id="contribution-type-chart"
-              phx-hook="PieChart"
-              data-chart-data={@contribution_type_stats_json}
-              data-chart-title="Contribution Types"
-            >
-            </canvas>
-          </div>
-
-          <%!-- Revenue by Type Chart --%>
-          <div class="chart-container">
-            <h4 class="text-lg font-medium text-white mb-4">Revenue by Type</h4>
-            <canvas
-              id="revenue-type-chart"
               phx-hook="BarChart"
-              data-chart-data={@revenue_by_type_stats_json}
-              data-chart-title="Revenue by Type"
-              data-chart-currency="true"
+              data-chart-data={@contribution_type_stats_json}
+              data-chart-title="Contributions by Type"
+              data-chart-horizontal="false"
             >
             </canvas>
           </div>

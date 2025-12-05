@@ -36,7 +36,7 @@ defmodule Chms.Church.Statistics do
 
   @doc """
   Gets count of congregants grouped by country.
-  Returns a list of maps with label and value keys, limited to top 10.
+  Returns a list of maps with label and value keys, sorted by count descending.
   """
   def get_congregant_counts_by_country(actor) do
     query =
@@ -56,7 +56,6 @@ defmodule Chms.Church.Statistics do
             }
           end)
           |> Enum.sort_by(& &1.value, :desc)
-          |> Enum.take(10)
 
         {:ok, counts}
 
@@ -166,7 +165,7 @@ defmodule Chms.Church.Statistics do
   end
 
   @doc """
-  Gets count of congregants grouped by contribution type.
+  Gets count of contributions grouped by contribution type for the current month.
   Returns a list of maps with label and value keys.
   """
   def get_contribution_counts_by_type(actor) do
@@ -176,8 +175,17 @@ defmodule Chms.Church.Statistics do
 
     case Ash.read(query, actor: actor) do
       {:ok, contributions} ->
+        # Filter for current month contributions
+        current_month_start = Date.beginning_of_month(Date.utc_today())
+        current_month_end = Date.end_of_month(Date.utc_today())
+
         counts =
           contributions
+          |> Enum.filter(fn c ->
+            contribution_date = DateTime.to_date(c.contribution_date)
+            Date.compare(contribution_date, current_month_start) != :lt and
+            Date.compare(contribution_date, current_month_end) != :gt
+          end)
           |> Enum.group_by(& &1.contribution_type)
           |> Enum.map(fn {type, list} ->
             %{
@@ -226,7 +234,7 @@ defmodule Chms.Church.Statistics do
   end
 
   @doc """
-  Gets total revenue grouped by contribution type.
+  Gets total revenue grouped by contribution type for the current month.
   Returns a list of maps with label and value keys.
   """
   def get_revenue_by_type(actor) do
@@ -236,8 +244,17 @@ defmodule Chms.Church.Statistics do
 
     case Ash.read(query, actor: actor) do
       {:ok, contributions} ->
+        # Filter for current month contributions
+        current_month_start = Date.beginning_of_month(Date.utc_today())
+        current_month_end = Date.end_of_month(Date.utc_today())
+
         revenue_by_type =
           contributions
+          |> Enum.filter(fn c ->
+            contribution_date = DateTime.to_date(c.contribution_date)
+            Date.compare(contribution_date, current_month_start) != :lt and
+            Date.compare(contribution_date, current_month_end) != :gt
+          end)
           |> Enum.group_by(& &1.contribution_type)
           |> Enum.map(fn {type, list} ->
             total =
