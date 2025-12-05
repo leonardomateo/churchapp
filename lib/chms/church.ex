@@ -24,5 +24,13 @@ defmodule Chms.Church do
       define :destroy_contribution, action: :destroy
       define :get_contribution_by_id, action: :read, get_by: [:id]
     end
+
+    resource Chms.Church.MinistryFunds do
+      define :create_ministry_fund, action: :create
+      define :list_ministry_funds, action: :read
+      define :update_ministry_fund, action: :update
+      define :destroy_ministry_fund, action: :destroy
+      define :get_ministry_fund_by_id, action: :read, get_by: [:id]
+    end
   end
 end

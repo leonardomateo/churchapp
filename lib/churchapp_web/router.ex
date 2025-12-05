@@ -80,6 +80,11 @@ defmodule ChurchappWeb.Router do
       live "/contributions/new", ContributionsLive.NewLive, :new
       live "/contributions/:id", ContributionsLive.ShowLive, :show
       live "/contributions/:id/edit", ContributionsLive.EditLive, :edit
+
+      live "/ministry-funds", MinistryFundsLive.IndexLive, :index
+      live "/ministry-funds/new", MinistryFundsLive.NewLive, :new
+      live "/ministry-funds/:id", MinistryFundsLive.ShowLive, :show
+      live "/ministry-funds/:id/edit", MinistryFundsLive.EditLive, :edit
     end
   end
 

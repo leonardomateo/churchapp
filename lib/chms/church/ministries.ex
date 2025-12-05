@@ -1,10 +1,11 @@
 defmodule Chms.Church.Ministries do
   @moduledoc """
   Module for managing church ministries.
-  Provides a predefined list of ministries that can be selected for congregants.
+  Provides a predefined list of ministries combined with custom ministries from the database.
+  Similar to ContributionTypes, allows dynamic ministry creation through the web interface.
   """
 
-  @ministries [
+  @default_ministries [
     "Worship",
     "Royal Rangers",
     "Evangelism",
@@ -31,29 +32,58 @@ defmodule Chms.Church.Ministries do
   ]
 
   @doc """
-  Returns the list of all available ministries.
+  Returns the list of default ministries.
   """
-  def list_ministries, do: @ministries
+  def default_ministries, do: @default_ministries
+
+  @doc """
+  Returns the list of all available ministries (default + custom from database).
+  """
+  def list_ministries, do: all_ministries()
+
+  @doc """
+  Get all unique ministry names from the database combined with defaults.
+  This allows for dynamic ministries that users have entered.
+  """
+  def all_ministries do
+    # Get unique ministry names from database
+    custom_ministries =
+      try do
+        Chms.Church.MinistryFunds
+        |> Ash.Query.select([:ministry_name])
+        |> Ash.read!()
+        |> Enum.map(& &1.ministry_name)
+        |> Enum.uniq()
+      rescue
+        _ -> []
+      end
+
+    # Combine with defaults and remove duplicates
+    (@default_ministries ++ custom_ministries)
+    |> Enum.uniq()
+    |> Enum.sort()
+  end
 
   @doc """
   Returns a list of tuples suitable for form options.
   Each tuple contains {display_name, value}.
   """
   def ministry_options do
-    Enum.map(@ministries, &{&1, &1})
+    all_ministries()
+    |> Enum.map(&{&1, &1})
   end
 
   @doc """
   Checks if a ministry is in the predefined list.
   """
   def valid_ministry?(ministry) when is_binary(ministry) do
-    ministry in @ministries
+    ministry in @default_ministries
   end
 
   def valid_ministry?(_), do: false
 
   @doc """
-  Filters a list to only include valid ministries.
+  Filters a list to only include valid ministries from the default list.
   """
   def filter_valid(ministries) when is_list(ministries) do
     Enum.filter(ministries, &valid_ministry?/1)
