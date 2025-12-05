@@ -292,7 +292,7 @@ defmodule ChurchappWeb.MinistryFundsLive.EditLive do
               </h3>
               <div>
                 <label for="notes" class="block text-sm font-medium text-gray-400">
-                  Additional Notes
+                  Additional Notes <span class="text-red-500">*</span>
                 </label>
                 <div class="mt-1">
                   <.input

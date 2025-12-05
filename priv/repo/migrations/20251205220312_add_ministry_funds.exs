@@ -18,7 +18,7 @@ defmodule Churchapp.Repo.Migrations.AddMinistryFunds do
         null: false,
         default: fragment("(now() AT TIME ZONE 'utc')")
 
-      add :notes, :text
+      add :notes, :text, null: false
 
       add :inserted_at, :utc_datetime_usec,
         null: false,

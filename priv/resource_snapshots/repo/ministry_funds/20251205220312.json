@@ -61,7 +61,7 @@
       "type": "utc_datetime_usec"
     },
     {
-      "allow_nil?": true,
+      "allow_nil?": false,
       "default": "nil",
       "generated?": false,
       "precision": null,
@@ -102,7 +102,7 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "F0A2F118295C03E977F92F7D1A286854C11CF990EB0903290124F0BB36E8741C",
+  "hash": "6595EF89F7C3D229C5224D3569E7A4A3F368CCCE3FD6F6DE9D2EC6C09B47054F",
   "identities": [],
   "multitenancy": {
     "attribute": null,

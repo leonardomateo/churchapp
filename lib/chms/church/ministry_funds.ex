@@ -87,6 +87,7 @@ defmodule Chms.Church.MinistryFunds do
     end
 
     attribute :notes, :string do
+      allow_nil? false
       description "Additional notes or description for this transaction"
     end
 
