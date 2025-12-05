@@ -11,10 +11,10 @@
 <!-- Navigation -->
       <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
         <.link
-          navigate={~p"/"}
+          navigate={~p"/dashboard"}
           class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
         >
-          <.icon name="hero-home" class="mr-3 h-5 w-5 flex-shrink-0" /> Dashboard
+          <.icon name="hero-chart-bar" class="mr-3 h-5 w-5 flex-shrink-0" /> Dashboard
         </.link>
 
         <.link
@@ -58,7 +58,9 @@
             />
             <div class="ml-3 min-w-0 flex-1">
               <p class="text-sm font-medium text-white truncate">
-                {if @current_user, do: to_string(@current_user.email) |> String.split("@") |> List.first(), else: "User"}
+                {if @current_user,
+                  do: to_string(@current_user.email) |> String.split("@") |> List.first(),
+                  else: "User"}
               </p>
               <%= if @current_user do %>
                 <.role_badge role={@current_user.role} class="mt-1" />
@@ -111,10 +113,10 @@
 <!-- Navigation -->
       <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
         <.link
-          navigate={~p"/"}
+          navigate={~p"/dashboard"}
           class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
         >
-          <.icon name="hero-home" class="mr-3 h-5 w-5" /> Dashboard
+          <.icon name="hero-chart-bar" class="mr-3 h-5 w-5" /> Dashboard
         </.link>
 
         <.link
@@ -158,7 +160,9 @@
             />
             <div class="ml-3 min-w-0 flex-1">
               <p class="text-sm font-medium text-white truncate">
-                {if @current_user, do: to_string(@current_user.email) |> String.split("@") |> List.first(), else: "User"}
+                {if @current_user,
+                  do: to_string(@current_user.email) |> String.split("@") |> List.first(),
+                  else: "User"}
               </p>
               <%= if @current_user do %>
                 <.role_badge role={@current_user.role} class="mt-1" />

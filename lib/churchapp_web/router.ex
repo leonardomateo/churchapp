@@ -69,6 +69,8 @@ defmodule ChurchappWeb.Router do
       on_mount: [
         {ChurchappWeb.LiveUserAuth, :live_user_required}
       ] do
+      live "/dashboard", DashboardLive.IndexLive, :index
+
       live "/congregants", CongregantsLive.IndexLive, :index
       live "/congregants/new", CongregantsLive.NewLive, :new
       live "/congregants/:id", CongregantsLive.ShowLive, :show

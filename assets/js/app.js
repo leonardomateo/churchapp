@@ -25,6 +25,9 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/churchapp"
 import topbar from "../vendor/topbar"
 
+// Import Chart.js hooks
+import {BarChart, PieChart, DoughnutChart} from "./hooks/charts.js"
+
 // Mobile Menu Hook
 const MobileMenu = {
   mounted() {
@@ -254,7 +257,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, BarChart, PieChart, DoughnutChart},
 })
 
 // Show progress bar on live navigation and form submits

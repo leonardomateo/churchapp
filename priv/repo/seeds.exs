@@ -388,7 +388,10 @@ created_congregants =
         congregant
 
       {:error, error} ->
-        IO.puts("✗ Error checking for existing congregant: #{attrs.first_name} #{attrs.last_name}")
+        IO.puts(
+          "✗ Error checking for existing congregant: #{attrs.first_name} #{attrs.last_name}"
+        )
+
         IO.inspect(error)
         nil
     end

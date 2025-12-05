@@ -15,6 +15,7 @@ defmodule ChurchappWeb.AuthOverrides do
         "w-full max-w-md mx-auto space-y-6 bg-dark-800 p-8 rounded-lg border border-dark-600 shadow-xl"
 
     set :label_class, "block text-sm font-medium text-gray-200 mb-2"
+
     set :input_class,
         "appearance-none relative block w-full px-4 py-3 border border-dark-600 placeholder-gray-500 text-gray-100 bg-dark-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
 
@@ -28,6 +29,7 @@ defmodule ChurchappWeb.AuthOverrides do
   override AshAuthentication.Phoenix.Components.Password do
     set :root_class, "space-y-4"
     set :label_class, "block text-sm font-medium text-gray-200 mb-2"
+
     set :input_class,
         "appearance-none relative block w-full px-4 py-3 border border-dark-600 placeholder-gray-500 text-gray-100 bg-dark-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
   end
@@ -44,6 +46,7 @@ defmodule ChurchappWeb.AuthOverrides do
         "w-full max-w-md space-y-6 bg-dark-800 p-8 rounded-lg border border-dark-600 shadow-xl"
 
     set :label_class, "block text-sm font-medium text-gray-200 mb-2"
+
     set :input_class,
         "appearance-none relative block w-full px-4 py-3 border border-dark-600 placeholder-gray-500 text-gray-100 bg-dark-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
 
@@ -59,6 +62,7 @@ defmodule ChurchappWeb.AuthOverrides do
         "w-full max-w-md space-y-6 bg-dark-800 p-8 rounded-lg border border-dark-600 shadow-xl"
 
     set :label_class, "block text-sm font-medium text-gray-200 mb-2"
+
     set :input_class,
         "appearance-none relative block w-full px-4 py-3 border border-dark-600 placeholder-gray-500 text-gray-100 bg-dark-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
 

@@ -242,8 +242,7 @@ defmodule ChurchappWeb.UsersLive.NewLive do
       <div class="bg-dark-800 shadow-xl rounded-lg border border-dark-700 overflow-hidden mb-8">
         <div class="px-6 py-6 border-b border-dark-700">
           <h2 class="text-lg font-medium text-white flex items-center">
-            <.icon name="hero-envelope" class="mr-2 h-5 w-5 text-primary-500" />
-            Account Credentials
+            <.icon name="hero-envelope" class="mr-2 h-5 w-5 text-primary-500" /> Account Credentials
           </h2>
           <p class="mt-1 text-sm text-gray-400">
             Enter the email and password for the new user
@@ -303,8 +302,7 @@ defmodule ChurchappWeb.UsersLive.NewLive do
       <div class="bg-dark-800 shadow-xl rounded-lg border border-dark-700 overflow-hidden mb-8">
         <div class="px-6 py-6 border-b border-dark-700">
           <h2 class="text-lg font-medium text-white flex items-center">
-            <.icon name="hero-shield-check" class="mr-2 h-5 w-5 text-primary-500" />
-            User Role
+            <.icon name="hero-shield-check" class="mr-2 h-5 w-5 text-primary-500" /> User Role
           </h2>
           <p class="mt-1 text-sm text-gray-400">
             Select the role that defines this user's base access level
@@ -350,8 +348,7 @@ defmodule ChurchappWeb.UsersLive.NewLive do
           <div class="flex items-center justify-between">
             <div>
               <h2 class="text-lg font-medium text-white flex items-center">
-                <.icon name="hero-key" class="mr-2 h-5 w-5 text-primary-500" />
-                Permissions
+                <.icon name="hero-key" class="mr-2 h-5 w-5 text-primary-500" /> Permissions
               </h2>
               <p class="mt-1 text-sm text-gray-400">
                 Grant specific permissions beyond the base role
@@ -406,7 +403,12 @@ defmodule ChurchappWeb.UsersLive.NewLive do
                       "text-sm font-medium",
                       if(permission in @selected_permissions, do: "text-white", else: "text-gray-300")
                     ]}>
-                      {permission |> to_string() |> String.replace("_", " ") |> String.split() |> Enum.map(&String.capitalize/1) |> Enum.join(" ")}
+                      {permission
+                      |> to_string()
+                      |> String.replace("_", " ")
+                      |> String.split()
+                      |> Enum.map(&String.capitalize/1)
+                      |> Enum.join(" ")}
                     </span>
                     <%= if permission in @selected_permissions do %>
                       <.icon name="hero-check-circle-solid" class="w-5 h-5 text-primary-500" />
@@ -444,8 +446,7 @@ defmodule ChurchappWeb.UsersLive.NewLive do
         >
           <%= if @saving do %>
             <span class="flex items-center gap-2">
-              <.icon name="hero-arrow-path" class="w-4 h-4 animate-spin" />
-              Creating...
+              <.icon name="hero-arrow-path" class="w-4 h-4 animate-spin" /> Creating...
             </span>
           <% else %>
             Create User
