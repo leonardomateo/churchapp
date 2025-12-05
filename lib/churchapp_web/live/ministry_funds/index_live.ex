@@ -925,20 +925,24 @@ defmodule ChurchappWeb.MinistryFundsLive.IndexLive do
   end
 
   # Generate pagination range with ellipsis
+  defp pagination_range(_current_page, total_pages) when total_pages <= 0 do
+    []
+  end
+
   defp pagination_range(current_page, total_pages) do
     cond do
       total_pages <= 7 ->
-        Enum.to_list(1..total_pages)
+        Enum.to_list(1..total_pages//1)
 
       current_page <= 4 ->
-        Enum.to_list(1..5) ++ [:ellipsis, total_pages]
+        Enum.to_list(1..5//1) ++ [:ellipsis, total_pages]
 
       current_page >= total_pages - 3 ->
-        [1, :ellipsis] ++ Enum.to_list((total_pages - 4)..total_pages)
+        [1, :ellipsis] ++ Enum.to_list((total_pages - 4)..total_pages//1)
 
       true ->
         [1, :ellipsis] ++
-          Enum.to_list((current_page - 1)..(current_page + 1)) ++ [:ellipsis, total_pages]
+          Enum.to_list((current_page - 1)..(current_page + 1)//1) ++ [:ellipsis, total_pages]
     end
   end
 end

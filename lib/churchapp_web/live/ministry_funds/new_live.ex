@@ -251,17 +251,19 @@ defmodule ChurchappWeb.MinistryFundsLive.NewLive do
                     Amount <span class="text-red-500">*</span>
                   </label>
                   <div class="mt-1">
-                    <.input
-                      field={@form[:amount]}
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      class={[
-                        "block w-full px-3 py-2 text-white bg-dark-900 border rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500",
-                        @transaction_type == :revenue && "border-green-500",
-                        @transaction_type == :expense && "border-red-500"
-                      ]}
-                    />
+                    <div class={[
+                      "block w-full rounded-md",
+                      @transaction_type == :revenue && "ring-2 ring-green-500",
+                      @transaction_type == :expense && "ring-2 ring-red-500"
+                    ]}>
+                      <.input
+                        field={@form[:amount]}
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                      />
+                    </div>
                   </div>
                   <p class="mt-1 text-xs text-gray-500">
                     <%= if @transaction_type == :revenue do %>
