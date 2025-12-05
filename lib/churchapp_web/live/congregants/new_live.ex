@@ -225,6 +225,8 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                     <.input
                       field={@form[:dob]}
                       type="date"
+                      phx-hook="DatePicker"
+                      max={Date.utc_today() |> Date.to_iso8601()}
                       class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
@@ -238,6 +240,8 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                     <.input
                       field={@form[:member_since]}
                       type="date"
+                      phx-hook="DatePicker"
+                      max={Date.utc_today() |> Date.to_iso8601()}
                       class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
