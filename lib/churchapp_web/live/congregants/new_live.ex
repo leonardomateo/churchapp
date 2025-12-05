@@ -507,7 +507,11 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                     <select
                       id={@form[:status].id}
                       name={@form[:status].name}
-                      class="appearance-none block w-full h-[42px] px-3 py-2 pr-10 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500 focus:outline-none cursor-pointer"
+                      class={[
+                        "appearance-none block w-full h-[42px] px-3 py-2 pr-10 text-white bg-dark-900 border rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500 focus:outline-none cursor-pointer",
+                        @form[:status].errors == [] && "border-dark-700",
+                        @form[:status].errors != [] && "border-red-500"
+                      ]}
                     >
                       <option value="member" selected={to_string(@form[:status].value) == "member"}>
                         Active Member
@@ -532,6 +536,13 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                       <.icon name="hero-chevron-up-down" class="h-5 w-5" />
                     </div>
                   </div>
+                  <p
+                    :for={error <- @form[:status].errors}
+                    class="mt-1.5 flex gap-2 items-center text-sm text-red-500"
+                  >
+                    <.icon name="hero-exclamation-circle" class="h-5 w-5" />
+                    {translate_error(error)}
+                  </p>
                 </div>
 
                 <div class="sm:col-span-3">
