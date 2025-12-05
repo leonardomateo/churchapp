@@ -146,6 +146,7 @@ defmodule ChurchappWeb.ContributionsLive.NewLive do
                     <.input
                       field={@form[:contribution_date]}
                       type="datetime-local"
+                      phx-hook="DatePicker"
                       class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>

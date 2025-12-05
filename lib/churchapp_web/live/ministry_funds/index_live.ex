@@ -326,20 +326,16 @@ defmodule ChurchappWeb.MinistryFundsLive.IndexLive do
       revenues =
         txns
         |> Enum.filter(&(&1.transaction_type == :revenue))
-        |> Enum.map(&Decimal.to_float(&1.amount))
-        |> Enum.sum()
+        |> Enum.map(& &1.amount)
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
       expenses =
         txns
         |> Enum.filter(&(&1.transaction_type == :expense))
-        |> Enum.map(&Decimal.to_float(&1.amount))
-        |> Enum.sum()
+        |> Enum.map(& &1.amount)
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
-      balance =
-        Decimal.sub(
-          Decimal.from_float(revenues),
-          Decimal.from_float(expenses)
-        )
+      balance = Decimal.sub(revenues, expenses)
 
       {ministry, balance}
     end)

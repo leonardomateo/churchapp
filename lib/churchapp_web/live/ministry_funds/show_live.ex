@@ -46,19 +46,16 @@ defmodule ChurchappWeb.MinistryFundsLive.ShowLive do
     revenues =
       transactions
       |> Enum.filter(&(&1.transaction_type == :revenue))
-      |> Enum.map(&Decimal.to_float(&1.amount))
-      |> Enum.sum()
+      |> Enum.map(& &1.amount)
+      |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
     expenses =
       transactions
       |> Enum.filter(&(&1.transaction_type == :expense))
-      |> Enum.map(&Decimal.to_float(&1.amount))
-      |> Enum.sum()
+      |> Enum.map(& &1.amount)
+      |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
-    Decimal.sub(
-      Decimal.from_float(revenues),
-      Decimal.from_float(expenses)
-    )
+    Decimal.sub(revenues, expenses)
   end
 
   def render(assigns) do

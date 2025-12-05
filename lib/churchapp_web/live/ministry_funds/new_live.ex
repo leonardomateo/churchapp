@@ -99,7 +99,10 @@ defmodule ChurchappWeb.MinistryFundsLive.NewLive do
   end
 
   def handle_event("save", %{"form" => params}, socket) do
-    case Form.submit(socket.assigns.form, params: params) do
+    # Merge the transaction_type from socket assigns into params
+    params_with_type = Map.put(params, "transaction_type", socket.assigns.transaction_type)
+
+    case Form.submit(socket.assigns.form, params: params_with_type) do
       {:ok, _ministry_fund} ->
         {:noreply,
          socket
@@ -225,6 +228,7 @@ defmodule ChurchappWeb.MinistryFundsLive.NewLive do
                     <.input
                       field={@form[:transaction_date]}
                       type="datetime-local"
+                      phx-hook="DatePicker"
                       class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
