@@ -6,10 +6,14 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
   def mount(_params, _session, socket) do
     actor = socket.assigns[:current_user]
 
+    # Get current month name for display
+    current_month = Date.utc_today() |> Calendar.strftime("%B %Y")
+
     socket =
       socket
       |> assign(:page_title, "Dashboard")
       |> assign(:loading, true)
+      |> assign(:current_month, current_month)
       |> fetch_statistics(actor)
 
     {:ok, socket}
@@ -102,7 +106,7 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
-                  Visitors
+                  Visitors ({@current_month})
                 </p>
                 <p class="text-3xl font-bold text-white mt-2">
                   {@visitors_count}
@@ -158,7 +162,7 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
-                Total Contributions
+                Contributions ({@current_month})
               </p>
               <p class="text-3xl font-bold text-white mt-2">
                 {@total_contributions}
@@ -175,7 +179,7 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
-                Total Revenue
+                Revenue ({@current_month})
               </p>
               <p class="text-3xl font-bold text-white mt-2">
                 ${format_currency(@total_revenue)}

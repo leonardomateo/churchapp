@@ -101,17 +101,28 @@ defmodule Chms.Church.Statistics do
   end
 
   @doc """
-  Gets count of visitors (status: visitor).
+  Gets count of visitors (status: visitor) for the current month.
   """
   def get_visitors_count(actor) do
     query =
       Chms.Church.Congregants
       |> Ash.Query.for_read(:read, %{}, actor: actor)
-      |> Ash.Query.filter(status == :visitor)
 
     case Ash.read(query, actor: actor) do
       {:ok, congregants} ->
-        {:ok, length(congregants)}
+        # Filter for visitors who became members this month
+        current_month_start = Date.beginning_of_month(Date.utc_today())
+
+        count =
+          congregants
+          |> Enum.filter(fn c ->
+            c.status == :visitor and
+            c.member_since != nil and
+            Date.compare(c.member_since, current_month_start) != :lt
+          end)
+          |> length()
+
+        {:ok, count}
 
       {:error, error} ->
         {:error, error}
@@ -184,7 +195,7 @@ defmodule Chms.Church.Statistics do
   end
 
   @doc """
-  Gets total revenue from all contributions.
+  Gets total revenue from contributions for the current month.
   """
   def get_total_revenue(actor) do
     query =
@@ -193,8 +204,17 @@ defmodule Chms.Church.Statistics do
 
     case Ash.read(query, actor: actor) do
       {:ok, contributions} ->
+        # Filter for current month contributions
+        current_month_start = Date.beginning_of_month(Date.utc_today())
+        current_month_end = Date.end_of_month(Date.utc_today())
+
         total =
           contributions
+          |> Enum.filter(fn c ->
+            contribution_date = DateTime.to_date(c.contribution_date)
+            Date.compare(contribution_date, current_month_start) != :lt and
+            Date.compare(contribution_date, current_month_end) != :gt
+          end)
           |> Enum.map(& &1.revenue)
           |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
@@ -240,7 +260,7 @@ defmodule Chms.Church.Statistics do
   end
 
   @doc """
-  Gets total count of all contributions.
+  Gets total count of contributions for the current month.
   """
   def get_total_contributions(actor) do
     query =
@@ -249,7 +269,20 @@ defmodule Chms.Church.Statistics do
 
     case Ash.read(query, actor: actor) do
       {:ok, contributions} ->
-        {:ok, length(contributions)}
+        # Filter for current month contributions
+        current_month_start = Date.beginning_of_month(Date.utc_today())
+        current_month_end = Date.end_of_month(Date.utc_today())
+
+        count =
+          contributions
+          |> Enum.filter(fn c ->
+            contribution_date = DateTime.to_date(c.contribution_date)
+            Date.compare(contribution_date, current_month_start) != :lt and
+            Date.compare(contribution_date, current_month_end) != :gt
+          end)
+          |> length()
+
+        {:ok, count}
 
       {:error, error} ->
         {:error, error}
