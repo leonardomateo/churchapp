@@ -225,7 +225,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                     <.input
                       field={@form[:dob]}
                       type="date"
-                      class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                      class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
@@ -238,7 +238,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                     <.input
                       field={@form[:member_since]}
                       type="date"
-                      class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                      class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
@@ -361,7 +361,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                       type="tel"
                       phx-hook="PhoneFormat"
                       placeholder="(123) 456 - 7890"
-                      class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                      class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
@@ -376,7 +376,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                       type="tel"
                       phx-hook="PhoneFormat"
                       placeholder="(123) 456 - 7890"
-                      class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                      class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
@@ -391,7 +391,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                       type="tel"
                       phx-hook="PhoneFormat"
                       placeholder="(123) 456 - 7890"
-                      class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                      class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
@@ -503,18 +503,34 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                   <label for="status" class="block text-sm font-medium text-gray-400">
                     Congregant Status <span class="text-red-500">*</span>
                   </label>
-                  <div class="mt-1">
-                    <.input
-                      field={@form[:status]}
-                      type="select"
-                      options={[
-                        {"Active Member", :member},
-                        {"Visitor", :visitor},
-                        {"Honorific", :honorific},
-                        {"Deceased", :deceased}
-                      ]}
-                      class="block w-full h-[42px] px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
-                    />
+                  <div class="mt-1 relative">
+                    <select
+                      id={@form[:status].id}
+                      name={@form[:status].name}
+                      class="appearance-none block w-full h-[42px] px-3 py-2 pr-10 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500 focus:outline-none cursor-pointer"
+                    >
+                      <option value="member" selected={to_string(@form[:status].value) == "member"}>
+                        Active Member
+                      </option>
+                      <option value="visitor" selected={to_string(@form[:status].value) == "visitor"}>
+                        Visitor
+                      </option>
+                      <option
+                        value="honorific"
+                        selected={to_string(@form[:status].value) == "honorific"}
+                      >
+                        Honorific
+                      </option>
+                      <option
+                        value="deceased"
+                        selected={to_string(@form[:status].value) == "deceased"}
+                      >
+                        Deceased
+                      </option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                      <.icon name="hero-chevron-up-down" class="h-5 w-5" />
+                    </div>
                   </div>
                 </div>
 

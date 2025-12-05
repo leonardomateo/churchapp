@@ -141,7 +141,7 @@ defmodule ChurchappWeb.ContributionTypeSelector do
           phx-debounce="150"
           autocomplete="off"
           placeholder="Search contribution types..."
-          class="block w-full px-3 py-2 pr-10 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500 cursor-pointer"
+          class="block w-full px-3 py-2 pr-10 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500 cursor-pointer"
         />
 
         <%= if @selected_type do %>

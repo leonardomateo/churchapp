@@ -152,7 +152,7 @@ defmodule ChurchappWeb.ContributionsLive.EditLive do
                     <.input
                       field={@form[:contribution_date]}
                       type="datetime-local"
-                      class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                      class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
@@ -210,7 +210,7 @@ defmodule ChurchappWeb.ContributionsLive.EditLive do
                       type="number"
                       step="0.01"
                       placeholder="0.00"
-                      class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                      class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
                 </div>
@@ -234,7 +234,7 @@ defmodule ChurchappWeb.ContributionsLive.EditLive do
                     type="textarea"
                     rows="4"
                     placeholder="Add any additional notes about this contribution..."
-                    class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                    class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                   />
                 </div>
               </div>
