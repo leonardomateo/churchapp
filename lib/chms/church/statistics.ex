@@ -101,6 +101,60 @@ defmodule Chms.Church.Statistics do
   end
 
   @doc """
+  Gets count of visitors (status: visitor).
+  """
+  def get_visitors_count(actor) do
+    query =
+      Chms.Church.Congregants
+      |> Ash.Query.for_read(:read, %{}, actor: actor)
+      |> Ash.Query.filter(status == :visitor)
+
+    case Ash.read(query, actor: actor) do
+      {:ok, congregants} ->
+        {:ok, length(congregants)}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @doc """
+  Gets count of honorific members (status: honorific).
+  """
+  def get_honorific_count(actor) do
+    query =
+      Chms.Church.Congregants
+      |> Ash.Query.for_read(:read, %{}, actor: actor)
+      |> Ash.Query.filter(status == :honorific)
+
+    case Ash.read(query, actor: actor) do
+      {:ok, congregants} ->
+        {:ok, length(congregants)}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @doc """
+  Gets count of deceased members (status: deceased).
+  """
+  def get_deceased_count(actor) do
+    query =
+      Chms.Church.Congregants
+      |> Ash.Query.for_read(:read, %{}, actor: actor)
+      |> Ash.Query.filter(status == :deceased)
+
+    case Ash.read(query, actor: actor) do
+      {:ok, congregants} ->
+        {:ok, length(congregants)}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @doc """
   Gets count of congregants grouped by contribution type.
   Returns a list of maps with label and value keys.
   """

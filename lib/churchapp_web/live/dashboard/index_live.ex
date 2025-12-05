@@ -19,6 +19,9 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
     # Fetch congregant statistics
     {:ok, total_congregants} = Statistics.get_total_congregants(actor)
     {:ok, active_members} = Statistics.get_active_members_count(actor)
+    {:ok, visitors_count} = Statistics.get_visitors_count(actor)
+    {:ok, honorific_count} = Statistics.get_honorific_count(actor)
+    {:ok, deceased_count} = Statistics.get_deceased_count(actor)
     {:ok, status_stats} = Statistics.get_congregant_counts_by_status(actor)
     {:ok, country_stats} = Statistics.get_congregant_counts_by_country(actor)
 
@@ -32,6 +35,9 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
     |> assign(:loading, false)
     |> assign(:total_congregants, total_congregants)
     |> assign(:active_members, active_members)
+    |> assign(:visitors_count, visitors_count)
+    |> assign(:honorific_count, honorific_count)
+    |> assign(:deceased_count, deceased_count)
     |> assign(:status_stats, status_stats)
     |> assign(:status_stats_json, Jason.encode!(status_stats))
     |> assign(:country_stats, country_stats)
@@ -54,7 +60,7 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
 
       <%!-- Summary Stat Cards --%>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <%!-- Total Congregants Card --%>
+        <%!-- Total Congregants Card - Always show --%>
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
@@ -71,24 +77,83 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
           </div>
         </div>
 
-        <%!-- Active Members Card --%>
-        <div class="stat-card">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
-                Active Members
-              </p>
-              <p class="text-3xl font-bold text-white mt-2">
-                {@active_members}
-              </p>
-            </div>
-            <div class="p-3 bg-green-500/10 rounded-lg">
-              <.icon name="hero-check-circle" class="h-8 w-8 text-green-400" />
+        <%!-- Active Members Card - Only show if count > 0 --%>
+        <%= if @active_members > 0 do %>
+          <div class="stat-card">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  Active Members
+                </p>
+                <p class="text-3xl font-bold text-white mt-2">
+                  {@active_members}
+                </p>
+              </div>
+              <div class="p-3 bg-green-500/10 rounded-lg">
+                <.icon name="hero-check-circle" class="h-8 w-8 text-green-400" />
+              </div>
             </div>
           </div>
-        </div>
+        <% end %>
 
-        <%!-- Total Contributions Card --%>
+        <%!-- Visitors Card - Only show if count > 0 --%>
+        <%= if @visitors_count > 0 do %>
+          <div class="stat-card">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  Visitors
+                </p>
+                <p class="text-3xl font-bold text-white mt-2">
+                  {@visitors_count}
+                </p>
+              </div>
+              <div class="p-3 bg-yellow-500/10 rounded-lg">
+                <.icon name="hero-user-plus" class="h-8 w-8 text-yellow-400" />
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <%!-- Honorific Card - Only show if count > 0 --%>
+        <%= if @honorific_count > 0 do %>
+          <div class="stat-card">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  Honorific
+                </p>
+                <p class="text-3xl font-bold text-white mt-2">
+                  {@honorific_count}
+                </p>
+              </div>
+              <div class="p-3 bg-blue-500/10 rounded-lg">
+                <.icon name="hero-star" class="h-8 w-8 text-blue-400" />
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <%!-- Deceased Card - Only show if count > 0 --%>
+        <%= if @deceased_count > 0 do %>
+          <div class="stat-card">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  Deceased
+                </p>
+                <p class="text-3xl font-bold text-white mt-2">
+                  {@deceased_count}
+                </p>
+              </div>
+              <div class="p-3 bg-gray-500/10 rounded-lg">
+                <.icon name="hero-heart" class="h-8 w-8 text-gray-400" />
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <%!-- Total Contributions Card - Always show --%>
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
@@ -99,13 +164,13 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
                 {@total_contributions}
               </p>
             </div>
-            <div class="p-3 bg-blue-500/10 rounded-lg">
-              <.icon name="hero-document-text" class="h-8 w-8 text-blue-400" />
+            <div class="p-3 bg-purple-500/10 rounded-lg">
+              <.icon name="hero-document-text" class="h-8 w-8 text-purple-400" />
             </div>
           </div>
         </div>
 
-        <%!-- Total Revenue Card --%>
+        <%!-- Total Revenue Card - Always show --%>
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
@@ -116,8 +181,8 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
                 ${format_currency(@total_revenue)}
               </p>
             </div>
-            <div class="p-3 bg-yellow-500/10 rounded-lg">
-              <.icon name="hero-banknotes" class="h-8 w-8 text-yellow-400" />
+            <div class="p-3 bg-emerald-500/10 rounded-lg">
+              <.icon name="hero-banknotes" class="h-8 w-8 text-emerald-400" />
             </div>
           </div>
         </div>
