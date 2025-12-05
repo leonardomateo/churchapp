@@ -4,9 +4,10 @@ defmodule ChurchappWeb.CongregantSelector do
 
   def update(%{field: field, form: form} = assigns, socket) do
     current_value = field.value
+    actor = assigns[:actor]
 
     # Load all congregants initially
-    all_congregants = load_congregants()
+    all_congregants = load_congregants(actor)
 
     # Find the currently selected congregant if there is one
     selected_congregant =
@@ -27,14 +28,15 @@ defmodule ChurchappWeb.CongregantSelector do
       |> assign(:filtered_congregants, all_congregants)
       |> assign(:show_dropdown, false)
       |> assign(:focused_index, -1)
+      |> assign(:actor, actor)
 
     {:ok, socket}
   end
 
-  defp load_congregants do
+  defp load_congregants(actor) do
     Chms.Church.Congregants
     |> Ash.Query.sort(first_name: :asc)
-    |> Ash.read!()
+    |> Ash.read!(actor: actor)
     |> Enum.map(fn congregant ->
       full_name = "#{congregant.first_name} #{congregant.last_name}"
       member_id = "##{congregant.member_id}"

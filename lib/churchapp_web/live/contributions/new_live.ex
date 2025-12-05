@@ -133,6 +133,7 @@ defmodule ChurchappWeb.ContributionsLive.NewLive do
                       id="congregant-selector-new"
                       field={@form[:congregant_id]}
                       form={@form}
+                      actor={@current_user}
                     />
                   </div>
                 </div>

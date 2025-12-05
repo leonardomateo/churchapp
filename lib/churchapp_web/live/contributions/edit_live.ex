@@ -140,6 +140,7 @@ defmodule ChurchappWeb.ContributionsLive.EditLive do
                       id="congregant-selector-edit"
                       field={@form[:congregant_id]}
                       form={@form}
+                      actor={@current_user}
                     />
                   </div>
                 </div>
