@@ -277,18 +277,16 @@ defmodule ChurchappWeb.MinistryFundsLive.EditLive do
                 <.icon name="hero-document-text" class="mr-2 h-5 w-5 text-primary-500" /> Notes
               </h3>
               <div>
-                <label for="notes" class="block text-sm font-medium text-gray-400">
+                <label for="notes" class="label mb-1">
                   Additional Notes <span class="text-red-500">*</span>
                 </label>
-                <div class="mt-1">
-                  <.input
-                    field={@form[:notes]}
-                    type="textarea"
-                    rows="4"
-                    placeholder="Add any additional notes about this transaction..."
-                    class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
+                <.input
+                  field={@form[:notes]}
+                  type="textarea"
+                  rows="4"
+                  placeholder="Add any additional notes about this transaction..."
+                  error_class=""
+                />
               </div>
             </div>
           </div>

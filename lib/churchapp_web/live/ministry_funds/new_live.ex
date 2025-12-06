@@ -221,12 +221,14 @@ defmodule ChurchappWeb.MinistryFundsLive.NewLive do
                 </div>
 
                 <div class="sm:col-span-3">
+                  <label for="transaction-date" class="label mb-1">
+                    Transaction Date <span class="text-red-500">*</span>
+                  </label>
                   <.input
                     field={@form[:transaction_date]}
                     type="datetime-local"
                     phx-hook="DatePicker"
                     max={DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.to_iso8601() |> String.slice(0, 16)}
-                    label="Transaction Date"
                   />
                 </div>
               </div>
@@ -242,12 +244,14 @@ defmodule ChurchappWeb.MinistryFundsLive.NewLive do
 
               <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                 <div class="sm:col-span-3">
+                  <label for="amount" class="label mb-1">
+                    Amount <span class="text-red-500">*</span>
+                  </label>
                   <.input
                     field={@form[:amount]}
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    label="Amount"
                   />
                   <p class="mt-1 text-xs text-gray-500">
                     <%= if @transaction_type == :revenue do %>
@@ -268,18 +272,16 @@ defmodule ChurchappWeb.MinistryFundsLive.NewLive do
                 <.icon name="hero-document-text" class="mr-2 h-5 w-5 text-primary-500" /> Notes
               </h3>
               <div>
-                <label for="notes" class="block text-sm font-medium text-gray-400">
+                <label for="notes" class="label mb-1">
                   Additional Notes <span class="text-red-500">*</span>
                 </label>
-                <div class="mt-1">
-                  <.input
-                    field={@form[:notes]}
-                    type="textarea"
-                    rows="4"
-                    placeholder="Add any additional notes about this transaction..."
-                    class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
+                <.input
+                  field={@form[:notes]}
+                  type="textarea"
+                  rows="4"
+                  placeholder="Add any additional notes about this transaction..."
+                  error_class=""
+                />
               </div>
             </div>
           </div>
