@@ -100,24 +100,26 @@ defmodule Chms.Church.Statistics do
   end
 
   @doc """
-  Gets count of visitors (status: visitor) for the current month.
+  Gets count of visitors (status: visitor) registered in the current month.
   """
   def get_visitors_count(actor) do
     query =
       Chms.Church.Congregants
       |> Ash.Query.for_read(:read, %{}, actor: actor)
+      |> Ash.Query.filter(status == :visitor)
 
     case Ash.read(query, actor: actor) do
       {:ok, congregants} ->
-        # Filter for visitors who became members this month
+        # Filter for visitors registered this month
         current_month_start = Date.beginning_of_month(Date.utc_today())
+        current_month_end = Date.end_of_month(Date.utc_today())
 
         count =
           congregants
           |> Enum.filter(fn c ->
-            c.status == :visitor and
-            c.member_since != nil and
-            Date.compare(c.member_since, current_month_start) != :lt
+            inserted_date = DateTime.to_date(c.inserted_at)
+            Date.compare(inserted_date, current_month_start) != :lt and
+            Date.compare(inserted_date, current_month_end) != :gt
           end)
           |> length()
 
