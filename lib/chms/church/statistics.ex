@@ -306,6 +306,212 @@ defmodule Chms.Church.Statistics do
     end
   end
 
+  # Ministry Funds Statistics
+
+  @doc """
+  Gets total revenue from ministry funds (revenue transactions).
+  Returns the sum of all revenue transactions.
+  """
+  def get_total_ministry_revenue(actor) do
+    query =
+      Chms.Church.MinistryFunds
+      |> Ash.Query.for_read(:read, %{}, actor: actor)
+      |> Ash.Query.filter(transaction_type == :revenue)
+
+    case Ash.read(query, actor: actor) do
+      {:ok, funds} ->
+        total =
+          funds
+          |> Enum.map(& &1.amount)
+          |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+        {:ok, total}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @doc """
+  Gets total expenses from ministry funds (expense transactions).
+  Returns the sum of all expense transactions.
+  """
+  def get_total_ministry_expenses(actor) do
+    query =
+      Chms.Church.MinistryFunds
+      |> Ash.Query.for_read(:read, %{}, actor: actor)
+      |> Ash.Query.filter(transaction_type == :expense)
+
+    case Ash.read(query, actor: actor) do
+      {:ok, funds} ->
+        total =
+          funds
+          |> Enum.map(& &1.amount)
+          |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+        {:ok, total}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @doc """
+  Gets the net balance for ministry funds (revenue - expenses).
+  Returns the difference between total revenue and total expenses.
+  """
+  def get_ministry_net_balance(actor) do
+    with {:ok, revenue} <- get_total_ministry_revenue(actor),
+         {:ok, expenses} <- get_total_ministry_expenses(actor) do
+      net = Decimal.sub(revenue, expenses)
+      {:ok, net}
+    else
+      {:error, error} -> {:error, error}
+    end
+  end
+
+  @doc """
+  Gets ministry funds summary grouped by ministry name.
+  Returns a list of maps with ministry name, revenue, expenses, and balance.
+  """
+  def get_ministry_funds_by_ministry(actor) do
+    query =
+      Chms.Church.MinistryFunds
+      |> Ash.Query.for_read(:read, %{}, actor: actor)
+
+    case Ash.read(query, actor: actor) do
+      {:ok, funds} ->
+        summary =
+          funds
+          |> Enum.group_by(& &1.ministry_name)
+          |> Enum.map(fn {ministry_name, transactions} ->
+            revenue =
+              transactions
+              |> Enum.filter(&(&1.transaction_type == :revenue))
+              |> Enum.map(& &1.amount)
+              |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+            expenses =
+              transactions
+              |> Enum.filter(&(&1.transaction_type == :expense))
+              |> Enum.map(& &1.amount)
+              |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+            balance = Decimal.sub(revenue, expenses)
+
+            %{
+              label: ministry_name,
+              revenue: Decimal.to_float(revenue),
+              expenses: Decimal.to_float(expenses),
+              balance: Decimal.to_float(balance)
+            }
+          end)
+          |> Enum.sort_by(& &1.balance, :desc)
+
+        {:ok, summary}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @doc """
+  Gets count of ministry fund transactions for the current month.
+  """
+  def get_ministry_transaction_count(actor) do
+    query =
+      Chms.Church.MinistryFunds
+      |> Ash.Query.for_read(:read, %{}, actor: actor)
+
+    case Ash.read(query, actor: actor) do
+      {:ok, funds} ->
+        # Filter for current month transactions
+        current_month_start = Date.beginning_of_month(Date.utc_today())
+        current_month_end = Date.end_of_month(Date.utc_today())
+
+        count =
+          funds
+          |> Enum.filter(fn f ->
+            transaction_date = DateTime.to_date(f.transaction_date)
+            Date.compare(transaction_date, current_month_start) != :lt and
+            Date.compare(transaction_date, current_month_end) != :gt
+          end)
+          |> length()
+
+        {:ok, count}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @doc """
+  Gets revenue and expenses grouped by ministry for the current month.
+  Returns a list of maps with label and value keys for chart display.
+  """
+  def get_ministry_revenue_chart_data(actor) do
+    query =
+      Chms.Church.MinistryFunds
+      |> Ash.Query.for_read(:read, %{}, actor: actor)
+      |> Ash.Query.filter(transaction_type == :revenue)
+
+    case Ash.read(query, actor: actor) do
+      {:ok, funds} ->
+        # Filter for current month transactions
+        current_month_start = Date.beginning_of_month(Date.utc_today())
+        current_month_end = Date.end_of_month(Date.utc_today())
+
+        revenue_by_ministry =
+          funds
+          |> Enum.filter(fn f ->
+            transaction_date = DateTime.to_date(f.transaction_date)
+            Date.compare(transaction_date, current_month_start) != :lt and
+            Date.compare(transaction_date, current_month_end) != :gt
+          end)
+          |> Enum.group_by(& &1.ministry_name)
+          |> Enum.map(fn {ministry, list} ->
+            total =
+              list
+              |> Enum.map(& &1.amount)
+              |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+            %{
+              label: ministry,
+              value: Decimal.to_float(total)
+            }
+          end)
+          |> Enum.sort_by(& &1.value, :desc)
+
+        {:ok, revenue_by_ministry}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  @doc """
+  Gets the number of unique ministries with transactions.
+  """
+  def get_unique_ministries_count(actor) do
+    query =
+      Chms.Church.MinistryFunds
+      |> Ash.Query.for_read(:read, %{}, actor: actor)
+
+    case Ash.read(query, actor: actor) do
+      {:ok, funds} ->
+        count =
+          funds
+          |> Enum.map(& &1.ministry_name)
+          |> Enum.uniq()
+          |> length()
+
+        {:ok, count}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
   # Private helper functions
 
   defp format_status(:member), do: "Member"

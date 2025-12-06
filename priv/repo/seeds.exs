@@ -400,6 +400,121 @@ Enum.each(contributions, fn attrs ->
   end
 end)
 
+IO.puts("\nSeeding ministry funds...")
+
+# Ministry names to use
+ministries = [
+  "Youth Ministry",
+  "Music Ministry",
+  "Missions",
+  "Benevolence",
+  "Building Fund",
+  "Children's Ministry",
+  "Worship",
+  "Outreach"
+]
+
+# Generate 100 ministry fund transactions
+ministry_funds_data =
+  Enum.map(1..100, fn _ ->
+    ministry = Enum.random(ministries)
+    transaction_type = Enum.random([:revenue, :expense])
+
+    # Random datetime within the last year
+    days_ago = Enum.random(1..365)
+    hours_ago = Enum.random(0..23)
+    minutes_ago = Enum.random(0..59)
+
+    transaction_date =
+      DateTime.utc_now()
+      |> DateTime.add(
+        -days_ago * 24 * 60 * 60 - hours_ago * 60 * 60 - minutes_ago * 60,
+        :second
+      )
+      |> DateTime.truncate(:second)
+
+    # Revenue amounts tend to be higher than expenses
+    amount =
+      case transaction_type do
+        :revenue -> Decimal.new(Enum.random(500..5000))
+        :expense -> Decimal.new(Enum.random(100..2000))
+      end
+
+    # Generate notes based on transaction type
+    notes =
+      case transaction_type do
+        :revenue ->
+          [
+            "Fundraiser proceeds",
+            "Donation received",
+            "Ministry offering",
+            "Special gift",
+            "Grant received",
+            "Event revenue",
+            "Annual pledge",
+            "Memorial gift"
+          ]
+          |> Enum.random()
+
+        :expense ->
+          [
+            "Equipment purchase",
+            "Event supplies",
+            "Program materials",
+            "Outreach expenses",
+            "Ministry resources",
+            "Facility rental",
+            "Transportation costs",
+            "Communication expenses"
+          ]
+          |> Enum.random()
+      end
+
+    %{
+      ministry_name: ministry,
+      transaction_type: transaction_type,
+      amount: amount,
+      transaction_date: transaction_date,
+      notes: notes
+    }
+  end)
+
+# Check for existing ministry funds to avoid duplicates
+existing_ministry_funds =
+  case Chms.Church.MinistryFunds
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, funds} -> funds
+    _ -> []
+  end
+
+# Only create if we don't have existing data
+ministry_funds_to_create =
+  if length(existing_ministry_funds) > 0 do
+    IO.puts("⊙ Ministry funds already exist, skipping seed")
+    []
+  else
+    ministry_funds_data
+  end
+
+Enum.each(ministry_funds_to_create, fn attrs ->
+  case Chms.Church.MinistryFunds
+       |> Ash.Changeset.for_create(:create, attrs)
+       |> Ash.create(authorize?: false) do
+    {:ok, fund} ->
+      type_icon = if fund.transaction_type == :revenue, do: "↑", else: "↓"
+      type_color = if fund.transaction_type == :revenue, do: "✓", else: "✗"
+
+      IO.puts(
+        "#{type_color} Created #{fund.transaction_type}: #{fund.ministry_name} - $#{Decimal.to_string(fund.amount, :normal)} #{type_icon}"
+      )
+
+    {:error, changeset} ->
+      IO.puts("✗ Failed to create ministry fund: #{attrs.ministry_name}")
+      IO.inspect(changeset.errors)
+  end
+end)
+
 IO.puts("\nSeeding complete!")
 
 # Show overall statistics
@@ -416,6 +531,14 @@ total_contributions =
        |> Ash.Query.for_read(:read)
        |> Ash.read(authorize?: false) do
     {:ok, all_contributions} -> length(all_contributions)
+    _ -> 0
+  end
+
+total_ministry_funds =
+  case Chms.Church.MinistryFunds
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, all_funds} -> length(all_funds)
     _ -> 0
   end
 
@@ -451,6 +574,7 @@ IO.puts("DATABASE STATISTICS")
 IO.puts(String.duplicate("=", 50))
 IO.puts("Total congregants: #{total_congregants}")
 IO.puts("Total contributions: #{total_contributions}")
+IO.puts("Total ministry fund transactions: #{total_ministry_funds}")
 IO.puts("\nCongregants by Status:")
 Enum.each(status_counts, fn {status, count} ->
   IO.puts("  #{status}: #{count}")

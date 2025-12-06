@@ -34,6 +34,15 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
     {:ok, total_revenue} = Statistics.get_total_revenue(actor)
     {:ok, contribution_type_stats} = Statistics.get_contribution_counts_by_type(actor)
 
+    # Fetch ministry funds statistics
+    {:ok, ministry_revenue} = Statistics.get_total_ministry_revenue(actor)
+    {:ok, ministry_expenses} = Statistics.get_total_ministry_expenses(actor)
+    {:ok, ministry_balance} = Statistics.get_ministry_net_balance(actor)
+    {:ok, ministry_transaction_count} = Statistics.get_ministry_transaction_count(actor)
+    {:ok, unique_ministries} = Statistics.get_unique_ministries_count(actor)
+    {:ok, ministry_summary} = Statistics.get_ministry_funds_by_ministry(actor)
+    {:ok, ministry_revenue_chart} = Statistics.get_ministry_revenue_chart_data(actor)
+
     socket
     |> assign(:loading, false)
     |> assign(:total_congregants, total_congregants)
@@ -49,6 +58,13 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
     |> assign(:total_revenue, total_revenue)
     |> assign(:contribution_type_stats, contribution_type_stats)
     |> assign(:contribution_type_stats_json, Jason.encode!(contribution_type_stats))
+    |> assign(:ministry_revenue, ministry_revenue)
+    |> assign(:ministry_expenses, ministry_expenses)
+    |> assign(:ministry_balance, ministry_balance)
+    |> assign(:ministry_transaction_count, ministry_transaction_count)
+    |> assign(:unique_ministries, unique_ministries)
+    |> assign(:ministry_summary, ministry_summary)
+    |> assign(:ministry_revenue_chart_json, Jason.encode!(ministry_revenue_chart))
   end
 
   def render(assigns) do
@@ -245,6 +261,149 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
           </div>
         </div>
       </div>
+
+      <%!-- Ministry Funds Statistics Section --%>
+      <div class="mb-8">
+        <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+          <.icon name="hero-building-library" class="mr-2 h-6 w-6 text-primary-500" />
+          Ministry Funds Overview
+        </h3>
+
+        <%!-- Ministry Funds Summary Cards --%>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <%!-- Total Revenue Card --%>
+          <div class="stat-card">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  Total Revenue
+                </p>
+                <p class="text-3xl font-bold text-green-400 mt-2">
+                  ${format_currency(@ministry_revenue)}
+                </p>
+              </div>
+              <div class="p-3 bg-green-500/10 rounded-lg">
+                <.icon name="hero-arrow-trending-up" class="h-8 w-8 text-green-400" />
+              </div>
+            </div>
+          </div>
+
+          <%!-- Total Expenses Card --%>
+          <div class="stat-card">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  Total Expenses
+                </p>
+                <p class="text-3xl font-bold text-red-400 mt-2">
+                  ${format_currency(@ministry_expenses)}
+                </p>
+              </div>
+              <div class="p-3 bg-red-500/10 rounded-lg">
+                <.icon name="hero-arrow-trending-down" class="h-8 w-8 text-red-400" />
+              </div>
+            </div>
+          </div>
+
+          <%!-- Net Balance Card --%>
+          <div class="stat-card">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  Net Balance
+                </p>
+                <p class={[
+                  "text-3xl font-bold mt-2",
+                  if(Decimal.compare(@ministry_balance, Decimal.new(0)) == :gt, do: "text-green-400", else: "text-red-400")
+                ]}>
+                  ${format_currency(@ministry_balance)}
+                </p>
+              </div>
+              <div class="p-3 bg-blue-500/10 rounded-lg">
+                <.icon name="hero-chart-bar" class="h-8 w-8 text-blue-400" />
+              </div>
+            </div>
+          </div>
+
+          <%!-- Active Ministries Card --%>
+          <div class="stat-card">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
+                  Active Ministries
+                </p>
+                <p class="text-3xl font-bold text-white mt-2">
+                  {@unique_ministries}
+                </p>
+                <p class="text-xs text-gray-500 mt-1">
+                  {@ministry_transaction_count} transactions ({@current_month})
+                </p>
+              </div>
+              <div class="p-3 bg-purple-500/10 rounded-lg">
+                <.icon name="hero-building-library" class="h-8 w-8 text-purple-400" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <%!-- Charts Section --%>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <%!-- Ministry Revenue Chart --%>
+          <%= if @ministry_revenue_chart_json != "[]" do %>
+            <div class="chart-container">
+              <h4 class="text-lg font-medium text-white mb-4">Revenue by Ministry ({@current_month})</h4>
+              <canvas
+                id="ministry-revenue-chart"
+                phx-hook="BarChart"
+                data-chart-data={@ministry_revenue_chart_json}
+                data-chart-title="Ministry Revenue"
+                data-chart-horizontal="true"
+              >
+              </canvas>
+            </div>
+          <% end %>
+
+          <%!-- Ministry Funds Summary Table --%>
+          <%= if @ministry_summary != [] do %>
+            <div class="chart-container">
+              <h4 class="text-lg font-medium text-white mb-4">Ministry Financial Summary</h4>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                  <thead class="text-xs text-gray-400 uppercase border-b border-gray-700">
+                    <tr>
+                      <th scope="col" class="px-4 py-3">Ministry</th>
+                      <th scope="col" class="px-4 py-3 text-right">Revenue</th>
+                      <th scope="col" class="px-4 py-3 text-right">Expenses</th>
+                      <th scope="col" class="px-4 py-3 text-right">Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <%= for ministry <- @ministry_summary do %>
+                      <tr class="border-b border-gray-700/50 hover:bg-gray-800/30 transition-colors">
+                        <td class="px-4 py-3 font-medium text-white">
+                          {ministry.label}
+                        </td>
+                        <td class="px-4 py-3 text-right text-green-400">
+                          ${format_number(ministry.revenue)}
+                        </td>
+                        <td class="px-4 py-3 text-right text-red-400">
+                          ${format_number(ministry.expenses)}
+                        </td>
+                        <td class={[
+                          "px-4 py-3 text-right font-semibold",
+                          if(ministry.balance >= 0, do: "text-green-400", else: "text-red-400")
+                        ]}>
+                          ${format_number(ministry.balance)}
+                        </td>
+                      </tr>
+                    <% end %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
     </div>
     """
   end
@@ -260,6 +419,25 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
       [whole, decimal_part] ->
         format_whole_number(whole) <> "." <> String.pad_trailing(decimal_part, 2, "0")
     end
+  end
+
+  defp format_number(number) when is_float(number) do
+    number
+    |> :erlang.float_to_binary(decimals: 2)
+    |> String.split(".")
+    |> case do
+      [whole, decimal_part] ->
+        format_whole_number(whole) <> "." <> decimal_part
+
+      [whole] ->
+        format_whole_number(whole) <> ".00"
+    end
+  end
+
+  defp format_number(number) when is_integer(number) do
+    number
+    |> Integer.to_string()
+    |> format_whole_number()
   end
 
   defp format_whole_number(number_string) do
