@@ -446,7 +446,7 @@ defmodule Chms.Church.Statistics do
   end
 
   @doc """
-  Gets revenue and expenses grouped by ministry for the current month.
+  Gets revenue grouped by ministry for the entire year.
   Returns a list of maps with label and value keys for chart display.
   """
   def get_ministry_revenue_chart_data(actor) do
@@ -457,17 +457,8 @@ defmodule Chms.Church.Statistics do
 
     case Ash.read(query, actor: actor) do
       {:ok, funds} ->
-        # Filter for current month transactions
-        current_month_start = Date.beginning_of_month(Date.utc_today())
-        current_month_end = Date.end_of_month(Date.utc_today())
-
         revenue_by_ministry =
           funds
-          |> Enum.filter(fn f ->
-            transaction_date = DateTime.to_date(f.transaction_date)
-            Date.compare(transaction_date, current_month_start) != :lt and
-            Date.compare(transaction_date, current_month_end) != :gt
-          end)
           |> Enum.group_by(& &1.ministry_name)
           |> Enum.map(fn {ministry, list} ->
             total =

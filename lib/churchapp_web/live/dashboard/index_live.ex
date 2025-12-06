@@ -351,7 +351,7 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
           <%!-- Ministry Revenue Chart --%>
           <%= if @ministry_revenue_chart_json != "[]" do %>
             <div class="chart-container">
-              <h4 class="text-lg font-medium text-white mb-4">Revenue by Ministry ({@current_month})</h4>
+              <h4 class="text-lg font-medium text-white mb-4">Revenue by Ministry (All Time)</h4>
               <canvas
                 id="ministry-revenue-chart"
                 phx-hook="BarChart"
