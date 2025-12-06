@@ -718,28 +718,8 @@ input[type="datetime-local"]::-webkit-datetime-edit-ampm-field {
   color: #111827;
 }
 
-/* Visual feedback when date/time input has a value - Dark mode */
-input[type="date"]:not(:placeholder-shown),
-input[type="datetime-local"]:not(:placeholder-shown),
-input[type="time"]:not(:placeholder-shown) {
-  border-color: #06b6d4 !important;
-  box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.3);
-}
-
-/* Visual feedback when date/time input has a value - Light mode */
-[data-theme="light"] input[type="date"]:not(:placeholder-shown),
-[data-theme="light"] input[type="datetime-local"]:not(:placeholder-shown),
-[data-theme="light"] input[type="time"]:not(:placeholder-shown) {
-  border-color: #06b6d4 !important;
-  box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.3);
-}
-
-/* Alternative: Use :valid pseudo-class for required date inputs */
-input[type="date"]:valid:not([value=""]),
-input[type="datetime-local"]:valid:not([value=""]),
-input[type="time"]:valid:not([value=""]) {
-  border-color: #06b6d4 !important;
-}
+/* Visual feedback when date/time input has a value - Disabled */
+/* Removed automatic border color change for date/time inputs with values */
 
 /* Select element global styling - Dark mode */
 select.appearance-none {
