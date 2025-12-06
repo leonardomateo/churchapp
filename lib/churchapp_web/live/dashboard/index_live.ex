@@ -14,9 +14,8 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
       |> assign(:page_title, "Dashboard")
       |> assign(:loading, true)
       |> assign(:current_month, current_month)
-      |> fetch_statistics(actor)
 
-    {:ok, socket}
+    {:ok, fetch_statistics(socket, actor)}
   end
 
   defp fetch_statistics(socket, actor) do
