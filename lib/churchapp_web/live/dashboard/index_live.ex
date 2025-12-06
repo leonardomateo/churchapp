@@ -239,29 +239,6 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
         </div>
       </div>
 
-      <%!-- Contribution Statistics Section --%>
-      <div class="mb-8">
-        <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
-          <.icon name="hero-banknotes" class="mr-2 h-6 w-6 text-primary-500" />
-          Contribution Statistics
-        </h3>
-
-        <div class="grid grid-cols-1 gap-6">
-          <%!-- Contribution Count by Type Chart --%>
-          <div class="chart-container">
-            <h4 class="text-lg font-medium text-white mb-4">Contributions by Type ({@current_month})</h4>
-            <canvas
-              id="contribution-type-chart"
-              phx-hook="BarChart"
-              data-chart-data={@contribution_type_stats_json}
-              data-chart-title="Contributions by Type"
-              data-chart-horizontal="false"
-            >
-            </canvas>
-          </div>
-        </div>
-      </div>
-
       <%!-- Ministry Funds Statistics Section --%>
       <div class="mb-8">
         <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
@@ -276,7 +253,7 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
-                  Total Revenue
+                  Revenue ({@current_month})
                 </p>
                 <p class="text-3xl font-bold text-green-400 mt-2">
                   ${format_currency(@ministry_revenue)}
@@ -293,7 +270,7 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
-                  Total Expenses
+                  Expenses ({@current_month})
                 </p>
                 <p class="text-3xl font-bold text-red-400 mt-2">
                   ${format_currency(@ministry_expenses)}
@@ -310,7 +287,7 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">
-                  Net Balance
+                  Net Balance ({@current_month})
                 </p>
                 <p class={[
                   "text-3xl font-bold mt-2",
@@ -366,7 +343,7 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
           <%!-- Ministry Funds Summary Table --%>
           <%= if @ministry_summary != [] do %>
             <div class="chart-container">
-              <h4 class="text-lg font-medium text-white mb-4">Ministry Financial Summary</h4>
+              <h4 class="text-lg font-medium text-white mb-4">Top 5 Ministries by Balance</h4>
               <div class="overflow-x-auto">
                 <table class="w-full text-sm text-left">
                   <thead class="text-xs text-gray-400 uppercase border-b border-gray-700">
@@ -378,7 +355,7 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
                     </tr>
                   </thead>
                   <tbody>
-                    <%= for ministry <- @ministry_summary do %>
+                    <%= for ministry <- Enum.take(@ministry_summary, 5) do %>
                       <tr class="border-b border-gray-700/50 hover:bg-gray-800/30 transition-colors">
                         <td class="px-4 py-3 font-medium text-white">
                           {ministry.label}

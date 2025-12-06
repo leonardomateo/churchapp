@@ -309,8 +309,8 @@ defmodule Chms.Church.Statistics do
   # Ministry Funds Statistics
 
   @doc """
-  Gets total revenue from ministry funds (revenue transactions).
-  Returns the sum of all revenue transactions.
+  Gets total revenue from ministry funds (revenue transactions) for the current month.
+  Returns the sum of all revenue transactions in the current month.
   """
   def get_total_ministry_revenue(actor) do
     query =
@@ -320,8 +320,17 @@ defmodule Chms.Church.Statistics do
 
     case Ash.read(query, actor: actor) do
       {:ok, funds} ->
+        # Filter for current month transactions
+        current_month_start = Date.beginning_of_month(Date.utc_today())
+        current_month_end = Date.end_of_month(Date.utc_today())
+
         total =
           funds
+          |> Enum.filter(fn f ->
+            transaction_date = DateTime.to_date(f.transaction_date)
+            Date.compare(transaction_date, current_month_start) != :lt and
+            Date.compare(transaction_date, current_month_end) != :gt
+          end)
           |> Enum.map(& &1.amount)
           |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
@@ -333,8 +342,8 @@ defmodule Chms.Church.Statistics do
   end
 
   @doc """
-  Gets total expenses from ministry funds (expense transactions).
-  Returns the sum of all expense transactions.
+  Gets total expenses from ministry funds (expense transactions) for the current month.
+  Returns the sum of all expense transactions in the current month.
   """
   def get_total_ministry_expenses(actor) do
     query =
@@ -344,8 +353,17 @@ defmodule Chms.Church.Statistics do
 
     case Ash.read(query, actor: actor) do
       {:ok, funds} ->
+        # Filter for current month transactions
+        current_month_start = Date.beginning_of_month(Date.utc_today())
+        current_month_end = Date.end_of_month(Date.utc_today())
+
         total =
           funds
+          |> Enum.filter(fn f ->
+            transaction_date = DateTime.to_date(f.transaction_date)
+            Date.compare(transaction_date, current_month_start) != :lt and
+            Date.compare(transaction_date, current_month_end) != :gt
+          end)
           |> Enum.map(& &1.amount)
           |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
@@ -357,8 +375,8 @@ defmodule Chms.Church.Statistics do
   end
 
   @doc """
-  Gets the net balance for ministry funds (revenue - expenses).
-  Returns the difference between total revenue and total expenses.
+  Gets the net balance for ministry funds (revenue - expenses) for the current month.
+  Returns the difference between total revenue and total expenses for the current month.
   """
   def get_ministry_net_balance(actor) do
     with {:ok, revenue} <- get_total_ministry_revenue(actor),
