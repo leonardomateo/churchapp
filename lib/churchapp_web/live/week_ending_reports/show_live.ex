@@ -15,7 +15,6 @@ defmodule ChurchappWeb.WeekEndingReportsLive.ShowLive do
           |> assign(:page_title, report.report_name || "Week Ending Report")
           |> assign(:report, report)
           |> assign(:entries_by_group, entries_by_group)
-          |> assign(:show_delete_confirm, false)
 
         {:ok, socket}
 
@@ -51,33 +50,6 @@ defmodule ChurchappWeb.WeekEndingReportsLive.ShowLive do
         _ -> 5
       end
     end)
-  end
-
-  def handle_event("show_delete_confirm", _params, socket) do
-    {:noreply, assign(socket, :show_delete_confirm, true)}
-  end
-
-  def handle_event("cancel_delete", _params, socket) do
-    {:noreply, assign(socket, :show_delete_confirm, false)}
-  end
-
-  def handle_event("confirm_delete", _params, socket) do
-    actor = socket.assigns[:current_user]
-    report = socket.assigns.report
-
-    case Ash.destroy(report, actor: actor) do
-      :ok ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Report deleted successfully")
-         |> push_navigate(to: ~p"/admin/week-ending-reports")}
-
-      {:error, _} ->
-        {:noreply,
-         socket
-         |> put_flash(:error, "Failed to delete report")
-         |> assign(:show_delete_confirm, false)}
-    end
   end
 
   def handle_event("export_csv", _params, socket) do
@@ -303,14 +275,7 @@ defmodule ChurchappWeb.WeekEndingReportsLive.ShowLive do
       </div>
 
       <%!-- Actions Footer --%>
-      <div class="mt-6 flex justify-between items-center print:hidden">
-        <button
-          type="button"
-          phx-click="show_delete_confirm"
-          class="inline-flex items-center px-4 py-2 text-sm font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-md hover:bg-red-500/20 transition-colors"
-        >
-          <.icon name="hero-trash" class="mr-2 h-4 w-4" /> Delete Report
-        </button>
+      <div class="mt-6 flex justify-end print:hidden">
         <.link
           navigate={~p"/admin/week-ending-reports"}
           class="text-gray-400 hover:text-white transition-colors"
@@ -318,49 +283,6 @@ defmodule ChurchappWeb.WeekEndingReportsLive.ShowLive do
           Back to all reports
         </.link>
       </div>
-
-      <%!-- Delete Confirmation Modal --%>
-      <%= if @show_delete_confirm do %>
-        <div
-          class="fixed inset-0 z-[100] overflow-y-auto print:hidden"
-          role="dialog"
-          aria-modal="true"
-          phx-window-keydown="cancel_delete"
-          phx-key="escape"
-        >
-          <div class="fixed inset-0 modal-backdrop transition-opacity" phx-click="cancel_delete">
-          </div>
-          <div class="flex min-h-full items-center justify-center p-4">
-            <div class="relative transform overflow-hidden rounded-lg bg-dark-800 border border-dark-700 shadow-2xl transition-all w-full max-w-md">
-              <div class="p-6">
-                <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-500/10 rounded-full mb-4">
-                  <.icon name="hero-exclamation-triangle" class="h-6 w-6 text-red-500" />
-                </div>
-                <h3 class="text-lg font-semibold text-white text-center mb-2">Delete Report</h3>
-                <p class="text-gray-400 text-center mb-6">
-                  Are you sure you want to delete "{@report.report_name || "this report"}"? This action cannot be undone.
-                </p>
-                <div class="flex justify-center space-x-3">
-                  <button
-                    type="button"
-                    phx-click="cancel_delete"
-                    class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded-md hover:bg-dark-600 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    phx-click="confirm_delete"
-                    class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
-                  >
-                    Delete Report
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      <% end %>
     </div>
     """
   end

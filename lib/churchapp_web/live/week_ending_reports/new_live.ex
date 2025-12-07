@@ -160,7 +160,7 @@ defmodule ChurchappWeb.WeekEndingReportsLive.NewLive do
           {:noreply,
            socket
            |> put_flash(:info, "Report created successfully")
-           |> push_navigate(to: ~p"/admin/week-ending-reports/#{report}")}
+           |> push_navigate(to: ~p"/admin/week-ending-reports")}
 
         {:error, changeset} ->
           error_message = extract_error_message(changeset)

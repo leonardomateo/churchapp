@@ -37,7 +37,7 @@ defmodule Chms.Church.WeekEndingReports do
             end_date = Ash.Changeset.get_attribute(changeset, :week_end_date)
 
             if start_date && end_date do
-              name = "Week Ending #{Calendar.strftime(end_date, "%b %d, %Y")}"
+              name = "Week Ending - #{Calendar.strftime(end_date, "%m/%d/%Y")}"
               Ash.Changeset.force_change_attribute(changeset, :report_name, name)
             else
               changeset
@@ -48,7 +48,7 @@ defmodule Chms.Church.WeekEndingReports do
             end_date = Ash.Changeset.get_attribute(changeset, :week_end_date)
 
             if start_date && end_date do
-              name = "Week Ending #{Calendar.strftime(end_date, "%b %d, %Y")}"
+              name = "Week Ending - #{Calendar.strftime(end_date, "%m/%d/%Y")}"
               Ash.Changeset.force_change_attribute(changeset, :report_name, name)
             else
               changeset

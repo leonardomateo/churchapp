@@ -14,10 +14,11 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
       |> assign(:page_title, "Week Ending Reports")
       |> assign(:sort_by, :week_end_date)
       |> assign(:sort_dir, :desc)
-      |> assign(:search_query, "")
       |> assign(:filter_report_id, nil)
       |> assign(:all_reports_for_filter, all_reports)
       |> assign(:open_menu_id, nil)
+      |> assign(:selected_ids, MapSet.new())
+      |> assign(:show_bulk_delete_confirm, false)
       |> assign(:show_delete_confirm, false)
       |> assign(:delete_report_id, nil)
       |> assign(:delete_report_name, nil)
@@ -45,10 +46,7 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
       |> Ash.read!(actor: actor)
 
     # Apply filters
-    filtered_reports =
-      reports
-      |> filter_by_search(socket.assigns.search_query)
-      |> filter_by_report_id(socket.assigns.filter_report_id)
+    filtered_reports = filter_by_report_id(reports, socket.assigns.filter_report_id)
 
     # Pagination
     total_count = length(filtered_reports)
@@ -68,18 +66,6 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
     |> assign(:total_pages, total_pages)
   end
 
-  defp filter_by_search(reports, nil), do: reports
-  defp filter_by_search(reports, ""), do: reports
-
-  defp filter_by_search(reports, query) do
-    query_downcase = String.downcase(query)
-
-    Enum.filter(reports, fn report ->
-      report_name = report.report_name || ""
-      String.contains?(String.downcase(report_name), query_downcase)
-    end)
-  end
-
   defp filter_by_report_id(reports, nil), do: reports
   defp filter_by_report_id(reports, ""), do: reports
 
@@ -90,8 +76,7 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
   end
 
   defp has_active_filters?(assigns) do
-    (assigns.search_query != "" and assigns.search_query != nil) or
-      (assigns.filter_report_id != nil and assigns.filter_report_id != "")
+    assigns.filter_report_id != nil and assigns.filter_report_id != ""
   end
 
   defp get_selected_report_display(assigns) do
@@ -100,18 +85,6 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
     else
       nil
     end
-  end
-
-  def handle_event("search", %{"search" => search_query}, socket) do
-    actor = socket.assigns[:current_user]
-
-    socket =
-      socket
-      |> assign(:search_query, search_query)
-      |> assign(:page, 1)
-      |> fetch_reports(actor)
-
-    {:noreply, socket}
   end
 
   def handle_event("filter_report", %{"filter_report_id" => report_id}, socket) do
@@ -133,7 +106,6 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
 
     socket =
       socket
-      |> assign(:search_query, "")
       |> assign(:filter_report_id, nil)
       |> assign(:page, 1)
       |> fetch_reports(actor)
@@ -226,14 +198,104 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
     socket =
       socket
       |> assign(:page, page)
+      |> assign(:selected_ids, MapSet.new())
       |> fetch_reports(actor)
 
     {:noreply, socket}
   end
 
+  def handle_event("toggle_select", %{"id" => id}, socket) do
+    selected_ids = socket.assigns.selected_ids
+
+    new_selected_ids =
+      if MapSet.member?(selected_ids, id) do
+        MapSet.delete(selected_ids, id)
+      else
+        MapSet.put(selected_ids, id)
+      end
+
+    {:noreply, assign(socket, :selected_ids, new_selected_ids)}
+  end
+
+  def handle_event("toggle_select_all", _params, socket) do
+    all_ids = Enum.map(socket.assigns.reports, & &1.id) |> MapSet.new()
+
+    new_selected_ids =
+      if MapSet.equal?(socket.assigns.selected_ids, all_ids) do
+        MapSet.new()
+      else
+        all_ids
+      end
+
+    {:noreply, assign(socket, :selected_ids, new_selected_ids)}
+  end
+
+  def handle_event("clear_selection", _params, socket) do
+    {:noreply, assign(socket, :selected_ids, MapSet.new())}
+  end
+
+  def handle_event("show_bulk_delete_confirm", _params, socket) do
+    {:noreply, assign(socket, :show_bulk_delete_confirm, true)}
+  end
+
+  def handle_event("cancel_bulk_delete", _params, socket) do
+    {:noreply, assign(socket, :show_bulk_delete_confirm, false)}
+  end
+
+  def handle_event("confirm_bulk_delete", _params, socket) do
+    actor = socket.assigns.current_user
+    count = MapSet.size(socket.assigns.selected_ids)
+
+    Enum.each(socket.assigns.selected_ids, fn id ->
+      case Chms.Church.get_week_ending_report_by_id(id, actor: actor) do
+        {:ok, report} -> Ash.destroy(report, actor: actor)
+        _ -> :ok
+      end
+    end)
+
+    socket
+    |> put_flash(:info, "Successfully deleted #{count} report(s)")
+    |> assign(:selected_ids, MapSet.new())
+    |> assign(:show_bulk_delete_confirm, false)
+    |> fetch_reports(actor)
+    |> then(&{:noreply, &1})
+  end
+
   def render(assigns) do
     ~H"""
     <div class="view-container active">
+      <%!-- Floating Action Bar for Bulk Selection --%>
+      <%= if MapSet.size(@selected_ids) > 0 do %>
+        <div class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
+          <div class="floating-action-bar shadow-2xl rounded-full px-6 py-3 flex items-center gap-6 bg-dark-800 border border-dark-600">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-check-circle" class="h-5 w-5 text-primary-500" />
+              <span class="text-sm font-medium text-white">
+                {MapSet.size(@selected_ids)} selected
+              </span>
+            </div>
+            <div class="h-6 w-px bg-dark-600"></div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                phx-click="clear_selection"
+                class="floating-cancel-btn inline-flex items-center px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 rounded-full border border-dark-600"
+                aria-label="Clear selection"
+              >
+                <.icon name="hero-x-mark" class="mr-2 h-4 w-4" /> Cancel
+              </button>
+              <button
+                type="button"
+                phx-click="show_bulk_delete_confirm"
+                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-full transition-colors"
+              >
+                <.icon name="hero-trash" class="mr-2 h-4 w-4" /> Delete Selected
+              </button>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
       <%!-- Page Header --%>
       <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
         <div>
@@ -248,32 +310,9 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
         </.link>
       </div>
 
-      <%!-- Search and Filters --%>
+      <%!-- Filters --%>
       <div class="mb-6 bg-dark-800 rounded-lg border border-dark-700 p-4">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <%!-- Search Input --%>
-          <div class="md:col-span-1">
-            <label for="search" class="block text-sm font-medium text-gray-400 mb-1">
-              Search
-            </label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <.icon name="hero-magnifying-glass" class="h-4 w-4 text-gray-500" />
-              </div>
-              <form phx-change="search" phx-submit="search">
-                <input
-                  type="text"
-                  id="search"
-                  name="search"
-                  value={@search_query}
-                  placeholder="Search by report name..."
-                  phx-debounce="300"
-                  class="block w-full h-[38px] pl-10 pr-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500 placeholder-gray-500"
-                />
-              </form>
-            </div>
-          </div>
-
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <%!-- Report Dropdown Filter --%>
           <div class="md:col-span-1">
             <label for="filter_report_id" class="block text-sm font-medium text-gray-400 mb-1">
@@ -303,27 +342,22 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
                 phx-click="clear_filters"
                 class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded-md hover:bg-dark-600 transition-colors"
               >
-                <.icon name="hero-x-mark" class="mr-2 h-4 w-4" /> Clear Filters
+                <.icon name="hero-x-mark" class="mr-2 h-4 w-4" /> Clear Filter
               </button>
             <% else %>
               <div class="text-sm text-gray-500 py-2">
-                <.icon name="hero-funnel" class="inline h-4 w-4 mr-1" /> No filters applied
+                <.icon name="hero-funnel" class="inline h-4 w-4 mr-1" /> No filter applied
               </div>
             <% end %>
           </div>
         </div>
 
-        <%!-- Active Filters Summary --%>
+        <%!-- Active Filter Summary --%>
         <%= if has_active_filters?(assigns) do %>
           <% selected_report = get_selected_report_display(assigns) %>
           <div class="mt-4 pt-4 border-t border-dark-700">
             <div class="flex flex-wrap items-center gap-2">
-              <span class="text-sm text-gray-400">Active filters:</span>
-              <%= if @search_query != "" and @search_query != nil do %>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-500/10 text-primary-400 border border-primary-500/20">
-                  Search: "{@search_query}"
-                </span>
-              <% end %>
+              <span class="text-sm text-gray-400">Active filter:</span>
               <%= if selected_report do %>
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
                   Report: {selected_report.report_name || "Untitled"} ({selected_report.date_range_display})
@@ -342,6 +376,18 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
         <table class="min-w-full">
           <thead>
             <tr class="border-b border-dark-700">
+              <th scope="col" class="px-6 py-4 w-12">
+                <input
+                  type="checkbox"
+                  phx-click="toggle_select_all"
+                  checked={
+                    MapSet.size(@selected_ids) > 0 &&
+                      MapSet.size(@selected_ids) == length(@reports)
+                  }
+                  class="h-4 w-4 text-primary-600 bg-dark-700 border-dark-600 rounded focus:ring-primary-500 focus:ring-offset-dark-800 cursor-pointer"
+                  aria-label="Select all"
+                />
+              </th>
               <th
                 scope="col"
                 class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
@@ -407,7 +453,7 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
           <tbody class="bg-dark-800">
             <%= if @reports == [] do %>
               <tr>
-                <td colspan="5" class="px-6 py-12 text-center text-gray-400">
+                <td colspan="6" class="px-6 py-12 text-center text-gray-400">
                   <.icon name="hero-document-chart-bar" class="mx-auto h-12 w-12 text-gray-500 mb-4" />
                   <%= if has_active_filters?(assigns) do %>
                     <p class="text-lg font-medium">No reports found</p>
@@ -434,8 +480,21 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
             <% else %>
               <tr
                 :for={{report, index} <- Enum.with_index(@reports)}
-                class="border-b border-dark-700 hover:bg-dark-700/40 transition-all duration-200 group"
+                class={[
+                  "border-b border-dark-700 hover:bg-dark-700/40 transition-all duration-200 group",
+                  MapSet.member?(@selected_ids, report.id) && "bg-primary-900/20"
+                ]}
               >
+                <td class="px-6 py-5 w-12">
+                  <input
+                    type="checkbox"
+                    phx-click="toggle_select"
+                    phx-value-id={report.id}
+                    checked={MapSet.member?(@selected_ids, report.id)}
+                    class="h-4 w-4 text-primary-600 bg-dark-700 border-dark-600 rounded focus:ring-primary-500 focus:ring-offset-dark-800 cursor-pointer"
+                    aria-label={"Select #{report.report_name || "report"}"}
+                  />
+                </td>
                 <td
                   class="px-6 py-5 cursor-pointer"
                   phx-click={JS.navigate(~p"/admin/week-ending-reports/#{report}")}
@@ -472,7 +531,7 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
                   phx-click={JS.navigate(~p"/admin/week-ending-reports/#{report}")}
                 >
                   <div class="text-sm text-gray-400">
-                    {Calendar.strftime(report.inserted_at, "%b %d, %Y")}
+                    {Calendar.strftime(report.inserted_at, "%b %d, %Y at %I:%M %p")}
                   </div>
                 </td>
                 <td class="px-6 py-5 text-right">
@@ -577,7 +636,7 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
         <% end %>
       </div>
 
-      <%!-- Delete Confirmation Modal --%>
+      <%!-- Single Delete Confirmation Modal --%>
       <%= if @show_delete_confirm do %>
         <div
           class="fixed inset-0 z-[100] overflow-y-auto"
@@ -612,6 +671,49 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
                     class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
                   >
                     Delete Report
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%!-- Bulk Delete Confirmation Modal --%>
+      <%= if @show_bulk_delete_confirm do %>
+        <div
+          class="fixed inset-0 z-[100] overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+          phx-window-keydown="cancel_bulk_delete"
+          phx-key="escape"
+        >
+          <div class="fixed inset-0 modal-backdrop transition-opacity" phx-click="cancel_bulk_delete">
+          </div>
+          <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative transform overflow-hidden rounded-lg bg-dark-800 border border-dark-700 shadow-2xl transition-all w-full max-w-md">
+              <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-500/10 rounded-full mb-4">
+                  <.icon name="hero-exclamation-triangle" class="h-6 w-6 text-red-500" />
+                </div>
+                <h3 class="text-lg font-semibold text-white text-center mb-2">Delete Reports</h3>
+                <p class="text-gray-400 text-center mb-6">
+                  Are you sure you want to delete {MapSet.size(@selected_ids)} report(s)? This action cannot be undone.
+                </p>
+                <div class="flex justify-center space-x-3">
+                  <button
+                    type="button"
+                    phx-click="cancel_bulk_delete"
+                    class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded-md hover:bg-dark-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    phx-click="confirm_bulk_delete"
+                    class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                  >
+                    Delete Reports
                   </button>
                 </div>
               </div>
