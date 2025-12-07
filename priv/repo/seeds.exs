@@ -679,6 +679,148 @@ else
   end)
 end
 
+# Seed Week Ending Reports
+IO.puts("\nSeeding week ending reports...")
+
+# Get existing report end dates to avoid duplicates
+existing_end_dates =
+  case Chms.Church.WeekEndingReports
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, reports} -> Enum.map(reports, & &1.week_end_date)
+    _ -> []
+  end
+
+# Get all active categories for creating entries
+all_categories =
+  case Chms.Church.ReportCategories
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, cats} -> cats
+    _ -> []
+  end
+
+if length(all_categories) == 0 do
+  IO.puts("⊙ No report categories found, skipping week ending reports seed")
+else
+  # Generate reports for the last 8 weeks
+  today = Date.utc_today()
+
+  # Find the most recent Sunday (end of week)
+  days_since_sunday = Date.day_of_week(today, :sunday)
+  last_sunday = Date.add(today, -days_since_sunday)
+
+  # Generate 8 weeks of reports
+  Enum.each(0..7, fn week_offset ->
+    week_end = Date.add(last_sunday, -week_offset * 7)
+    week_start = Date.add(week_end, -6)
+
+    # Skip if a report with this end date already exists
+    if week_end in existing_end_dates do
+      IO.puts("⊙ Report for week ending #{week_end} already exists, skipping")
+    else
+      report_attrs = %{
+        week_start_date: week_start,
+        week_end_date: week_end,
+        report_name: nil,
+        notes:
+          if Enum.random(1..3) == 1 do
+            Enum.random([
+              "Good attendance this week",
+              "Special service with guest speaker",
+              "Communion Sunday",
+              "Youth-led worship service",
+              "Annual thanksgiving service",
+              "Normal service week",
+              "Holiday weekend - lower attendance",
+              "Building fund campaign kickoff"
+            ])
+          else
+            nil
+          end
+      }
+
+      case Chms.Church.WeekEndingReports
+         |> Ash.Changeset.for_create(:create, report_attrs)
+         |> Ash.create(authorize?: false) do
+      {:ok, report} ->
+        IO.puts("✓ Created report: #{report.report_name}")
+
+        # Create category entries with random amounts
+        Enum.each(all_categories, fn category ->
+          # Generate amount based on category group
+          # Some categories are more likely to have amounts
+          amount =
+            case category.group do
+              :offerings ->
+                # Offerings are most common - 90% chance of having value
+                if Enum.random(1..10) <= 9 do
+                  Decimal.new(Enum.random(100..3000))
+                else
+                  Decimal.new(0)
+                end
+
+              :ministries ->
+                # Ministries - 60% chance
+                if Enum.random(1..10) <= 6 do
+                  Decimal.new(Enum.random(50..500))
+                else
+                  Decimal.new(0)
+                end
+
+              :missions ->
+                # Missions - 40% chance
+                if Enum.random(1..10) <= 4 do
+                  Decimal.new(Enum.random(100..1000))
+                else
+                  Decimal.new(0)
+                end
+
+              :property ->
+                # Property - 30% chance
+                if Enum.random(1..10) <= 3 do
+                  Decimal.new(Enum.random(200..2000))
+                else
+                  Decimal.new(0)
+                end
+
+              _ ->
+                # Custom - 20% chance
+                if Enum.random(1..10) <= 2 do
+                  Decimal.new(Enum.random(25..250))
+                else
+                  Decimal.new(0)
+                end
+            end
+
+          # Only create entry if amount > 0
+          if Decimal.compare(amount, Decimal.new(0)) == :gt do
+            entry_attrs = %{
+              week_ending_report_id: report.id,
+              report_category_id: category.id,
+              amount: amount
+            }
+
+            case Chms.Church.ReportCategoryEntries
+                 |> Ash.Changeset.for_create(:create, entry_attrs)
+                 |> Ash.create(authorize?: false) do
+              {:ok, _entry} ->
+                :ok
+
+              {:error, _} ->
+                IO.puts("  ✗ Failed to create entry for #{category.display_name}")
+            end
+          end
+        end)
+
+      {:error, changeset} ->
+        IO.puts("✗ Failed to create report for week ending #{week_end}")
+        IO.inspect(changeset.errors)
+      end
+    end
+  end)
+end
+
 IO.puts("\nSeeding complete!")
 
 # Show overall statistics
@@ -703,6 +845,14 @@ total_ministry_funds =
        |> Ash.Query.for_read(:read)
        |> Ash.read(authorize?: false) do
     {:ok, all_funds} -> length(all_funds)
+    _ -> 0
+  end
+
+total_week_ending_reports =
+  case Chms.Church.WeekEndingReports
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, all_reports} -> length(all_reports)
     _ -> 0
   end
 
@@ -743,6 +893,7 @@ IO.puts(String.duplicate("=", 50))
 IO.puts("Total congregants: #{total_congregants}")
 IO.puts("Total contributions: #{total_contributions}")
 IO.puts("Total ministry fund transactions: #{total_ministry_funds}")
+IO.puts("Total week ending reports: #{total_week_ending_reports}")
 IO.puts("\nCongregants by Status:")
 
 Enum.each(status_counts, fn {status, count} ->
