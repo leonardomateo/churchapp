@@ -6,11 +6,17 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
   def mount(_params, _session, socket) do
     actor = socket.assigns[:current_user]
 
+    # Fetch all reports for the filter dropdown
+    all_reports = fetch_all_reports(actor)
+
     socket =
       socket
       |> assign(:page_title, "Week Ending Reports")
       |> assign(:sort_by, :week_end_date)
       |> assign(:sort_dir, :desc)
+      |> assign(:search_query, "")
+      |> assign(:filter_report_id, nil)
+      |> assign(:all_reports_for_filter, all_reports)
       |> assign(:open_menu_id, nil)
       |> assign(:show_delete_confirm, false)
       |> assign(:delete_report_id, nil)
@@ -22,6 +28,14 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
     {:ok, socket}
   end
 
+  defp fetch_all_reports(actor) do
+    WeekEndingReports
+    |> Ash.Query.for_read(:read, %{}, actor: actor)
+    |> Ash.Query.load([:date_range_display])
+    |> Ash.Query.sort(week_end_date: :desc)
+    |> Ash.read!(actor: actor)
+  end
+
   defp fetch_reports(socket, actor) do
     reports =
       WeekEndingReports
@@ -30,13 +44,19 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
       |> Ash.Query.sort([{socket.assigns.sort_by, socket.assigns.sort_dir}])
       |> Ash.read!(actor: actor)
 
+    # Apply filters
+    filtered_reports =
+      reports
+      |> filter_by_search(socket.assigns.search_query)
+      |> filter_by_report_id(socket.assigns.filter_report_id)
+
     # Pagination
-    total_count = length(reports)
+    total_count = length(filtered_reports)
     page = socket.assigns.page
     per_page = socket.assigns.per_page
 
     paginated_reports =
-      reports
+      filtered_reports
       |> Enum.drop((page - 1) * per_page)
       |> Enum.take(per_page)
 
@@ -46,6 +66,79 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
     |> assign(:reports, paginated_reports)
     |> assign(:total_count, total_count)
     |> assign(:total_pages, total_pages)
+  end
+
+  defp filter_by_search(reports, nil), do: reports
+  defp filter_by_search(reports, ""), do: reports
+
+  defp filter_by_search(reports, query) do
+    query_downcase = String.downcase(query)
+
+    Enum.filter(reports, fn report ->
+      report_name = report.report_name || ""
+      String.contains?(String.downcase(report_name), query_downcase)
+    end)
+  end
+
+  defp filter_by_report_id(reports, nil), do: reports
+  defp filter_by_report_id(reports, ""), do: reports
+
+  defp filter_by_report_id(reports, report_id) do
+    Enum.filter(reports, fn report ->
+      report.id == report_id
+    end)
+  end
+
+  defp has_active_filters?(assigns) do
+    (assigns.search_query != "" and assigns.search_query != nil) or
+      (assigns.filter_report_id != nil and assigns.filter_report_id != "")
+  end
+
+  defp get_selected_report_display(assigns) do
+    if assigns.filter_report_id do
+      Enum.find(assigns.all_reports_for_filter, fn r -> r.id == assigns.filter_report_id end)
+    else
+      nil
+    end
+  end
+
+  def handle_event("search", %{"search" => search_query}, socket) do
+    actor = socket.assigns[:current_user]
+
+    socket =
+      socket
+      |> assign(:search_query, search_query)
+      |> assign(:page, 1)
+      |> fetch_reports(actor)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("filter_report", %{"filter_report_id" => report_id}, socket) do
+    actor = socket.assigns[:current_user]
+
+    filter_id = if report_id == "", do: nil, else: report_id
+
+    socket =
+      socket
+      |> assign(:filter_report_id, filter_id)
+      |> assign(:page, 1)
+      |> fetch_reports(actor)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("clear_filters", _params, socket) do
+    actor = socket.assigns[:current_user]
+
+    socket =
+      socket
+      |> assign(:search_query, "")
+      |> assign(:filter_report_id, nil)
+      |> assign(:page, 1)
+      |> fetch_reports(actor)
+
+    {:noreply, socket}
   end
 
   def handle_event("sort", %{"field" => field}, socket) do
@@ -155,6 +248,95 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
         </.link>
       </div>
 
+      <%!-- Search and Filters --%>
+      <div class="mb-6 bg-dark-800 rounded-lg border border-dark-700 p-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <%!-- Search Input --%>
+          <div class="md:col-span-1">
+            <label for="search" class="block text-sm font-medium text-gray-400 mb-1">
+              Search
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <.icon name="hero-magnifying-glass" class="h-4 w-4 text-gray-500" />
+              </div>
+              <form phx-change="search" phx-submit="search">
+                <input
+                  type="text"
+                  id="search"
+                  name="search"
+                  value={@search_query}
+                  placeholder="Search by report name..."
+                  phx-debounce="300"
+                  class="block w-full h-[38px] pl-10 pr-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500 placeholder-gray-500"
+                />
+              </form>
+            </div>
+          </div>
+
+          <%!-- Report Dropdown Filter --%>
+          <div class="md:col-span-1">
+            <label for="filter_report_id" class="block text-sm font-medium text-gray-400 mb-1">
+              Select Report
+            </label>
+            <form phx-change="filter_report">
+              <select
+                id="filter_report_id"
+                name="filter_report_id"
+                class="block w-full h-[38px] px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="">All Reports</option>
+                <%= for report <- @all_reports_for_filter do %>
+                  <option value={report.id} selected={@filter_report_id == report.id}>
+                    {report.report_name || "Untitled"} - {report.date_range_display}
+                  </option>
+                <% end %>
+              </select>
+            </form>
+          </div>
+
+          <%!-- Clear Filters Button --%>
+          <div class="md:col-span-1 flex items-end">
+            <%= if has_active_filters?(assigns) do %>
+              <button
+                type="button"
+                phx-click="clear_filters"
+                class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded-md hover:bg-dark-600 transition-colors"
+              >
+                <.icon name="hero-x-mark" class="mr-2 h-4 w-4" /> Clear Filters
+              </button>
+            <% else %>
+              <div class="text-sm text-gray-500 py-2">
+                <.icon name="hero-funnel" class="inline h-4 w-4 mr-1" /> No filters applied
+              </div>
+            <% end %>
+          </div>
+        </div>
+
+        <%!-- Active Filters Summary --%>
+        <%= if has_active_filters?(assigns) do %>
+          <% selected_report = get_selected_report_display(assigns) %>
+          <div class="mt-4 pt-4 border-t border-dark-700">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-sm text-gray-400">Active filters:</span>
+              <%= if @search_query != "" and @search_query != nil do %>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-500/10 text-primary-400 border border-primary-500/20">
+                  Search: "{@search_query}"
+                </span>
+              <% end %>
+              <%= if selected_report do %>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                  Report: {selected_report.report_name || "Untitled"} ({selected_report.date_range_display})
+                </span>
+              <% end %>
+              <span class="text-sm text-gray-500">
+                ({@total_count} {if @total_count == 1, do: "result", else: "results"})
+              </span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
       <%!-- Reports Table --%>
       <div class="bg-dark-800 rounded-lg shadow-xl overflow-x-auto overflow-y-visible border border-dark-700">
         <table class="min-w-full">
@@ -227,14 +409,26 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
               <tr>
                 <td colspan="5" class="px-6 py-12 text-center text-gray-400">
                   <.icon name="hero-document-chart-bar" class="mx-auto h-12 w-12 text-gray-500 mb-4" />
-                  <p class="text-lg font-medium">No reports yet</p>
-                  <p class="mt-1 text-sm">Create your first week ending report to get started.</p>
-                  <.link
-                    navigate={~p"/admin/week-ending-reports/new"}
-                    class="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md transition-colors"
-                  >
-                    <.icon name="hero-plus" class="mr-2 h-4 w-4" /> Create Report
-                  </.link>
+                  <%= if has_active_filters?(assigns) do %>
+                    <p class="text-lg font-medium">No reports found</p>
+                    <p class="mt-1 text-sm">Try adjusting your search or filter criteria.</p>
+                    <button
+                      type="button"
+                      phx-click="clear_filters"
+                      class="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md transition-colors"
+                    >
+                      <.icon name="hero-x-mark" class="mr-2 h-4 w-4" /> Clear Filters
+                    </button>
+                  <% else %>
+                    <p class="text-lg font-medium">No reports yet</p>
+                    <p class="mt-1 text-sm">Create your first week ending report to get started.</p>
+                    <.link
+                      navigate={~p"/admin/week-ending-reports/new"}
+                      class="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md transition-colors"
+                    >
+                      <.icon name="hero-plus" class="mr-2 h-4 w-4" /> Create Report
+                    </.link>
+                  <% end %>
                 </td>
               </tr>
             <% else %>
