@@ -118,8 +118,9 @@ defmodule Chms.Church.Statistics do
           congregants
           |> Enum.filter(fn c ->
             inserted_date = DateTime.to_date(c.inserted_at)
+
             Date.compare(inserted_date, current_month_start) != :lt and
-            Date.compare(inserted_date, current_month_end) != :gt
+              Date.compare(inserted_date, current_month_end) != :gt
           end)
           |> length()
 
@@ -185,8 +186,9 @@ defmodule Chms.Church.Statistics do
           contributions
           |> Enum.filter(fn c ->
             contribution_date = DateTime.to_date(c.contribution_date)
+
             Date.compare(contribution_date, current_month_start) != :lt and
-            Date.compare(contribution_date, current_month_end) != :gt
+              Date.compare(contribution_date, current_month_end) != :gt
           end)
           |> Enum.group_by(& &1.contribution_type)
           |> Enum.map(fn {type, list} ->
@@ -222,8 +224,9 @@ defmodule Chms.Church.Statistics do
           contributions
           |> Enum.filter(fn c ->
             contribution_date = DateTime.to_date(c.contribution_date)
+
             Date.compare(contribution_date, current_month_start) != :lt and
-            Date.compare(contribution_date, current_month_end) != :gt
+              Date.compare(contribution_date, current_month_end) != :gt
           end)
           |> Enum.map(& &1.revenue)
           |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
@@ -254,8 +257,9 @@ defmodule Chms.Church.Statistics do
           contributions
           |> Enum.filter(fn c ->
             contribution_date = DateTime.to_date(c.contribution_date)
+
             Date.compare(contribution_date, current_month_start) != :lt and
-            Date.compare(contribution_date, current_month_end) != :gt
+              Date.compare(contribution_date, current_month_end) != :gt
           end)
           |> Enum.group_by(& &1.contribution_type)
           |> Enum.map(fn {type, list} ->
@@ -296,8 +300,9 @@ defmodule Chms.Church.Statistics do
           contributions
           |> Enum.filter(fn c ->
             contribution_date = DateTime.to_date(c.contribution_date)
+
             Date.compare(contribution_date, current_month_start) != :lt and
-            Date.compare(contribution_date, current_month_end) != :gt
+              Date.compare(contribution_date, current_month_end) != :gt
           end)
           |> length()
 
@@ -330,8 +335,9 @@ defmodule Chms.Church.Statistics do
           funds
           |> Enum.filter(fn f ->
             transaction_date = DateTime.to_date(f.transaction_date)
+
             Date.compare(transaction_date, current_month_start) != :lt and
-            Date.compare(transaction_date, current_month_end) != :gt
+              Date.compare(transaction_date, current_month_end) != :gt
           end)
           |> Enum.map(& &1.amount)
           |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
@@ -363,8 +369,9 @@ defmodule Chms.Church.Statistics do
           funds
           |> Enum.filter(fn f ->
             transaction_date = DateTime.to_date(f.transaction_date)
+
             Date.compare(transaction_date, current_month_start) != :lt and
-            Date.compare(transaction_date, current_month_end) != :gt
+              Date.compare(transaction_date, current_month_end) != :gt
           end)
           |> Enum.map(& &1.amount)
           |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
@@ -453,8 +460,9 @@ defmodule Chms.Church.Statistics do
           funds
           |> Enum.filter(fn f ->
             transaction_date = DateTime.to_date(f.transaction_date)
+
             Date.compare(transaction_date, current_month_start) != :lt and
-            Date.compare(transaction_date, current_month_end) != :gt
+              Date.compare(transaction_date, current_month_end) != :gt
           end)
           |> length()
 

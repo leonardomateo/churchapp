@@ -253,11 +253,36 @@ const DatePicker = {
   }
 }
 
+// CsvDownload Hook - handles CSV file download from LiveView events
+const CsvDownload = {
+  mounted() {
+    this.handleEvent("download_csv", ({content, filename}) => {
+      // Create blob from CSV content
+      const blob = new Blob([content], { type: "text/csv;charset=utf-8;" })
+      
+      // Create download link
+      const link = document.createElement("a")
+      const url = URL.createObjectURL(blob)
+      link.setAttribute("href", url)
+      link.setAttribute("download", filename)
+      link.style.visibility = "hidden"
+      
+      // Trigger download
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Clean up
+      URL.revokeObjectURL(url)
+    })
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, BarChart, PieChart, DoughnutChart},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, CsvDownload, BarChart, PieChart, DoughnutChart},
 })
 
 // Show progress bar on live navigation and form submits

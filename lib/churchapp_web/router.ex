@@ -6,54 +6,59 @@ defmodule ChurchappWeb.Router do
   import AshAuthentication.Plug.Helpers
 
   pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_live_flash
-    plug :put_root_layout, html: {ChurchappWeb.Layouts, :root}
-    plug :protect_from_forgery
-    plug :put_secure_browser_headers
-    plug :load_from_session
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(:fetch_live_flash)
+    plug(:put_root_layout, html: {ChurchappWeb.Layouts, :root})
+    plug(:protect_from_forgery)
+    plug(:put_secure_browser_headers)
+    plug(:load_from_session)
   end
 
   pipeline :api do
-    plug :accepts, ["json"]
-    plug :load_from_bearer
-    plug :set_actor, :user
+    plug(:accepts, ["json"])
+    plug(:load_from_bearer)
+    plug(:set_actor, :user)
   end
 
   scope "/", ChurchappWeb do
-    pipe_through :browser
+    pipe_through(:browser)
 
     # Public routes
-    get "/", PageController, :home
+    get("/", PageController, :home)
 
     # Controller-based auth routes (callbacks, sign-out)
-    auth_routes AuthController, Churchapp.Accounts.User, path: "/auth"
-    sign_out_route AuthController
+    auth_routes(AuthController, Churchapp.Accounts.User, path: "/auth")
+    sign_out_route(AuthController)
   end
 
   # LiveView auth routes - must be in separate scope
   scope "/", ChurchappWeb do
-    pipe_through :browser
+    pipe_through(:browser)
 
-    sign_in_route register_path: "/register",
-                  reset_path: "/reset",
-                  auth_routes_prefix: "/auth",
-                  on_mount: [{ChurchappWeb.LiveUserAuth, :live_no_user}],
-                  overrides: [
-                    ChurchappWeb.AuthOverrides,
-                    Elixir.AshAuthentication.Phoenix.Overrides.DaisyUI
-                  ]
+    sign_in_route(
+      register_path: "/register",
+      reset_path: "/reset",
+      auth_routes_prefix: "/auth",
+      on_mount: [{ChurchappWeb.LiveUserAuth, :live_no_user}],
+      overrides: [
+        ChurchappWeb.AuthOverrides,
+        Elixir.AshAuthentication.Phoenix.Overrides.DaisyUI
+      ]
+    )
 
-    reset_route auth_routes_prefix: "/auth",
-                overrides: [
-                  ChurchappWeb.AuthOverrides,
-                  Elixir.AshAuthentication.Phoenix.Overrides.DaisyUI
-                ]
+    reset_route(
+      auth_routes_prefix: "/auth",
+      overrides: [
+        ChurchappWeb.AuthOverrides,
+        Elixir.AshAuthentication.Phoenix.Overrides.DaisyUI
+      ]
+    )
 
-    confirm_route Churchapp.Accounts.User, :confirm_new_user,
+    confirm_route(Churchapp.Accounts.User, :confirm_new_user,
       auth_routes_prefix: "/auth",
       overrides: [ChurchappWeb.AuthOverrides, Elixir.AshAuthentication.Phoenix.Overrides.DaisyUI]
+    )
 
     magic_sign_in_route(Churchapp.Accounts.User, :magic_link,
       auth_routes_prefix: "/auth",
@@ -63,43 +68,49 @@ defmodule ChurchappWeb.Router do
 
   # Protected routes - require authentication
   scope "/", ChurchappWeb do
-    pipe_through :browser
+    pipe_through(:browser)
 
     ash_authentication_live_session :authenticated,
       on_mount: [
         {ChurchappWeb.LiveUserAuth, :live_user_required}
       ] do
-      live "/dashboard", DashboardLive.IndexLive, :index
+      live("/dashboard", DashboardLive.IndexLive, :index)
 
-      live "/congregants", CongregantsLive.IndexLive, :index
-      live "/congregants/new", CongregantsLive.NewLive, :new
-      live "/congregants/:id", CongregantsLive.ShowLive, :show
-      live "/congregants/:id/edit", CongregantsLive.EditLive, :edit
+      live("/congregants", CongregantsLive.IndexLive, :index)
+      live("/congregants/new", CongregantsLive.NewLive, :new)
+      live("/congregants/:id", CongregantsLive.ShowLive, :show)
+      live("/congregants/:id/edit", CongregantsLive.EditLive, :edit)
 
-      live "/contributions", ContributionsLive.IndexLive, :index
-      live "/contributions/new", ContributionsLive.NewLive, :new
-      live "/contributions/:id", ContributionsLive.ShowLive, :show
-      live "/contributions/:id/edit", ContributionsLive.EditLive, :edit
+      live("/contributions", ContributionsLive.IndexLive, :index)
+      live("/contributions/new", ContributionsLive.NewLive, :new)
+      live("/contributions/:id", ContributionsLive.ShowLive, :show)
+      live("/contributions/:id/edit", ContributionsLive.EditLive, :edit)
 
-      live "/ministry-funds", MinistryFundsLive.IndexLive, :index
-      live "/ministry-funds/new", MinistryFundsLive.NewLive, :new
-      live "/ministry-funds/:id", MinistryFundsLive.ShowLive, :show
-      live "/ministry-funds/:id/edit", MinistryFundsLive.EditLive, :edit
+      live("/ministry-funds", MinistryFundsLive.IndexLive, :index)
+      live("/ministry-funds/new", MinistryFundsLive.NewLive, :new)
+      live("/ministry-funds/:id", MinistryFundsLive.ShowLive, :show)
+      live("/ministry-funds/:id/edit", MinistryFundsLive.EditLive, :edit)
     end
   end
 
   # Admin-only routes - require admin or super_admin role
   scope "/admin", ChurchappWeb do
-    pipe_through :browser
+    pipe_through(:browser)
 
     ash_authentication_live_session :admin,
       on_mount: [
         {ChurchappWeb.LiveUserAuth, :live_user_required},
         {ChurchappWeb.LiveUserAuth, :require_admin}
       ] do
-      live "/users", UsersLive.IndexLive, :index
-      live "/users/new", UsersLive.NewLive, :new
-      live "/users/:id/edit", UsersLive.EditLive, :edit
+      live("/users", UsersLive.IndexLive, :index)
+      live("/users/new", UsersLive.NewLive, :new)
+      live("/users/:id/edit", UsersLive.EditLive, :edit)
+
+      # Week Ending Reports
+      live("/week-ending-reports", WeekEndingReportsLive.IndexLive, :index)
+      live("/week-ending-reports/new", WeekEndingReportsLive.NewLive, :new)
+      live("/week-ending-reports/:id", WeekEndingReportsLive.ShowLive, :show)
+      live("/week-ending-reports/:id/edit", WeekEndingReportsLive.EditLive, :edit)
     end
   end
 
@@ -118,10 +129,10 @@ defmodule ChurchappWeb.Router do
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
-      pipe_through :browser
+      pipe_through(:browser)
 
-      live_dashboard "/dashboard", metrics: ChurchappWeb.Telemetry
-      forward "/mailbox", Plug.Swoosh.MailboxPreview
+      live_dashboard("/dashboard", metrics: ChurchappWeb.Telemetry)
+      forward("/mailbox", Plug.Swoosh.MailboxPreview)
     end
   end
 
@@ -129,9 +140,9 @@ defmodule ChurchappWeb.Router do
     import AshAdmin.Router
 
     scope "/admin" do
-      pipe_through :browser
+      pipe_through(:browser)
 
-      ash_admin "/", domains: [Chms.Church, Churchapp.Accounts]
+      ash_admin("/", domains: [Chms.Church, Churchapp.Accounts])
     end
   end
 end

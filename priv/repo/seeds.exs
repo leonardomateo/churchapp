@@ -116,43 +116,161 @@ IO.puts("Seeding 150 congregants from Latin America, USA, and Canada...")
 
 # Latin American countries + USA and Canada
 # Weighted to have more Dominican Republic congregants
+# 5x weight for Dominican Republic
 countries =
-  List.duplicate("Dominican Republic", 5) ++  # 5x weight for Dominican Republic
-  [
-    "Mexico",
-    "Colombia",
-    "Venezuela",
-    "Peru",
-    "Argentina",
-    "Chile",
-    "Ecuador",
-    "Guatemala",
-    "Cuba",
-    "Honduras",
-    "El Salvador",
-    "USA",
-    "Canada"
-  ]
+  List.duplicate("Dominican Republic", 5) ++
+    [
+      "Mexico",
+      "Colombia",
+      "Venezuela",
+      "Peru",
+      "Argentina",
+      "Chile",
+      "Ecuador",
+      "Guatemala",
+      "Cuba",
+      "Honduras",
+      "El Salvador",
+      "USA",
+      "Canada"
+    ]
 
 # Common Latin American first names
 first_names = [
-  "Juan", "Maria", "Jose", "Ana", "Carlos", "Carmen", "Luis", "Rosa", "Miguel", "Isabel",
-  "Pedro", "Sofia", "Jorge", "Elena", "Francisco", "Laura", "Antonio", "Patricia", "Manuel", "Teresa",
-  "Rafael", "Lucia", "Fernando", "Gabriela", "Roberto", "Valentina", "Diego", "Camila", "Alejandro", "Andrea",
-  "Ricardo", "Monica", "Javier", "Daniela", "Sergio", "Natalia", "Pablo", "Victoria", "Andres", "Mariana",
-  "Raul", "Adriana", "Oscar", "Beatriz", "Enrique", "Claudia", "Hector", "Silvia", "Arturo", "Veronica",
-  "Gustavo", "Paola", "Eduardo", "Cristina", "Alberto", "Sandra", "Julio", "Diana", "Cesar", "Alejandra",
-  "Felipe", "Lorena", "Rodrigo", "Angelica", "Mauricio", "Fernanda", "Ernesto", "Juliana", "Armando", "Carolina",
-  "Victor", "Marcela", "Ramon", "Susana", "Guillermo", "Yolanda", "Ruben", "Cecilia", "Ignacio", "Alicia"
+  "Juan",
+  "Maria",
+  "Jose",
+  "Ana",
+  "Carlos",
+  "Carmen",
+  "Luis",
+  "Rosa",
+  "Miguel",
+  "Isabel",
+  "Pedro",
+  "Sofia",
+  "Jorge",
+  "Elena",
+  "Francisco",
+  "Laura",
+  "Antonio",
+  "Patricia",
+  "Manuel",
+  "Teresa",
+  "Rafael",
+  "Lucia",
+  "Fernando",
+  "Gabriela",
+  "Roberto",
+  "Valentina",
+  "Diego",
+  "Camila",
+  "Alejandro",
+  "Andrea",
+  "Ricardo",
+  "Monica",
+  "Javier",
+  "Daniela",
+  "Sergio",
+  "Natalia",
+  "Pablo",
+  "Victoria",
+  "Andres",
+  "Mariana",
+  "Raul",
+  "Adriana",
+  "Oscar",
+  "Beatriz",
+  "Enrique",
+  "Claudia",
+  "Hector",
+  "Silvia",
+  "Arturo",
+  "Veronica",
+  "Gustavo",
+  "Paola",
+  "Eduardo",
+  "Cristina",
+  "Alberto",
+  "Sandra",
+  "Julio",
+  "Diana",
+  "Cesar",
+  "Alejandra",
+  "Felipe",
+  "Lorena",
+  "Rodrigo",
+  "Angelica",
+  "Mauricio",
+  "Fernanda",
+  "Ernesto",
+  "Juliana",
+  "Armando",
+  "Carolina",
+  "Victor",
+  "Marcela",
+  "Ramon",
+  "Susana",
+  "Guillermo",
+  "Yolanda",
+  "Ruben",
+  "Cecilia",
+  "Ignacio",
+  "Alicia"
 ]
 
 # Common Latin American last names
 last_names = [
-  "Garcia", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Perez", "Sanchez", "Ramirez", "Torres",
-  "Flores", "Rivera", "Gomez", "Diaz", "Cruz", "Morales", "Reyes", "Gutierrez", "Ortiz", "Chavez",
-  "Ruiz", "Jimenez", "Mendoza", "Alvarez", "Castillo", "Romero", "Herrera", "Medina", "Aguilar", "Vargas",
-  "Castro", "Ramos", "Moreno", "Guerrero", "Mendez", "Rojas", "Delgado", "Campos", "Vazquez", "Nunez",
-  "Soto", "Contreras", "Luna", "Rios", "Mejia", "Dominguez", "Guzman", "Velasquez", "Salazar", "Pena"
+  "Garcia",
+  "Rodriguez",
+  "Martinez",
+  "Hernandez",
+  "Lopez",
+  "Gonzalez",
+  "Perez",
+  "Sanchez",
+  "Ramirez",
+  "Torres",
+  "Flores",
+  "Rivera",
+  "Gomez",
+  "Diaz",
+  "Cruz",
+  "Morales",
+  "Reyes",
+  "Gutierrez",
+  "Ortiz",
+  "Chavez",
+  "Ruiz",
+  "Jimenez",
+  "Mendoza",
+  "Alvarez",
+  "Castillo",
+  "Romero",
+  "Herrera",
+  "Medina",
+  "Aguilar",
+  "Vargas",
+  "Castro",
+  "Ramos",
+  "Moreno",
+  "Guerrero",
+  "Mendez",
+  "Rojas",
+  "Delgado",
+  "Campos",
+  "Vazquez",
+  "Nunez",
+  "Soto",
+  "Contreras",
+  "Luna",
+  "Rios",
+  "Mejia",
+  "Dominguez",
+  "Guzman",
+  "Velasquez",
+  "Salazar",
+  "Pena"
 ]
 
 # US States for USA congregants
@@ -165,9 +283,9 @@ canadian_provinces = ["Ontario", "Quebec", "British Columbia", "Alberta"]
 # 60% member, 20% visitor, 15% honorific, 5% deceased
 statuses =
   List.duplicate(:member, 90) ++
-  List.duplicate(:visitor, 30) ++
-  List.duplicate(:honorific, 23) ++
-  List.duplicate(:deceased, 7)
+    List.duplicate(:visitor, 30) ++
+    List.duplicate(:honorific, 23) ++
+    List.duplicate(:deceased, 7)
 
 # Generate 150 congregants
 congregants_data =
@@ -176,56 +294,74 @@ congregants_data =
     status = Enum.at(statuses, i - 1)
 
     # Determine state/province based on country
-    {city, state} = case country do
-      "USA" ->
-        state = Enum.random(us_states)
-        cities = %{
-          "New York" => ["New York City", "Brooklyn", "Queens", "Manhattan", "Bronx"],
-          "California" => ["Los Angeles", "San Francisco", "San Diego", "Sacramento"],
-          "Texas" => ["Houston", "Dallas", "Austin", "San Antonio"],
-          "Florida" => ["Miami", "Orlando", "Tampa", "Jacksonville"],
-          "Illinois" => ["Chicago", "Springfield", "Naperville"]
-        }
-        {Enum.random(cities[state]), state}
+    {city, state} =
+      case country do
+        "USA" ->
+          state = Enum.random(us_states)
 
-      "Canada" ->
-        province = Enum.random(canadian_provinces)
-        cities = %{
-          "Ontario" => ["Toronto", "Ottawa", "Mississauga", "Hamilton"],
-          "Quebec" => ["Montreal", "Quebec City", "Laval"],
-          "British Columbia" => ["Vancouver", "Victoria", "Surrey"],
-          "Alberta" => ["Calgary", "Edmonton", "Red Deer"]
-        }
-        {Enum.random(cities[province]), province}
+          cities = %{
+            "New York" => ["New York City", "Brooklyn", "Queens", "Manhattan", "Bronx"],
+            "California" => ["Los Angeles", "San Francisco", "San Diego", "Sacramento"],
+            "Texas" => ["Houston", "Dallas", "Austin", "San Antonio"],
+            "Florida" => ["Miami", "Orlando", "Tampa", "Jacksonville"],
+            "Illinois" => ["Chicago", "Springfield", "Naperville"]
+          }
 
-      _ ->
-        # Latin American countries
-        {"Capital City", "Central"}
-    end
+          {Enum.random(cities[state]), state}
+
+        "Canada" ->
+          province = Enum.random(canadian_provinces)
+
+          cities = %{
+            "Ontario" => ["Toronto", "Ottawa", "Mississauga", "Hamilton"],
+            "Quebec" => ["Montreal", "Quebec City", "Laval"],
+            "British Columbia" => ["Vancouver", "Victoria", "Surrey"],
+            "Alberta" => ["Calgary", "Edmonton", "Red Deer"]
+          }
+
+          {Enum.random(cities[province]), province}
+
+        _ ->
+          # Latin American countries
+          {"Capital City", "Central"}
+      end
 
     # Generate random dates
-    days_member = Enum.random(365..3650)  # 1-10 years
+    # 1-10 years
+    days_member = Enum.random(365..3650)
     member_since = Date.add(Date.utc_today(), -days_member)
 
-    days_old = Enum.random(6570..25550)  # 18-70 years old
+    # 18-70 years old
+    days_old = Enum.random(6570..25550)
     dob = Date.add(Date.utc_today(), -days_old)
 
     %{
       first_name: Enum.random(first_names),
       last_name: Enum.random(last_names),
-      address: "#{Enum.random(100..9999)} #{Enum.random(["Main", "Oak", "Maple", "Pine", "Elm"])} #{Enum.random(["St", "Ave", "Blvd", "Dr", "Ln"])}",
+      address:
+        "#{Enum.random(100..9999)} #{Enum.random(["Main", "Oak", "Maple", "Pine", "Elm"])} #{Enum.random(["St", "Ave", "Blvd", "Dr", "Ln"])}",
       suite: if(Enum.random(1..3) == 1, do: "Apt #{Enum.random(1..20)}", else: nil),
       city: city,
       state: state,
       zip_code: "#{Enum.random(10000..99999)}",
       country: country,
-      mobile_tel: "(#{Enum.random(200..999)}) #{Enum.random(200..999)}-#{Enum.random(1000..9999)}",
-      home_tel: if(Enum.random(1..3) == 1, do: "(#{Enum.random(200..999)}) #{Enum.random(200..999)}-#{Enum.random(1000..9999)}", else: nil),
-      work_tel: if(Enum.random(1..4) == 1, do: "(#{Enum.random(200..999)}) #{Enum.random(200..999)}-#{Enum.random(1000..9999)}", else: nil),
+      mobile_tel:
+        "(#{Enum.random(200..999)}) #{Enum.random(200..999)}-#{Enum.random(1000..9999)}",
+      home_tel:
+        if(Enum.random(1..3) == 1,
+          do: "(#{Enum.random(200..999)}) #{Enum.random(200..999)}-#{Enum.random(1000..9999)}",
+          else: nil
+        ),
+      work_tel:
+        if(Enum.random(1..4) == 1,
+          do: "(#{Enum.random(200..999)}) #{Enum.random(200..999)}-#{Enum.random(1000..9999)}",
+          else: nil
+        ),
       dob: dob,
       member_since: member_since,
       status: status,
-      is_leader: Enum.random(1..5) == 1,  # 20% are leaders
+      # 20% are leaders
+      is_leader: Enum.random(1..5) == 1,
       gender: Enum.random([:male, :female])
     }
   end)
@@ -270,9 +406,7 @@ created_congregants =
         end
 
       {:ok, congregant} ->
-        IO.puts(
-          "⊙ Congregant already exists: #{congregant.first_name} #{congregant.last_name}"
-        )
+        IO.puts("⊙ Congregant already exists: #{congregant.first_name} #{congregant.last_name}")
 
         congregant
 
@@ -320,9 +454,7 @@ newly_created_congregants =
     end
   end)
 
-IO.puts(
-  "Creating contributions for #{length(newly_created_congregants)} congregants..."
-)
+IO.puts("Creating contributions for #{length(newly_created_congregants)} congregants...")
 
 # Generate exactly 200 contributions distributed across congregants
 contributions =
@@ -392,9 +524,7 @@ Enum.each(contributions, fn attrs ->
       )
 
     {:error, changeset} ->
-      IO.puts(
-        "✗ Failed to create contribution: #{attrs.contribution_type}"
-      )
+      IO.puts("✗ Failed to create contribution: #{attrs.contribution_type}")
 
       IO.inspect(changeset.errors)
   end
@@ -515,6 +645,40 @@ Enum.each(ministry_funds_to_create, fn attrs ->
   end
 end)
 
+# Seed Report Categories
+IO.puts("\nSeeding report categories...")
+
+# Check if categories already exist
+existing_categories =
+  case Chms.Church.ReportCategories
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, categories} -> categories
+    _ -> []
+  end
+
+if length(existing_categories) > 0 do
+  IO.puts("⊙ Report categories already exist, skipping seed")
+else
+  # Get default categories from the module
+  default_categories = Chms.Church.ReportCategories.default_categories()
+
+  Enum.each(default_categories, fn attrs ->
+    attrs_with_active = Map.put(attrs, :is_active, true)
+
+    case Chms.Church.ReportCategories
+         |> Ash.Changeset.for_create(:create, attrs_with_active)
+         |> Ash.create(authorize?: false) do
+      {:ok, category} ->
+        IO.puts("✓ Created category: #{category.display_name} (#{category.group})")
+
+      {:error, changeset} ->
+        IO.puts("✗ Failed to create category: #{attrs.display_name}")
+        IO.inspect(changeset.errors)
+    end
+  end)
+end
+
 IO.puts("\nSeeding complete!")
 
 # Show overall statistics
@@ -552,7 +716,9 @@ status_counts =
       |> Enum.group_by(& &1.status)
       |> Enum.map(fn {status, list} -> {status, length(list)} end)
       |> Enum.into(%{})
-    _ -> %{}
+
+    _ ->
+      %{}
   end
 
 # Count by country
@@ -566,7 +732,9 @@ country_counts =
       |> Enum.map(fn {country, list} -> {country, length(list)} end)
       |> Enum.sort_by(fn {_, count} -> count end, :desc)
       |> Enum.take(10)
-    _ -> []
+
+    _ ->
+      []
   end
 
 IO.puts("\n" <> String.duplicate("=", 50))
@@ -576,11 +744,15 @@ IO.puts("Total congregants: #{total_congregants}")
 IO.puts("Total contributions: #{total_contributions}")
 IO.puts("Total ministry fund transactions: #{total_ministry_funds}")
 IO.puts("\nCongregants by Status:")
+
 Enum.each(status_counts, fn {status, count} ->
   IO.puts("  #{status}: #{count}")
 end)
+
 IO.puts("\nTop 10 Countries:")
+
 Enum.each(country_counts, fn {country, count} ->
   IO.puts("  #{country}: #{count}")
 end)
+
 IO.puts(String.duplicate("=", 50))

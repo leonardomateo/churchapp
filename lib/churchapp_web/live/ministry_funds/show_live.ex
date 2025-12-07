@@ -244,7 +244,7 @@ defmodule ChurchappWeb.MinistryFundsLive.ShowLive do
                       transaction.transaction_type == :expense &&
                         "bg-red-500/10 text-red-400 border-red-500/20"
                     ]}>
-                      <%= if transaction.transaction_type == :revenue, do: "Revenue", else: "Expense" %>
+                      {if transaction.transaction_type == :revenue, do: "Revenue", else: "Expense"}
                     </span>
                   </td>
                   <td class={[

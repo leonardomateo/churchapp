@@ -290,7 +290,10 @@ defmodule ChurchappWeb.DashboardLive.IndexLive do
                 </p>
                 <p class={[
                   "text-3xl font-bold mt-2",
-                  if(Decimal.compare(@ministry_balance, Decimal.new(0)) == :gt, do: "text-green-400", else: "text-red-400")
+                  if(Decimal.compare(@ministry_balance, Decimal.new(0)) == :gt,
+                    do: "text-green-400",
+                    else: "text-red-400"
+                  )
                 ]}>
                   ${format_currency(@ministry_balance)}
                 </p>

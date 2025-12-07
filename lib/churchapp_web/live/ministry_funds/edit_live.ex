@@ -234,7 +234,12 @@ defmodule ChurchappWeb.MinistryFundsLive.EditLive do
                     field={@form[:transaction_date]}
                     type="datetime-local"
                     phx-hook="DatePicker"
-                    max={DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.to_iso8601() |> String.slice(0, 16)}
+                    max={
+                      DateTime.utc_now()
+                      |> DateTime.to_naive()
+                      |> NaiveDateTime.to_iso8601()
+                      |> String.slice(0, 16)
+                    }
                     label="Transaction Date"
                   />
                 </div>
@@ -337,7 +342,10 @@ defmodule ChurchappWeb.MinistryFundsLive.EditLive do
               </div>
               <%!-- Content --%>
               <div class="mb-6">
-                <label for="modal-custom-ministry" class="block text-sm font-medium text-gray-400 mb-2">
+                <label
+                  for="modal-custom-ministry"
+                  class="block text-sm font-medium text-gray-400 mb-2"
+                >
                   Ministry Name <span class="text-red-500">*</span>
                 </label>
                 <form phx-change="validate_custom_ministry">

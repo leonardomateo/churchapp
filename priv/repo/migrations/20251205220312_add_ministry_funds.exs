@@ -31,7 +31,8 @@ defmodule Churchapp.Repo.Migrations.AddMinistryFunds do
 
     # Add check constraint for transaction_type
     create constraint(:ministry_funds, :ministry_funds_transaction_type_check,
-             check: "transaction_type IN ('revenue', 'expense')")
+             check: "transaction_type IN ('revenue', 'expense')"
+           )
 
     # Add check constraint for amount (must be non-negative)
     create constraint(:ministry_funds, :ministry_funds_amount_check, check: "amount >= 0")

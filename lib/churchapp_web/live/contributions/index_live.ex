@@ -375,7 +375,12 @@ defmodule ChurchappWeb.ContributionsLive.IndexLive do
 
       <div class="mb-6 space-y-4">
         <div class="flex flex-col sm:flex-row gap-4">
-          <form phx-change="search" phx-submit="search" onsubmit="return false;" class="relative flex-1">
+          <form
+            phx-change="search"
+            phx-submit="search"
+            onsubmit="return false;"
+            class="relative flex-1"
+          >
             <.icon
               name="hero-magnifying-glass"
               class="absolute left-4 top-1/2 h-4 w-4 text-gray-500 transform -translate-y-1/2 pointer-events-none z-10"
