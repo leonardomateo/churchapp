@@ -171,12 +171,15 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
       Chms.Church.Congregants
       |> Ash.Query.sort([{socket.assigns.sort_by, socket.assigns.sort_dir}])
 
+    # Trim the search query to handle spaces properly
+    trimmed_search = String.trim(socket.assigns.search_query)
+
     query =
-      if socket.assigns.search_query != "" do
+      if trimmed_search != "" do
         # Check if query is a number for ID search
-        case Integer.parse(socket.assigns.search_query) do
+        case Integer.parse(trimmed_search) do
           {id, ""} ->
-            search_term = String.downcase(socket.assigns.search_query)
+            search_term = String.downcase(trimmed_search)
 
             Ash.Query.filter(
               query,
@@ -185,13 +188,42 @@ defmodule ChurchappWeb.CongregantsLive.IndexLive do
             )
 
           _ ->
-            search_term = String.downcase(socket.assigns.search_query)
+            # Split into parts for full name search
+            parts = trimmed_search |> String.downcase() |> String.split(" ", trim: true)
 
-            Ash.Query.filter(
-              query,
-              contains(string_downcase(first_name), ^search_term) or
-                contains(string_downcase(last_name), ^search_term)
-            )
+            case parts do
+              [] ->
+                # Empty search after trimming
+                query
+
+              [single_word] ->
+                # Single word search - search in first_name or last_name
+                Ash.Query.filter(
+                  query,
+                  contains(string_downcase(first_name), ^single_word) or
+                    contains(string_downcase(last_name), ^single_word)
+                )
+
+              [first_part, last_part] ->
+                # Two words - try "first last" or "last first" patterns
+                Ash.Query.filter(
+                  query,
+                  (contains(string_downcase(first_name), ^first_part) and
+                     contains(string_downcase(last_name), ^last_part)) or
+                    (contains(string_downcase(first_name), ^last_part) and
+                       contains(string_downcase(last_name), ^first_part))
+                )
+
+              _ ->
+                # Multiple words - search each word in any field
+                Enum.reduce(parts, query, fn word, acc_query ->
+                  Ash.Query.filter(
+                    acc_query,
+                    contains(string_downcase(first_name), ^word) or
+                      contains(string_downcase(last_name), ^word)
+                  )
+                end)
+            end
         end
       else
         query
