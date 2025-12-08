@@ -2201,6 +2201,72 @@ form input[type="checkbox"]:checked::after {
 }
 
 /* ============================================
+   Profile Image Upload Animations
+   ============================================ */
+
+/* Smooth fade-in scale animation for profile images */
+@keyframes profile-image-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes profile-image-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Profile image container animation */
+.profile-image-preview {
+  animation: profile-image-appear 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.profile-image-preview img,
+.profile-image-preview .avatar {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-image-preview:hover img,
+.profile-image-preview:hover .avatar {
+  transform: scale(1.02);
+}
+
+/* Actions that appear below the image */
+.profile-image-actions {
+  animation: profile-image-fade-in 0.3s ease 0.15s forwards;
+  opacity: 0;
+}
+
+/* Avatar placeholder with smooth transition */
+.profile-avatar-placeholder {
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.profile-avatar-placeholder:hover {
+  transform: scale(1.02);
+  border-color: #06b6d4;
+}
+
+/* Upload dropzone hover animation */
+.image-upload-dropzone {
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.image-upload-dropzone.dragging {
+  border-color: #06b6d4;
+  background-color: rgba(6, 182, 212, 0.05);
+}
+
+/* ============================================
    Enhanced Date Input Styling
    ============================================ */
 

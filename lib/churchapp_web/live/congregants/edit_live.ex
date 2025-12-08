@@ -324,7 +324,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                       id="image-upload-dropzone"
                       phx-drop-target={@uploads.image.ref}
                       phx-hook="ImageUpload"
-                      class="relative border-2 border-dashed border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
+                      class="image-upload-dropzone relative border-2 border-dashed border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
                     >
                       <.live_file_input
                         upload={@uploads.image}
@@ -334,17 +334,22 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
 
                       <%= cond do %>
                         <% !Enum.empty?(@uploads.image.entries) -> %>
-                          <!-- New image being uploaded -->
-                          <div :for={entry <- @uploads.image.entries}>
-                            <p class="text-xs text-gray-500 mb-3">New Image Preview</p>
-                            <.live_img_preview
-                              entry={entry}
-                              class="w-24 h-24 mx-auto rounded-full object-cover border-2 border-primary-500"
-                            />
-                            <div class="mt-3 flex items-center justify-center gap-3">
+                          <!-- New image being uploaded with smooth animation -->
+                          <div
+                            :for={entry <- @uploads.image.entries}
+                            class="profile-image-preview"
+                          >
+                            <p class="text-xs text-gray-500 mb-3 text-center">New Image Preview</p>
+                            <div class="relative inline-block">
+                              <.live_img_preview
+                                entry={entry}
+                                class="w-24 h-24 mx-auto rounded-full object-cover border-2 border-primary-500 shadow-lg shadow-primary-500/20"
+                              />
+                            </div>
+                            <div class="profile-image-actions mt-3 flex items-center justify-center gap-3">
                               <label
                                 for={@uploads.image.ref}
-                                class="text-sm text-primary-500 hover:text-primary-400 cursor-pointer"
+                                class="text-sm text-primary-500 hover:text-primary-400 cursor-pointer transition-colors"
                               >
                                 Change image
                               </label>
@@ -353,28 +358,30 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                                 type="button"
                                 phx-click="cancel-upload"
                                 phx-value-ref={entry.ref}
-                                class="text-sm text-red-500 hover:text-red-400"
+                                class="text-sm text-red-500 hover:text-red-400 transition-colors"
                               >
                                 Remove
                               </button>
                             </div>
                           </div>
                         <% @congregant.image && @congregant.image != "" -> %>
-                          <!-- Has existing image -->
-                          <div>
+                          <!-- Has existing image with hover effect -->
+                          <div class="profile-image-preview">
                             <label for={@uploads.image.ref} class="cursor-pointer inline-block">
-                              <.avatar
-                                image={@congregant.image}
-                                first_name={@congregant.first_name}
-                                last_name={@congregant.last_name}
-                                size="lg"
-                                class="mx-auto border-2 border-dark-600 hover:border-primary-500 transition-colors"
-                              />
+                              <div class="profile-avatar-placeholder inline-block rounded-full">
+                                <.avatar
+                                  image={@congregant.image}
+                                  first_name={@congregant.first_name}
+                                  last_name={@congregant.last_name}
+                                  size="lg"
+                                  class="mx-auto border-2 border-dark-600 hover:border-primary-500 transition-colors shadow-lg"
+                                />
+                              </div>
                             </label>
-                            <div class="mt-3 flex items-center justify-center gap-3">
+                            <div class="profile-image-actions mt-3 flex items-center justify-center gap-3">
                               <label
                                 for={@uploads.image.ref}
-                                class="text-sm text-primary-500 hover:text-primary-400 cursor-pointer"
+                                class="text-sm text-primary-500 hover:text-primary-400 cursor-pointer transition-colors"
                               >
                                 Change image
                               </label>
@@ -382,7 +389,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                               <button
                                 type="button"
                                 phx-click="remove-image"
-                                class="text-sm text-red-500 hover:text-red-400"
+                                class="text-sm text-red-500 hover:text-red-400 transition-colors"
                               >
                                 Remove image
                               </button>
@@ -391,20 +398,28 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                         <% true -> %>
                           <!-- No image - show avatar preview with upload prompt -->
                           <label for={@uploads.image.ref} class="cursor-pointer block">
-                            <.avatar
-                              image={nil}
-                              first_name={@congregant.first_name}
-                              last_name={@congregant.last_name}
-                              size="lg"
-                              class="mx-auto"
-                            />
-                            <div class="mt-4 text-sm text-gray-400">
-                              <p class="font-medium">Click to upload or drag and drop</p>
-                              <p class="text-xs">PNG, JPG, GIF up to 5MB</p>
+                            <div class="space-y-4">
+                              <div class="profile-avatar-placeholder inline-block rounded-full">
+                                <.avatar
+                                  image={nil}
+                                  first_name={@congregant.first_name}
+                                  last_name={@congregant.last_name}
+                                  size="lg"
+                                  class="mx-auto"
+                                />
+                              </div>
+                              <div class="text-sm text-gray-400">
+                                <p class="font-medium">Click to upload or drag and drop</p>
+                                <p class="text-xs">PNG, JPG, GIF up to 5MB</p>
+                              </div>
                             </div>
                           </label>
                       <% end %>
                     </div>
+
+                    <p class="mt-2 text-xs text-gray-500">
+                      Upload a profile image for the congregant
+                    </p>
                   </div>
                 </div>
               </div>

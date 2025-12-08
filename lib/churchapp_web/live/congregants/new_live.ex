@@ -284,7 +284,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                       id="image-upload-dropzone"
                       phx-drop-target={@uploads.image.ref}
                       phx-hook="ImageUpload"
-                      class="relative border-2 border-dashed border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
+                      class="image-upload-dropzone relative border-2 border-dashed border-dark-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
                     >
                       <.live_file_input
                         upload={@uploads.image}
@@ -294,17 +294,22 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
 
                       <%= cond do %>
                         <% !Enum.empty?(@uploads.image.entries) -> %>
-                          <!-- New image being uploaded -->
-                          <div :for={entry <- @uploads.image.entries}>
+                          <!-- New image being uploaded with smooth animation -->
+                          <div
+                            :for={entry <- @uploads.image.entries}
+                            class="profile-image-preview"
+                          >
                             <p class="text-xs text-gray-500 mb-3 text-center">New Image Preview</p>
-                            <.live_img_preview
-                              entry={entry}
-                              class="w-24 h-24 mx-auto rounded-full object-cover border-2 border-primary-500"
-                            />
-                            <div class="mt-3 flex items-center justify-center gap-3">
+                            <div class="relative inline-block">
+                              <.live_img_preview
+                                entry={entry}
+                                class="w-24 h-24 mx-auto rounded-full object-cover border-2 border-primary-500 shadow-lg shadow-primary-500/20"
+                              />
+                            </div>
+                            <div class="profile-image-actions mt-3 flex items-center justify-center gap-3">
                               <label
                                 for={@uploads.image.ref}
-                                class="text-sm text-primary-500 hover:text-primary-400 cursor-pointer"
+                                class="text-sm text-primary-500 hover:text-primary-400 cursor-pointer transition-colors"
                               >
                                 Change image
                               </label>
@@ -313,7 +318,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                                 type="button"
                                 phx-click="cancel-upload"
                                 phx-value-ref={entry.ref}
-                                class="text-sm text-red-500 hover:text-red-400"
+                                class="text-sm text-red-500 hover:text-red-400 transition-colors"
                               >
                                 Remove
                               </button>
@@ -323,13 +328,15 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                           <!-- No image - show avatar preview with upload prompt -->
                           <label for={@uploads.image.ref} class="cursor-pointer block">
                             <div class="space-y-4">
-                              <.avatar
-                                image={nil}
-                                first_name={@form[:first_name].value || "First"}
-                                last_name={@form[:last_name].value || "Last"}
-                                size="lg"
-                                class="mx-auto"
-                              />
+                              <div class="profile-avatar-placeholder inline-block rounded-full">
+                                <.avatar
+                                  image={nil}
+                                  first_name={@form[:first_name].value || "First"}
+                                  last_name={@form[:last_name].value || "Last"}
+                                  size="lg"
+                                  class="mx-auto"
+                                />
+                              </div>
                               <div class="text-sm text-gray-400">
                                 <p class="font-medium">Click to upload or drag and drop</p>
                                 <p class="text-xs">PNG, JPG, GIF up to 5MB</p>
