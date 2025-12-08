@@ -32,9 +32,6 @@ defmodule ChurchappWeb.EventsLive.NewLive do
       socket
       |> assign(:page_title, "New Event")
       |> assign(:form, form)
-      |> assign(:is_recurring, initial_values[:is_recurring] || false)
-      |> assign(:show_recurrence_options, false)
-      |> assign(:recurrence_presets, recurrence_presets())
       |> assign(:start_time_dropdown_open, false)
       |> assign(:end_time_dropdown_open, false)
 
@@ -49,23 +46,9 @@ defmodule ChurchappWeb.EventsLive.NewLive do
     # Combine separate date/time fields into datetime fields
     form_params = combine_date_time_fields(params, form_params)
 
-    is_recurring = form_params["is_recurring"] == "true"
-    was_recurring = socket.assigns.is_recurring
-
-    # If recurring was just enabled and no rule is set, apply a default preset
-    form_params =
-      if is_recurring && !was_recurring && (form_params["recurrence_rule"] || "") == "" do
-        Map.put(form_params, "recurrence_rule", "FREQ=WEEKLY;BYDAY=SU")
-      else
-        form_params
-      end
-
     form = Form.validate(socket.assigns.form, form_params)
 
-    {:noreply,
-     socket
-     |> assign(:form, form)
-     |> assign(:is_recurring, is_recurring)}
+    {:noreply, assign(socket, :form, form)}
   end
 
   def handle_event("save", params, socket) do
@@ -87,31 +70,6 @@ defmodule ChurchappWeb.EventsLive.NewLive do
     end
   end
 
-  def handle_event("toggle_recurrence", _params, socket) do
-    {:noreply, assign(socket, :show_recurrence_options, !socket.assigns.show_recurrence_options)}
-  end
-
-  def handle_event("apply_preset", %{"preset" => preset}, socket) do
-    rrule = get_preset_rrule(preset)
-
-    # Get current form params and merge with new recurrence values
-    current_params = socket.assigns.form.params || %{}
-
-    merged_params =
-      Map.merge(current_params, %{
-        "is_recurring" => "true",
-        "recurrence_rule" => rrule
-      })
-
-    form = Form.validate(socket.assigns.form, merged_params)
-
-    {:noreply,
-     socket
-     |> assign(:form, form)
-     |> assign(:is_recurring, true)
-     |> assign(:show_recurrence_options, false)}
-  end
-
   def handle_event("toggle_start_time_dropdown", _params, socket) do
     {:noreply,
      socket
@@ -131,7 +89,8 @@ defmodule ChurchappWeb.EventsLive.NewLive do
     start_date = extract_date(socket.assigns.form[:start_time].value)
     new_start_time = if start_date != "", do: "#{start_date}T#{time}", else: time
 
-    form_params = socket.assigns.form.params || %{}
+    # Get current form values and update start_time
+    form_params = get_current_form_params(socket.assigns.form)
     form_params = Map.put(form_params, "start_time", new_start_time)
     form = Form.validate(socket.assigns.form, form_params)
 
@@ -146,7 +105,8 @@ defmodule ChurchappWeb.EventsLive.NewLive do
     end_date = extract_date(socket.assigns.form[:end_time].value)
     new_end_time = if end_date != "", do: "#{end_date}T#{time}", else: time
 
-    form_params = socket.assigns.form.params || %{}
+    # Get current form values and update end_time
+    form_params = get_current_form_params(socket.assigns.form)
     form_params = Map.put(form_params, "end_time", new_end_time)
     form = Form.validate(socket.assigns.form, form_params)
 
@@ -165,6 +125,51 @@ defmodule ChurchappWeb.EventsLive.NewLive do
 
   defp is_admin?(nil), do: false
   defp is_admin?(user), do: user.role in [:super_admin, :admin, :staff]
+
+  # Extract current form values to preserve them during partial updates
+  defp get_current_form_params(form) do
+    base_params = form.params || %{}
+
+    start_time_str =
+      case Map.get(base_params, "start_time") do
+        nil -> format_datetime_for_form(form[:start_time].value)
+        "" -> format_datetime_for_form(form[:start_time].value)
+        value -> value
+      end
+
+    end_time_str =
+      case Map.get(base_params, "end_time") do
+        nil -> format_datetime_for_form(form[:end_time].value)
+        "" -> format_datetime_for_form(form[:end_time].value)
+        value -> value
+      end
+
+    %{
+      "title" => to_string_value(form[:title].value),
+      "description" => to_string_value(form[:description].value),
+      "start_time" => start_time_str,
+      "end_time" => end_time_str,
+      "all_day" => to_string(form[:all_day].value || false),
+      "location" => to_string_value(form[:location].value),
+      "color" => to_string_value(form[:color].value)
+    }
+  end
+
+  defp format_datetime_for_form(nil), do: ""
+  defp format_datetime_for_form(""), do: ""
+
+  defp format_datetime_for_form(%DateTime{} = dt) do
+    date_str = dt |> DateTime.to_date() |> Date.to_iso8601()
+    time_str = dt |> DateTime.to_time() |> Time.to_iso8601() |> String.slice(0, 5)
+    "#{date_str}T#{time_str}"
+  end
+
+  defp format_datetime_for_form(value) when is_binary(value), do: value
+  defp format_datetime_for_form(_), do: ""
+
+  defp to_string_value(nil), do: ""
+  defp to_string_value(value) when is_binary(value), do: value
+  defp to_string_value(value), do: to_string(value)
 
   defp build_initial_values(params) do
     # Start with default values - all_day should default to false
@@ -217,7 +222,6 @@ defmodule ChurchappWeb.EventsLive.NewLive do
   end
 
   defp add_hour_to_datetime(datetime_str) do
-    # Handle both date-only (2025-12-08) and datetime (2025-12-08T10:00) formats
     datetime_to_parse =
       cond do
         String.contains?(datetime_str, "T") && String.contains?(datetime_str, "Z") ->
@@ -241,30 +245,6 @@ defmodule ChurchappWeb.EventsLive.NewLive do
         datetime_str
     end
   end
-
-  defp recurrence_presets do
-    [
-      %{id: "weekly_sunday", label: "Every Sunday", rrule: "FREQ=WEEKLY;BYDAY=SU"},
-      %{id: "weekly_wednesday", label: "Every Wednesday", rrule: "FREQ=WEEKLY;BYDAY=WE"},
-      %{id: "weekly_friday", label: "Every Friday", rrule: "FREQ=WEEKLY;BYDAY=FR"},
-      %{id: "biweekly", label: "Every 2 Weeks", rrule: "FREQ=WEEKLY;INTERVAL=2"},
-      %{
-        id: "monthly_first_sunday",
-        label: "First Sunday of Month",
-        rrule: "FREQ=MONTHLY;BYDAY=1SU"
-      },
-      %{id: "monthly_date", label: "Same Day Monthly", rrule: "FREQ=MONTHLY"},
-      %{id: "custom", label: "Custom...", rrule: nil}
-    ]
-  end
-
-  defp get_preset_rrule("weekly_sunday"), do: "FREQ=WEEKLY;BYDAY=SU"
-  defp get_preset_rrule("weekly_wednesday"), do: "FREQ=WEEKLY;BYDAY=WE"
-  defp get_preset_rrule("weekly_friday"), do: "FREQ=WEEKLY;BYDAY=FR"
-  defp get_preset_rrule("biweekly"), do: "FREQ=WEEKLY;INTERVAL=2"
-  defp get_preset_rrule("monthly_first_sunday"), do: "FREQ=MONTHLY;BYDAY=1SU"
-  defp get_preset_rrule("monthly_date"), do: "FREQ=MONTHLY"
-  defp get_preset_rrule(_), do: ""
 
   @impl true
   def render(assigns) do
@@ -451,7 +431,7 @@ defmodule ChurchappWeb.EventsLive.NewLive do
                 id={@form[:location].id}
                 name={@form[:location].name}
                 value={@form[:location].value}
-                placeholder="e.g., Main Sanctuary"
+                placeholder="e.g., 320 47th Street"
                 class="w-full px-4 py-2 text-gray-200 placeholder-gray-500 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
@@ -489,125 +469,6 @@ defmodule ChurchappWeb.EventsLive.NewLive do
               </div>
             </div>
 
-            <%!-- Recurrence Section --%>
-            <div class="border-t border-dark-600 pt-6">
-              <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-3">
-                  <input type="hidden" name={@form[:is_recurring].name} value="false" />
-                  <input
-                    type="checkbox"
-                    id={@form[:is_recurring].id}
-                    name={@form[:is_recurring].name}
-                    value="true"
-                    checked={@is_recurring}
-                    class="h-4 w-4"
-                  />
-                  <label for={@form[:is_recurring].id} class="text-sm font-medium text-gray-300">
-                    Recurring Event
-                  </label>
-                </div>
-                <%= if @is_recurring do %>
-                  <button
-                    type="button"
-                    phx-click="toggle_recurrence"
-                    class="text-sm text-primary-500 hover:text-primary-400"
-                  >
-                    {if @show_recurrence_options, do: "Hide options", else: "Show options"}
-                  </button>
-                <% end %>
-              </div>
-
-              <%= if @is_recurring do %>
-                <%!-- Hidden input for recurrence_rule to ensure it's always submitted --%>
-                <%= if !@show_recurrence_options do %>
-                  <input
-                    type="hidden"
-                    name={@form[:recurrence_rule].name}
-                    value={@form[:recurrence_rule].value}
-                  />
-                <% end %>
-
-                <%!-- Show current recurrence pattern --%>
-                <div class="mb-4 p-3 bg-dark-700/50 rounded-lg">
-                  <p class="text-sm text-gray-300">
-                    <span class="font-medium">Current pattern:</span>
-                    <span class="text-primary-400 ml-2">{format_rrule(@form[:recurrence_rule].value)}</span>
-                  </p>
-                </div>
-
-                <%!-- Recurrence Presets --%>
-                <div class="mb-4">
-                  <label class="block text-sm font-medium text-gray-300 mb-2">
-                    Quick Presets
-                  </label>
-                  <div class="flex flex-wrap gap-2">
-                    <%= for preset <- @recurrence_presets do %>
-                      <%= if preset.rrule do %>
-                        <button
-                          type="button"
-                          phx-click="apply_preset"
-                          phx-value-preset={preset.id}
-                          class={[
-                            "px-3 py-1.5 text-xs font-medium border rounded-full transition-colors",
-                            if(@form[:recurrence_rule].value == preset.rrule,
-                              do: "bg-primary-500 text-white border-primary-500",
-                              else: "bg-dark-700 text-gray-300 border-dark-600 hover:bg-dark-600 hover:text-white"
-                            )
-                          ]}
-                        >
-                          {preset.label}
-                        </button>
-                      <% end %>
-                    <% end %>
-                  </div>
-                </div>
-
-                <%!-- Recurrence Rule (Advanced) --%>
-                <%= if @show_recurrence_options do %>
-                  <div class="space-y-4 p-4 bg-dark-700/50 rounded-lg">
-                    <div>
-                      <label
-                        for={@form[:recurrence_rule].id}
-                        class="block text-sm font-medium text-gray-300 mb-2"
-                      >
-                        Recurrence Rule (RRULE)
-                      </label>
-                      <input
-                        type="text"
-                        id={@form[:recurrence_rule].id}
-                        name={@form[:recurrence_rule].name}
-                        value={@form[:recurrence_rule].value}
-                        placeholder="e.g., FREQ=WEEKLY;BYDAY=SU"
-                        class="w-full px-4 py-2 text-gray-200 placeholder-gray-500 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm"
-                      />
-                      <p class="mt-1 text-xs text-gray-500">
-                        Uses iCalendar RRULE format. Examples: FREQ=WEEKLY;BYDAY=SU, FREQ=MONTHLY;BYMONTHDAY=1
-                      </p>
-                    </div>
-
-                    <div>
-                      <label
-                        for={@form[:recurrence_end_date].id}
-                        class="block text-sm font-medium text-gray-300 mb-2"
-                      >
-                        Recurrence End Date <span class="text-gray-500 font-normal">(optional)</span>
-                      </label>
-                      <input
-                        type="date"
-                        id={@form[:recurrence_end_date].id}
-                        name={@form[:recurrence_end_date].name}
-                        value={@form[:recurrence_end_date].value}
-                        class="w-full px-4 py-2 text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      />
-                      <p class="mt-1 text-xs text-gray-500">
-                        Leave empty for no end date
-                      </p>
-                    </div>
-                  </div>
-                <% end %>
-              <% end %>
-            </div>
-
             <%!-- Form Actions --%>
             <div class="flex items-center justify-end gap-3 pt-4 border-t border-dark-600">
               <.link
@@ -639,8 +500,10 @@ defmodule ChurchappWeb.EventsLive.NewLive do
   end
 
   defp extract_date(value) when is_binary(value) do
-    # Handle "YYYY-MM-DDTHH:MM" or "YYYY-MM-DD" format
-    value |> String.split("T") |> List.first() |> Kernel.||("")
+    value
+    |> String.split(~r/[T\s]/)
+    |> List.first()
+    |> Kernel.||("")
   end
 
   defp extract_date(_), do: ""
@@ -657,9 +520,12 @@ defmodule ChurchappWeb.EventsLive.NewLive do
   end
 
   defp extract_time(value) when is_binary(value) do
-    case String.split(value, "T") do
-      [_date, time] -> String.slice(time, 0, 5)
-      _ -> "09:00"
+    case String.split(value, ~r/[T\s]/) do
+      [_date, time | _] ->
+        time |> String.slice(0, 5)
+
+      _ ->
+        "09:00"
     end
   end
 
@@ -667,12 +533,12 @@ defmodule ChurchappWeb.EventsLive.NewLive do
 
   # Combine separate date and time fields into datetime strings
   defp combine_date_time_fields(params, form_params) do
-    start_date = params["start_date"] || extract_date(form_params["start_time"])
-    end_date = params["end_date"] || extract_date(form_params["end_time"])
-    start_time_only = params["start_time_only"] || "09:00"
-    end_time_only = params["end_time_only"] || "10:00"
+    start_date = non_empty_string(params["start_date"]) || extract_date(form_params["start_time"])
+    end_date = non_empty_string(params["end_date"]) || extract_date(form_params["end_time"])
 
-    # Only combine if we have date values
+    start_time_only = non_empty_string(params["start_time_only"]) || extract_time(form_params["start_time"])
+    end_time_only = non_empty_string(params["end_time_only"]) || extract_time(form_params["end_time"])
+
     form_params =
       if start_date && start_date != "" do
         Map.put(form_params, "start_time", "#{start_date}T#{start_time_only}")
@@ -687,15 +553,10 @@ defmodule ChurchappWeb.EventsLive.NewLive do
     end
   end
 
-  defp format_rrule(nil), do: "Not set"
-  defp format_rrule(""), do: "Not set"
-  defp format_rrule("FREQ=WEEKLY;BYDAY=SU"), do: "Every Sunday"
-  defp format_rrule("FREQ=WEEKLY;BYDAY=WE"), do: "Every Wednesday"
-  defp format_rrule("FREQ=WEEKLY;BYDAY=FR"), do: "Every Friday"
-  defp format_rrule("FREQ=WEEKLY;INTERVAL=2"), do: "Every 2 Weeks"
-  defp format_rrule("FREQ=MONTHLY;BYDAY=1SU"), do: "First Sunday of Month"
-  defp format_rrule("FREQ=MONTHLY"), do: "Same Day Monthly"
-  defp format_rrule(rule), do: rule
+  defp non_empty_string(nil), do: nil
+  defp non_empty_string(""), do: nil
+  defp non_empty_string(str) when is_binary(str), do: str
+  defp non_empty_string(_), do: nil
 
   # Generate time options in 30-minute intervals
   defp time_options do
@@ -725,7 +586,6 @@ defmodule ChurchappWeb.EventsLive.NewLive do
     "#{display_hour}:#{minute_str} #{period}"
   end
 
-  # Convert a time value (HH:MM) to display label
   defp format_time_label_from_value(""), do: "9:00 AM"
 
   defp format_time_label_from_value(time_value) do

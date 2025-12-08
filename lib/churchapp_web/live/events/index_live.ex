@@ -267,7 +267,7 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
 
           <div class="flex items-center gap-3">
             <%!-- Export Dropdown --%>
-            <div class="export-dropdown relative" phx-click-away="close_export_menu">
+            <div class="relative" phx-click-away="close_export_menu">
               <button
                 type="button"
                 phx-click="toggle_export_menu"
@@ -278,12 +278,27 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
                 <.icon name="hero-chevron-down" class="h-4 w-4" />
               </button>
               <%= if @show_export_menu do %>
-                <div class="export-dropdown-menu">
-                  <button type="button" phx-click="export_ical" class="export-dropdown-item">
-                    <.icon name="hero-calendar" class="h-4 w-4" /> Download iCal (.ics)
+                <div
+                  style="background-color: #1E1E1E;"
+                  class="absolute right-0 top-full mt-2 min-w-[12rem] border border-dark-600 rounded-lg shadow-xl z-50 overflow-hidden"
+                >
+                  <button
+                    type="button"
+                    phx-click="export_ical"
+                    style="background-color: #1E1E1E;"
+                    class="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+                  >
+                    <.icon name="hero-calendar" class="h-4 w-4" />
+                    <span>Download iCal (.ics)</span>
                   </button>
-                  <button type="button" onclick="window.print()" class="export-dropdown-item">
-                    <.icon name="hero-printer" class="h-4 w-4" /> Print Calendar
+                  <button
+                    type="button"
+                    onclick="window.print()"
+                    style="background-color: #1E1E1E;"
+                    class="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors border-t border-dark-600"
+                  >
+                    <.icon name="hero-printer" class="h-4 w-4" />
+                    <span>Print Calendar</span>
                   </button>
                 </div>
               <% end %>
