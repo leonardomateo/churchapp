@@ -345,7 +345,14 @@ const EventCalendar = {
     this.calendar = new Calendar(calendarEl, {
       plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
       initialView: 'dayGridMonth',
-      headerToolbar: false, // We use custom header in LiveView
+      headerToolbar: {
+        left: 'title',
+        center: '',
+        right: 'today prev,next'
+      },
+      buttonText: {
+        today: 'Today'
+      },
       height: 'auto',
       editable: this.isAdmin,
       selectable: this.isAdmin,
@@ -552,7 +559,8 @@ const EventCalendar = {
   updated() {
     // Handle view change commands from LiveView
     const viewCommand = this.el.dataset.viewCommand
-    if (viewCommand) {
+    if (viewCommand && viewCommand !== '' && viewCommand !== 'null') {
+      let commandExecuted = true
       switch(viewCommand) {
         case 'month':
           this.calendar.changeView('dayGridMonth')
@@ -575,10 +583,15 @@ const EventCalendar = {
         case 'next':
           this.calendar.next()
           break
+        default:
+          commandExecuted = false
       }
-      // Push updated title back to LiveView
-      this.pushEvent("calendar_navigated", { title: this.calendar.view.title })
-      // Clear the command
+      
+      if (commandExecuted) {
+        // Push updated title back to LiveView
+        this.pushEvent("calendar_navigated", { title: this.calendar.view.title })
+      }
+      // Clear the command (always clear to prevent repeated execution)
       this.el.dataset.viewCommand = ''
     }
   }

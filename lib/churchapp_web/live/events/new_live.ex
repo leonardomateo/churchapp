@@ -86,7 +86,7 @@ defmodule ChurchappWeb.EventsLive.NewLive do
   end
 
   defp is_admin?(nil), do: false
-  defp is_admin?(user), do: user.role in [:super_admin, :admin]
+  defp is_admin?(user), do: user.role in [:super_admin, :admin, :staff]
 
   defp build_initial_values(params) do
     values = %{}
@@ -132,7 +132,21 @@ defmodule ChurchappWeb.EventsLive.NewLive do
   end
 
   defp add_hour_to_datetime(datetime_str) do
-    case DateTime.from_iso8601(datetime_str <> ":00Z") do
+    # Handle both date-only (2025-12-08) and datetime (2025-12-08T10:00) formats
+    datetime_to_parse =
+      cond do
+        String.contains?(datetime_str, "T") && String.contains?(datetime_str, "Z") ->
+          datetime_str
+
+        String.contains?(datetime_str, "T") ->
+          datetime_str <> ":00Z"
+
+        true ->
+          # Date only - add default time
+          datetime_str <> "T00:00:00Z"
+      end
+
+    case DateTime.from_iso8601(datetime_to_parse) do
       {:ok, dt, _} ->
         DateTime.add(dt, 3600, :second)
         |> DateTime.to_iso8601()

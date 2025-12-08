@@ -41,7 +41,10 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
   # Handle calendar navigation events from JS hook
   @impl true
   def handle_event("calendar_navigated", %{"title" => title}, socket) do
-    {:noreply, assign(socket, :calendar_title, title)}
+    {:noreply,
+     socket
+     |> assign(:calendar_title, title)
+     |> assign(:view_command, nil)}
   end
 
   # Handle date click - create new event
@@ -186,7 +189,7 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
 
   # Helper functions
   defp is_admin?(nil), do: false
-  defp is_admin?(user), do: user.role in [:super_admin, :admin]
+  defp is_admin?(user), do: user.role in [:super_admin, :admin, :staff]
 
   defp format_current_month do
     Calendar.strftime(Date.utc_today(), "%B %Y")
@@ -212,6 +215,8 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
 
   defp parse_datetime(_), do: {:error, :invalid_datetime}
 
+  @valid_event_filters ~w(service midweek_service special_service)
+
   defp fetch_events(start_date, end_date, filter, actor) do
     query =
       Events
@@ -222,7 +227,7 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
       )
 
     query =
-      if filter && filter != "" do
+      if filter && filter != "" && filter in @valid_event_filters do
         filter_atom = String.to_existing_atom(filter)
         Ash.Query.filter(query, event_type == ^filter_atom)
       else
@@ -239,7 +244,7 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
     query = Events
 
     query =
-      if filter && filter != "" do
+      if filter && filter != "" && filter in @valid_event_filters do
         filter_atom = String.to_existing_atom(filter)
         Ash.Query.filter(query, event_type == ^filter_atom)
       else
@@ -399,38 +404,6 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
             </div>
           </div>
 
-          <%!-- Right: Navigation --%>
-          <div class="flex items-center gap-3">
-            <button
-              type="button"
-              phx-click="navigate"
-              phx-value-direction="today"
-              class="calendar-nav-btn"
-            >
-              Today
-            </button>
-            <div class="flex items-center">
-              <button
-                type="button"
-                phx-click="navigate"
-                phx-value-direction="prev"
-                class="calendar-nav-btn rounded-r-none border-r-0"
-              >
-                <.icon name="hero-chevron-left" class="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                phx-click="navigate"
-                phx-value-direction="next"
-                class="calendar-nav-btn rounded-l-none"
-              >
-                <.icon name="hero-chevron-right" class="h-4 w-4" />
-              </button>
-            </div>
-            <span class="text-lg font-semibold text-white min-w-[200px] text-center">
-              {@calendar_title}
-            </span>
-          </div>
         </div>
 
         <%!-- Event Type Legend --%>

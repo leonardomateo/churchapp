@@ -58,7 +58,7 @@ defmodule ChurchappWeb.EventsLive.ShowLive do
   end
 
   defp is_admin?(nil), do: false
-  defp is_admin?(user), do: user.role in [:super_admin, :admin]
+  defp is_admin?(user), do: user.role in [:super_admin, :admin, :staff]
 
   defp slugify(title) do
     title

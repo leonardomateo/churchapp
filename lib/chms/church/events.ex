@@ -35,6 +35,10 @@ defmodule Chms.Church.Events do
         :recurrence_end_date
       ]
 
+      # Validate end_time is after start_time
+      validate compare(:end_time, greater_than: :start_time),
+        message: "must be after start time"
+
       change fn changeset, _context ->
         # Set default color based on event type if not provided
         case Ash.Changeset.get_attribute(changeset, :color) do
@@ -45,6 +49,18 @@ defmodule Chms.Church.Events do
 
           _ ->
             changeset
+        end
+      end
+
+      # Validate recurrence_rule is provided when is_recurring is true
+      validate fn changeset, _context ->
+        is_recurring = Ash.Changeset.get_attribute(changeset, :is_recurring)
+        recurrence_rule = Ash.Changeset.get_attribute(changeset, :recurrence_rule)
+
+        if is_recurring == true && (is_nil(recurrence_rule) || recurrence_rule == "") do
+          {:error, field: :recurrence_rule, message: "is required for recurring events"}
+        else
+          :ok
         end
       end
     end
@@ -63,6 +79,22 @@ defmodule Chms.Church.Events do
         :recurrence_rule,
         :recurrence_end_date
       ]
+
+      # Validate end_time is after start_time
+      validate compare(:end_time, greater_than: :start_time),
+        message: "must be after start time"
+
+      # Validate recurrence_rule is provided when is_recurring is true
+      validate fn changeset, _context ->
+        is_recurring = Ash.Changeset.get_attribute(changeset, :is_recurring)
+        recurrence_rule = Ash.Changeset.get_attribute(changeset, :recurrence_rule)
+
+        if is_recurring == true && (is_nil(recurrence_rule) || recurrence_rule == "") do
+          {:error, field: :recurrence_rule, message: "is required for recurring events"}
+        else
+          :ok
+        end
+      end
     end
 
     read :list_in_range do
@@ -89,14 +121,14 @@ defmodule Chms.Church.Events do
       authorize_if {Checks.IsSuperAdmin, []}
     end
 
-    # Read policy - all authenticated users can view events
+    # Read policy - authenticated users can view events
     policy action_type(:read) do
-      authorize_if always()
+      authorize_if {Checks.HasRole, role: [:admin, :staff, :leader, :member]}
     end
 
-    # Write policies - only admins can manage events
+    # Write policies - admins and staff can manage events
     policy action_type([:create, :update, :destroy]) do
-      authorize_if {Checks.HasRole, role: [:admin]}
+      authorize_if {Checks.HasRole, role: [:admin, :staff]}
     end
   end
 
