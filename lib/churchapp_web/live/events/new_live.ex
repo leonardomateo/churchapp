@@ -23,10 +23,14 @@ defmodule ChurchappWeb.EventsLive.NewLive do
     # Pre-populate form based on URL params (from calendar click)
     initial_values = build_initial_values(params)
 
+    # Create form without validating to avoid showing errors on initial load
     form =
       Events
-      |> Form.for_create(:create, domain: Chms.Church, actor: socket.assigns.current_user)
-      |> Form.validate(initial_values)
+      |> Form.for_create(:create,
+        domain: Chms.Church,
+        actor: socket.assigns.current_user,
+        params: initial_values
+      )
       |> to_form()
 
     activity_names = EventActivityNames.all_name_options()
@@ -53,7 +57,10 @@ defmodule ChurchappWeb.EventsLive.NewLive do
     # Combine separate date/time fields into datetime fields
     form_params = combine_date_time_fields(params, form_params)
 
-    form = Form.validate(socket.assigns.form, form_params)
+    form =
+      socket.assigns.form.source
+      |> Form.validate(form_params)
+      |> to_form()
 
     {:noreply, assign(socket, :form, form)}
   end
@@ -65,7 +72,7 @@ defmodule ChurchappWeb.EventsLive.NewLive do
     # Combine separate date/time fields into datetime fields (same as validate)
     form_params = combine_date_time_fields(params, form_params)
 
-    case Form.submit(socket.assigns.form, params: form_params) do
+    case Form.submit(socket.assigns.form.source, params: form_params) do
       {:ok, event} ->
         {:noreply,
          socket
@@ -73,7 +80,7 @@ defmodule ChurchappWeb.EventsLive.NewLive do
          |> push_navigate(to: ~p"/events")}
 
       {:error, form} ->
-        {:noreply, assign(socket, :form, form)}
+        {:noreply, assign(socket, :form, to_form(form))}
     end
   end
 
@@ -99,7 +106,11 @@ defmodule ChurchappWeb.EventsLive.NewLive do
     # Get current form values and update start_time
     form_params = get_current_form_params(socket.assigns.form)
     form_params = Map.put(form_params, "start_time", new_start_time)
-    form = Form.validate(socket.assigns.form, form_params)
+
+    form =
+      socket.assigns.form.source
+      |> Form.validate(form_params)
+      |> to_form()
 
     {:noreply,
      socket
@@ -115,7 +126,11 @@ defmodule ChurchappWeb.EventsLive.NewLive do
     # Get current form values and update end_time
     form_params = get_current_form_params(socket.assigns.form)
     form_params = Map.put(form_params, "end_time", new_end_time)
-    form = Form.validate(socket.assigns.form, form_params)
+
+    form =
+      socket.assigns.form.source
+      |> Form.validate(form_params)
+      |> to_form()
 
     {:noreply,
      socket
@@ -329,7 +344,7 @@ defmodule ChurchappWeb.EventsLive.NewLive do
         </.link>
       </div>
 
-      <div class="max-w-2xl">
+      <div class="max-w-2xl mx-auto">
         <div class="mb-6">
           <h2 class="text-2xl font-bold text-white">Create New Event</h2>
           <p class="mt-1 text-sm text-gray-400">
@@ -376,6 +391,13 @@ defmodule ChurchappWeb.EventsLive.NewLive do
                   </div>
                 </div>
               </div>
+              <p
+                :for={msg <- get_field_errors(@form[:title])}
+                class="mt-1.5 flex gap-2 items-center text-sm text-red-400"
+              >
+                <.icon name="hero-exclamation-circle" class="h-5 w-5" />
+                {msg}
+              </p>
             </div>
 
             <%!-- Date & Time Section --%>
@@ -395,6 +417,13 @@ defmodule ChurchappWeb.EventsLive.NewLive do
                     class="w-full px-4 py-3 text-base text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     required
                   />
+                  <p
+                    :for={msg <- get_field_errors(@form[:start_time])}
+                    class="mt-1.5 flex gap-2 items-center text-sm text-red-400"
+                  >
+                    <.icon name="hero-exclamation-circle" class="h-5 w-5" />
+                    {msg}
+                  </p>
                 </div>
                 <div>
                   <label class="block text-sm font-medium text-gray-300 mb-2">
@@ -409,107 +438,132 @@ defmodule ChurchappWeb.EventsLive.NewLive do
                     class="w-full px-4 py-3 text-base text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     required
                   />
+                  <p
+                    :for={msg <- get_field_errors(@form[:end_time])}
+                    class="mt-1.5 flex gap-2 items-center text-sm text-red-400"
+                  >
+                    <.icon name="hero-exclamation-circle" class="h-5 w-5" />
+                    {msg}
+                  </p>
                 </div>
               </div>
 
               <%!-- Time Row with All Day Toggle --%>
               <div class="flex flex-wrap items-end gap-4">
                 <%!-- Start Time Custom Dropdown --%>
-                <div class="flex-1 min-w-[140px] relative">
+                <div class="flex-1 min-w-[140px]">
                   <label class="block text-sm font-medium text-gray-300 mb-2">
                     From <span class="text-red-500">*</span>
                   </label>
-                  <input
-                    type="hidden"
-                    name="start_time_only"
-                    value={extract_time(@form[:start_time].value)}
-                  />
-                  <button
-                    type="button"
-                    phx-click="toggle_start_time_dropdown"
-                    disabled={@form[:all_day].value == true || @form[:all_day].value == ""}
-                    class={[
-                      "w-full h-[46px] px-4 text-left text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent flex items-center justify-between",
-                      (@form[:all_day].value == true || @form[:all_day].value == "true") &&
-                        "opacity-50 cursor-not-allowed"
-                    ]}
-                  >
-                    <span>
-                      {format_time_label_from_value(extract_time(@form[:start_time].value))}
-                    </span>
-                    <.icon name="hero-chevron-down" class="w-4 h-4 text-gray-400" />
-                  </button>
-                  <%= if @start_time_dropdown_open do %>
-                    <div
-                      style="background-color: #2D2D2D;"
-                      class="absolute z-50 mt-1 w-full border border-dark-600 rounded-md shadow-lg max-h-60 overflow-y-auto"
-                      phx-click-away="close_time_dropdowns"
+                  <div class="relative">
+                    <input
+                      type="hidden"
+                      name="start_time_only"
+                      value={extract_time(@form[:start_time].value)}
+                    />
+                    <button
+                      type="button"
+                      phx-click="toggle_start_time_dropdown"
+                      disabled={@form[:all_day].value == true || @form[:all_day].value == ""}
+                      class={[
+                        "w-full h-[46px] px-4 text-left text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent flex items-center justify-between",
+                        (@form[:all_day].value == true || @form[:all_day].value == "true") &&
+                          "opacity-50 cursor-not-allowed"
+                      ]}
                     >
-                      <%= for {label, value} <- time_options() do %>
-                        <button
-                          type="button"
-                          phx-click="select_start_time"
-                          phx-value-time={value}
-                          style={
-                            if extract_time(@form[:start_time].value) == value,
-                              do: "background-color: #06b6d4; color: white;",
-                              else: "background-color: #2D2D2D; color: #e5e7eb;"
-                          }
-                          class="w-full px-4 py-2.5 text-left text-sm transition-colors time-picker-option"
-                        >
-                          {label}
-                        </button>
-                      <% end %>
-                    </div>
-                  <% end %>
+                      <span>
+                        {format_time_label_from_value(extract_time(@form[:start_time].value))}
+                      </span>
+                      <.icon name="hero-chevron-down" class="w-4 h-4 text-gray-400" />
+                    </button>
+                    <%= if @start_time_dropdown_open do %>
+                      <div
+                        style="background-color: #2D2D2D;"
+                        class="absolute z-50 mt-1 w-full border border-dark-600 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                        phx-click-away="close_time_dropdowns"
+                      >
+                        <%= for {label, value} <- time_options() do %>
+                          <button
+                            type="button"
+                            phx-click="select_start_time"
+                            phx-value-time={value}
+                            style={
+                              if extract_time(@form[:start_time].value) == value,
+                                do: "background-color: #06b6d4; color: white;",
+                                else: "background-color: #2D2D2D; color: #e5e7eb;"
+                            }
+                            class="w-full px-4 py-2.5 text-left text-sm transition-colors time-picker-option"
+                          >
+                            {label}
+                          </button>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                  <p
+                    :for={msg <- get_field_errors(@form[:start_time])}
+                    class="mt-1.5 flex gap-2 items-center text-sm text-red-400"
+                  >
+                    <.icon name="hero-exclamation-circle" class="h-5 w-5" />
+                    {msg}
+                  </p>
                 </div>
 
                 <%!-- End Time Custom Dropdown --%>
-                <div class="flex-1 min-w-[140px] relative">
+                <div class="flex-1 min-w-[140px]">
                   <label class="block text-sm font-medium text-gray-300 mb-2">
                     To <span class="text-red-500">*</span>
                   </label>
-                  <input
-                    type="hidden"
-                    name="end_time_only"
-                    value={extract_time(@form[:end_time].value)}
-                  />
-                  <button
-                    type="button"
-                    phx-click="toggle_end_time_dropdown"
-                    disabled={@form[:all_day].value == true || @form[:all_day].value == "true"}
-                    class={[
-                      "w-full h-[46px] px-4 text-left text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent flex items-center justify-between",
-                      (@form[:all_day].value == true || @form[:all_day].value == "true") &&
-                        "opacity-50 cursor-not-allowed"
-                    ]}
-                  >
-                    <span>{format_time_label_from_value(extract_time(@form[:end_time].value))}</span>
-                    <.icon name="hero-chevron-down" class="w-4 h-4 text-gray-400" />
-                  </button>
-                  <%= if @end_time_dropdown_open do %>
-                    <div
-                      style="background-color: #2D2D2D;"
-                      class="absolute z-50 mt-1 w-full border border-dark-600 rounded-md shadow-lg max-h-60 overflow-y-auto"
-                      phx-click-away="close_time_dropdowns"
+                  <div class="relative">
+                    <input
+                      type="hidden"
+                      name="end_time_only"
+                      value={extract_time(@form[:end_time].value)}
+                    />
+                    <button
+                      type="button"
+                      phx-click="toggle_end_time_dropdown"
+                      disabled={@form[:all_day].value == true || @form[:all_day].value == "true"}
+                      class={[
+                        "w-full h-[46px] px-4 text-left text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent flex items-center justify-between",
+                        (@form[:all_day].value == true || @form[:all_day].value == "true") &&
+                          "opacity-50 cursor-not-allowed"
+                      ]}
                     >
-                      <%= for {label, value} <- time_options() do %>
-                        <button
-                          type="button"
-                          phx-click="select_end_time"
-                          phx-value-time={value}
-                          style={
-                            if extract_time(@form[:end_time].value) == value,
-                              do: "background-color: #06b6d4; color: white;",
-                              else: "background-color: #2D2D2D; color: #e5e7eb;"
-                          }
-                          class="w-full px-4 py-2.5 text-left text-sm transition-colors time-picker-option"
-                        >
-                          {label}
-                        </button>
-                      <% end %>
-                    </div>
-                  <% end %>
+                      <span>{format_time_label_from_value(extract_time(@form[:end_time].value))}</span>
+                      <.icon name="hero-chevron-down" class="w-4 h-4 text-gray-400" />
+                    </button>
+                    <%= if @end_time_dropdown_open do %>
+                      <div
+                        style="background-color: #2D2D2D;"
+                        class="absolute z-50 mt-1 w-full border border-dark-600 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                        phx-click-away="close_time_dropdowns"
+                      >
+                        <%= for {label, value} <- time_options() do %>
+                          <button
+                            type="button"
+                            phx-click="select_end_time"
+                            phx-value-time={value}
+                            style={
+                              if extract_time(@form[:end_time].value) == value,
+                                do: "background-color: #06b6d4; color: white;",
+                                else: "background-color: #2D2D2D; color: #e5e7eb;"
+                            }
+                            class="w-full px-4 py-2.5 text-left text-sm transition-colors time-picker-option"
+                          >
+                            {label}
+                          </button>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                  <p
+                    :for={msg <- get_field_errors(@form[:end_time])}
+                    class="mt-1.5 flex gap-2 items-center text-sm text-red-400"
+                  >
+                    <.icon name="hero-exclamation-circle" class="h-5 w-5" />
+                    {msg}
+                  </p>
                 </div>
 
                 <div class="flex items-center gap-2 pb-2">
@@ -794,6 +848,20 @@ defmodule ChurchappWeb.EventsLive.NewLive do
 
       _ ->
         "9:00 AM"
+    end
+  end
+
+  defp get_field_errors(field) do
+    case field.errors do
+      errors when is_list(errors) ->
+        Enum.map(errors, fn
+          {msg, _opts} -> msg
+          msg when is_binary(msg) -> msg
+          _ -> "Invalid"
+        end)
+
+      _ ->
+        []
     end
   end
 end
