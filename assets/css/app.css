@@ -1178,7 +1178,7 @@ form input[type="checkbox"]:checked::after {
   --fc-page-bg-color: #1E1E1E;
   --fc-neutral-bg-color: #2D2D2D;
   --fc-list-event-hover-bg-color: #2D2D2D;
-  --fc-today-bg-color: rgba(6, 182, 212, 0.1);
+  --fc-today-bg-color: #1E1E1E;  /* Same as regular days */
   --fc-now-indicator-color: #06b6d4;
   --fc-event-bg-color: #06b6d4;
   --fc-event-border-color: #06b6d4;
@@ -1311,7 +1311,7 @@ form input[type="checkbox"]:checked::after {
 }
 
 .fc .fc-daygrid-day.fc-day-today {
-  background-color: rgba(6, 182, 212, 0.1);
+  background-color: #1E1E1E;  /* Same as regular days */
 }
 
 .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
@@ -1331,11 +1331,12 @@ form input[type="checkbox"]:checked::after {
 /* Events */
 .fc .fc-event {
   border-radius: 4px;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 500;
-  padding: 2px 6px;
+  padding: 3px 6px;
   cursor: pointer;
   transition: transform 0.1s ease, box-shadow 0.1s ease;
+  overflow: hidden;
 }
 
 .fc .fc-event:hover {
@@ -1343,15 +1344,46 @@ form input[type="checkbox"]:checked::after {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
+/* Day grid block events - show full text */
+.fc .fc-daygrid-block-event {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fc .fc-daygrid-block-event .fc-event-main {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Event title and time styling */
 .fc .fc-event-title {
   font-weight: 500;
   color: #ffffff !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .fc .fc-event-time {
-  font-weight: 400;
-  opacity: 0.9;
+  font-weight: 600;
+  font-size: 0.7rem;
+  opacity: 1;
   color: #ffffff !important;
+  margin-right: 4px;
+}
+
+/* Show time and title inline in month view */
+.fc .fc-daygrid-event .fc-event-main-frame {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.fc .fc-daygrid-event .fc-event-title-container {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Ensure all event text is white for contrast */
@@ -1542,7 +1574,7 @@ form input[type="checkbox"]:checked::after {
   --fc-page-bg-color: #ffffff;
   --fc-neutral-bg-color: #f9fafb;
   --fc-list-event-hover-bg-color: #f3f4f6;
-  --fc-today-bg-color: rgba(6, 182, 212, 0.08);
+  --fc-today-bg-color: #ffffff;  /* Same as regular days in light mode */
   --fc-now-indicator-color: #06b6d4;
   --fc-event-bg-color: #06b6d4;
   --fc-event-border-color: #06b6d4;
@@ -1600,7 +1632,7 @@ form input[type="checkbox"]:checked::after {
 }
 
 [data-theme="light"] .fc .fc-daygrid-day.fc-day-today {
-  background-color: rgba(6, 182, 212, 0.08);
+  background-color: #ffffff;  /* Same as regular days in light mode */
 }
 
 [data-theme="light"] .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
@@ -1863,6 +1895,124 @@ form input[type="checkbox"]:checked::after {
   font-size: 0.625rem;
   margin-left: 0.25rem;
   color: #9ca3af;
+}
+
+/* ============================================
+   Calendar Responsive Styles
+   ============================================ */
+
+/* Tablet and below */
+@media (max-width: 1024px) {
+  .fc .fc-toolbar {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .fc .fc-toolbar-chunk {
+    justify-content: center;
+  }
+  
+  .fc .fc-toolbar-title {
+    font-size: 1.25rem;
+    text-align: center;
+  }
+  
+  .fc .fc-daygrid-day-number {
+    font-size: 0.875rem;
+    padding: 0.25rem;
+  }
+  
+  .fc .fc-event {
+    font-size: 0.7rem;
+    padding: 2px 4px;
+  }
+  
+  .fc .fc-col-header-cell-cushion {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.25rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .fc .fc-toolbar-title {
+    font-size: 1.125rem;
+  }
+  
+  .fc .fc-button {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .fc .fc-daygrid-day-number {
+    font-size: 0.75rem;
+    padding: 0.125rem;
+  }
+  
+  .fc .fc-event {
+    font-size: 0.625rem;
+    padding: 1px 3px;
+  }
+  
+  .fc .fc-event-time {
+    display: none;  /* Hide time on mobile to save space */
+  }
+  
+  .fc .fc-col-header-cell-cushion {
+    font-size: 0.625rem;
+    padding: 0.375rem 0.125rem;
+  }
+  
+  /* Show abbreviated day names on mobile */
+  .fc .fc-col-header-cell {
+    padding: 0;
+  }
+  
+  /* Reduce cell height on mobile */
+  .fc .fc-daygrid-day {
+    min-height: 60px;
+  }
+  
+  /* Calendar container padding */
+  .calendar-container {
+    padding: 0.5rem;
+  }
+  
+  /* Calendar controls responsive */
+  .calendar-view-btn {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .calendar-nav-btn {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .calendar-filter-select {
+    font-size: 0.75rem;
+    padding: 0.375rem 1.5rem 0.375rem 0.5rem;
+  }
+}
+
+/* Extra small mobile */
+@media (max-width: 400px) {
+  .fc .fc-toolbar-title {
+    font-size: 1rem;
+  }
+  
+  .fc .fc-event {
+    font-size: 0.5625rem;
+  }
+  
+  .fc .fc-col-header-cell-cushion {
+    font-size: 0.5rem;
+  }
+  
+  .fc .fc-daygrid-day {
+    min-height: 50px;
+  }
 }
 
 /* ============================================

@@ -5,9 +5,11 @@ defmodule ChurchappWeb.EventsLive.ShowLive do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    case Chms.Church.get_event_by_id(id) do
+    actor = socket.assigns[:current_user]
+
+    case Chms.Church.get_event_by_id(id, actor: actor) do
       {:ok, event} ->
-        is_admin = is_admin?(socket.assigns[:current_user])
+        is_admin = is_admin?(actor)
 
         {:ok,
          socket
@@ -16,7 +18,7 @@ defmodule ChurchappWeb.EventsLive.ShowLive do
          |> assign(:is_admin, is_admin)
          |> assign(:show_delete_modal, false)}
 
-      {:error, _} ->
+      {:error, _error} ->
         {:ok,
          socket
          |> put_flash(:error, "Event not found")

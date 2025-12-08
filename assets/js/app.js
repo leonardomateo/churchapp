@@ -357,8 +357,22 @@ const EventCalendar = {
       editable: this.isAdmin,
       selectable: this.isAdmin,
       selectMirror: true,
-      dayMaxEvents: 3,
+      dayMaxEvents: true,  // Show "more" link when events overflow
+      dayMaxEventRows: 4,  // Show up to 4 rows of events before "more" link
       weekends: true,
+      eventDisplay: 'block',  // Use block display for better text visibility
+      
+      // Responsive configuration
+      windowResize: (arg) => {
+        // Adjust dayMaxEventRows based on screen size
+        if (window.innerWidth < 640) {
+          this.calendar.setOption('dayMaxEventRows', 2)
+        } else if (window.innerWidth < 1024) {
+          this.calendar.setOption('dayMaxEventRows', 3)
+        } else {
+          this.calendar.setOption('dayMaxEventRows', 4)
+        }
+      },
       nowIndicator: true,
       eventTimeFormat: {
         hour: 'numeric',
@@ -398,7 +412,7 @@ const EventCalendar = {
       eventClick: (info) => {
         const eventId = info.event.id
         // For recurring event instances, extract the original event ID
-        const originalId = info.event.extendedProps.originalId || eventId
+        const originalId = info.event.extendedProps?.originalId || eventId
         this.pushEvent("event_clicked", { id: originalId })
       },
       

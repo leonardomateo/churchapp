@@ -66,6 +66,9 @@ defmodule Chms.Church.Events do
     end
 
     update :update do
+      # Disable atomic requirement due to custom validation function
+      require_atomic? false
+
       accept [
         :title,
         :description,

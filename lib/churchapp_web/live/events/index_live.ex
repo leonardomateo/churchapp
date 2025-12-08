@@ -442,7 +442,7 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
         <%= if @is_admin do %>
           <p>
             <.icon name="hero-information-circle" class="inline h-4 w-4 mr-1" />
-            Click on a date to create a new event. Click on an event to view details. Drag events to reschedule.
+            Click on a date to create a new event. Click on an event to view, edit, or delete it. Drag events to reschedule.
           </p>
         <% else %>
           <p>

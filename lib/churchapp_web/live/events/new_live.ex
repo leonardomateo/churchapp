@@ -278,6 +278,7 @@ defmodule ChurchappWeb.EventsLive.NewLive do
 
             <%!-- All Day Checkbox --%>
             <div class="flex items-center gap-3">
+              <input type="hidden" name={@form[:all_day].name} value="false" />
               <input
                 type="checkbox"
                 id={@form[:all_day].id}
@@ -343,6 +344,7 @@ defmodule ChurchappWeb.EventsLive.NewLive do
             <div class="border-t border-dark-600 pt-6">
               <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-3">
+                  <input type="hidden" name={@form[:is_recurring].name} value="false" />
                   <input
                     type="checkbox"
                     id={@form[:is_recurring].id}
