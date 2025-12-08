@@ -307,7 +307,6 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
               </button>
             </div>
           </div>
-
         </div>
       </div>
 

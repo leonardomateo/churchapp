@@ -12,7 +12,6 @@ defmodule Churchapp.Repo.Migrations.CreateEvents do
       add :id, :uuid, null: false, default: fragment("gen_random_uuid()"), primary_key: true
       add :title, :text, null: false
       add :description, :text
-      add :event_type, :text, null: false, default: "service"
       add :start_time, :utc_datetime, null: false
       add :end_time, :utc_datetime, null: false
       add :all_day, :boolean, null: false, default: false

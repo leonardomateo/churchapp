@@ -270,17 +270,24 @@ defmodule ChurchappWeb.EventsLive.EditLive do
                   <label class="block text-sm font-medium text-gray-300 mb-2">
                     From <span class="text-red-500">*</span>
                   </label>
-                  <input type="hidden" name="start_time_only" value={extract_time(@form[:start_time].value)} />
+                  <input
+                    type="hidden"
+                    name="start_time_only"
+                    value={extract_time(@form[:start_time].value)}
+                  />
                   <button
                     type="button"
                     phx-click="toggle_start_time_dropdown"
                     disabled={@form[:all_day].value == true || @form[:all_day].value == "true"}
                     class={[
                       "w-full h-[46px] px-4 text-left text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent flex items-center justify-between",
-                      (@form[:all_day].value == true || @form[:all_day].value == "true") && "opacity-50 cursor-not-allowed"
+                      (@form[:all_day].value == true || @form[:all_day].value == "true") &&
+                        "opacity-50 cursor-not-allowed"
                     ]}
                   >
-                    <span>{format_time_label_from_value(extract_time(@form[:start_time].value))}</span>
+                    <span>
+                      {format_time_label_from_value(extract_time(@form[:start_time].value))}
+                    </span>
                     <.icon name="hero-chevron-down" class="w-4 h-4 text-gray-400" />
                   </button>
                   <%= if @start_time_dropdown_open do %>
@@ -294,7 +301,11 @@ defmodule ChurchappWeb.EventsLive.EditLive do
                           type="button"
                           phx-click="select_start_time"
                           phx-value-time={value}
-                          style={if extract_time(@form[:start_time].value) == value, do: "background-color: #06b6d4; color: white;", else: "background-color: #2D2D2D; color: #e5e7eb;"}
+                          style={
+                            if extract_time(@form[:start_time].value) == value,
+                              do: "background-color: #06b6d4; color: white;",
+                              else: "background-color: #2D2D2D; color: #e5e7eb;"
+                          }
                           class="w-full px-4 py-2.5 text-left text-sm transition-colors time-picker-option"
                         >
                           {label}
@@ -309,14 +320,19 @@ defmodule ChurchappWeb.EventsLive.EditLive do
                   <label class="block text-sm font-medium text-gray-300 mb-2">
                     To <span class="text-red-500">*</span>
                   </label>
-                  <input type="hidden" name="end_time_only" value={extract_time(@form[:end_time].value)} />
+                  <input
+                    type="hidden"
+                    name="end_time_only"
+                    value={extract_time(@form[:end_time].value)}
+                  />
                   <button
                     type="button"
                     phx-click="toggle_end_time_dropdown"
                     disabled={@form[:all_day].value == true || @form[:all_day].value == "true"}
                     class={[
                       "w-full h-[46px] px-4 text-left text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent flex items-center justify-between",
-                      (@form[:all_day].value == true || @form[:all_day].value == "true") && "opacity-50 cursor-not-allowed"
+                      (@form[:all_day].value == true || @form[:all_day].value == "true") &&
+                        "opacity-50 cursor-not-allowed"
                     ]}
                   >
                     <span>{format_time_label_from_value(extract_time(@form[:end_time].value))}</span>
@@ -333,7 +349,11 @@ defmodule ChurchappWeb.EventsLive.EditLive do
                           type="button"
                           phx-click="select_end_time"
                           phx-value-time={value}
-                          style={if extract_time(@form[:end_time].value) == value, do: "background-color: #06b6d4; color: white;", else: "background-color: #2D2D2D; color: #e5e7eb;"}
+                          style={
+                            if extract_time(@form[:end_time].value) == value,
+                              do: "background-color: #06b6d4; color: white;",
+                              else: "background-color: #2D2D2D; color: #e5e7eb;"
+                          }
                           class="w-full px-4 py-2.5 text-left text-sm transition-colors time-picker-option"
                         >
                           {label}
@@ -407,7 +427,7 @@ defmodule ChurchappWeb.EventsLive.EditLive do
                   class="h-10 w-20 bg-dark-700 border border-dark-600 rounded cursor-pointer"
                 />
                 <span class="text-sm text-gray-500">
-                  Leave default to use event type color
+                  Choose a color to display on the calendar
                 </span>
               </div>
             </div>
@@ -479,8 +499,11 @@ defmodule ChurchappWeb.EventsLive.EditLive do
     start_date = non_empty_string(params["start_date"]) || extract_date(form_params["start_time"])
     end_date = non_empty_string(params["end_date"]) || extract_date(form_params["end_time"])
 
-    start_time_only = non_empty_string(params["start_time_only"]) || extract_time(form_params["start_time"])
-    end_time_only = non_empty_string(params["end_time_only"]) || extract_time(form_params["end_time"])
+    start_time_only =
+      non_empty_string(params["start_time_only"]) || extract_time(form_params["start_time"])
+
+    end_time_only =
+      non_empty_string(params["end_time_only"]) || extract_time(form_params["end_time"])
 
     form_params =
       if start_date && start_date != "" do

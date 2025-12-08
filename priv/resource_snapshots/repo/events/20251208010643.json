@@ -38,18 +38,6 @@
     },
     {
       "allow_nil?": false,
-      "default": "\"service\"",
-      "generated?": false,
-      "precision": null,
-      "primary_key?": false,
-      "references": null,
-      "scale": null,
-      "size": null,
-      "source": "event_type",
-      "type": "text"
-    },
-    {
-      "allow_nil?": false,
       "default": "nil",
       "generated?": false,
       "precision": null,
@@ -174,7 +162,7 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "AFBAA5E883E0A43E84295C32AA7979C79415784F034B41904737A2A9D5683D51",
+  "hash": "CC7F8AEDABB1D119357BCD43DC5C7A3F3CB7945EF0DAFA6F0E55707A2D3AD4A0",
   "identities": [
     {
       "all_tenants?": false,
