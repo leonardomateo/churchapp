@@ -46,20 +46,32 @@ defmodule Chms.Church.Ministries do
   This allows for dynamic ministries that users have entered.
   """
   def all_ministries do
-    # Get unique ministry names from database
-    custom_ministries =
+    # Get unique ministry names from MinistryFunds (skip authorization for internal query)
+    ministry_fund_ministries =
       try do
         Chms.Church.MinistryFunds
         |> Ash.Query.select([:ministry_name])
-        |> Ash.read!()
+        |> Ash.read!(authorize?: false)
         |> Enum.map(& &1.ministry_name)
         |> Enum.uniq()
       rescue
         _ -> []
       end
 
+    # Get unique ministry names from Congregants (skip authorization for internal query)
+    congregant_ministries =
+      try do
+        Chms.Church.Congregants
+        |> Ash.Query.select([:ministries])
+        |> Ash.read!(authorize?: false)
+        |> Enum.flat_map(fn c -> c.ministries || [] end)
+        |> Enum.uniq()
+      rescue
+        _ -> []
+      end
+
     # Combine with defaults and remove duplicates
-    (@default_ministries ++ custom_ministries)
+    (@default_ministries ++ ministry_fund_ministries ++ congregant_ministries)
     |> Enum.uniq()
     |> Enum.sort()
   end
