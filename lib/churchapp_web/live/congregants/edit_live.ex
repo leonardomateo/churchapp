@@ -2,6 +2,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
   use ChurchappWeb, :live_view
 
   alias Chms.Church.Ministries
+  alias ChurchappWeb.Utils.Countries
   alias AshPhoenix.Form
 
   def mount(%{"id" => id}, _session, socket) do
@@ -33,6 +34,10 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
           |> assign(:uploaded_files, [])
           |> assign(:ministries_options, Ministries.ministry_options())
           |> assign(:selected_ministries, congregant.ministries || [])
+          |> assign(:countries, Countries.country_options())
+          |> assign(:show_custom_country_modal, false)
+          |> assign(:custom_country_input, "")
+          |> assign(:custom_country_error, nil)
           |> allow_upload(:image,
             accept: ~w(.jpg .jpeg .png .gif .webp),
             max_file_size: 5_000_000,
@@ -189,6 +194,65 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
 
       {:error, form} ->
         {:noreply, assign(socket, :form, form)}
+    end
+  end
+
+  # Custom country modal handlers
+  def handle_event("open_custom_country_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_custom_country_modal, true)
+     |> assign(:custom_country_input, "")
+     |> assign(:custom_country_error, nil)}
+  end
+
+  def handle_event("close_country_modal", _params, socket) do
+    {:noreply, assign(socket, :show_custom_country_modal, false)}
+  end
+
+  def handle_event("validate_custom_country", %{"custom_country" => value}, socket) do
+    {:noreply,
+     socket
+     |> assign(:custom_country_input, value)
+     |> assign(:custom_country_error, nil)}
+  end
+
+  def handle_event("save_custom_country", %{"custom_country" => custom_country}, socket) do
+    custom_country = String.trim(custom_country)
+
+    if custom_country == "" do
+      {:noreply,
+       socket
+       |> assign(:custom_country_error, "Please enter a country name")}
+    else
+      # Check if country already exists
+      existing = Enum.find(socket.assigns.countries, fn {name, _code} ->
+        String.downcase(name) == String.downcase(custom_country)
+      end)
+
+      if existing do
+        {:noreply,
+         socket
+         |> assign(:custom_country_error, "This country already exists")}
+      else
+        # Add the new country to the list
+        new_country = {custom_country, String.upcase(String.slice(custom_country, 0, 2))}
+        updated_countries = Countries.country_options([new_country])
+
+        # Update the form with the new custom country
+        form =
+          socket.assigns.form.source
+          |> Form.validate(%{"country" => custom_country})
+          |> to_form()
+
+        {:noreply,
+         socket
+         |> assign(:countries, updated_countries)
+         |> assign(:form, form)
+         |> assign(:show_custom_country_modal, false)
+         |> assign(:custom_country_input, "")
+         |> put_flash(:info, "New country '#{custom_country}' added successfully")}
+      end
     end
   end
 
@@ -543,7 +607,7 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                   </div>
                 </div>
 
-                <div class="sm:col-span-3">
+                <div class="sm:col-span-2">
                   <label for="zip-code" class="block text-sm font-medium text-gray-400">
                     Zip Code <span class="text-red-500">*</span>
                   </label>
@@ -556,17 +620,37 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                   </div>
                 </div>
 
-                <div class="sm:col-span-3">
+                <div class="sm:col-span-2">
                   <label for="country" class="block text-sm font-medium text-gray-400">
                     Country
                   </label>
                   <div class="mt-1">
-                    <.input
+                    <.live_component
+                      module={ChurchappWeb.CountrySelector}
+                      id="country-selector-edit"
                       field={@form[:country]}
-                      type="text"
-                      placeholder="USA"
-                      class="block w-full px-3 py-2 text-white bg-dark-900 border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
+                      form={@form}
+                      countries={@countries}
                     />
+                  </div>
+                </div>
+
+                <div class="sm:col-span-2">
+                  <label class="block text-sm font-medium text-gray-400 invisible">Action</label>
+                  <div class="mt-1 relative group">
+                    <button
+                      type="button"
+                      phx-click="open_custom_country_modal"
+                      class="flex items-center h-[42px] px-4 text-sm font-medium text-primary-500 bg-primary-500/10 border border-primary-500/20 rounded-md hover:bg-primary-500/20 hover:border-primary-500/30 transition-all duration-200 whitespace-nowrap"
+                    >
+                      <.icon name="hero-plus" class="h-5 w-5 mr-1.5" /> Add Country
+                    </button>
+                    <%!-- Tooltip --%>
+                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-dark-700 text-white text-xs rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                      Add a new country to the list
+                      <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-dark-700">
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -681,6 +765,88 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
           </div>
         </.form>
       </div>
+
+      <%!-- Custom Country Modal --%>
+      <%= if @show_custom_country_modal do %>
+        <div
+          class="fixed inset-0 z-50 overflow-y-auto animate-fade-in"
+          phx-window-keydown="close_country_modal"
+          phx-key="escape"
+        >
+          <div class="flex min-h-screen items-center justify-center p-4">
+            <%!-- Backdrop --%>
+            <div
+              class="fixed inset-0 modal-backdrop transition-opacity"
+              phx-click="close_country_modal"
+            >
+            </div>
+            <%!-- Modal --%>
+            <div class="relative bg-dark-800 rounded-lg shadow-xl border border-dark-700 w-full max-w-md p-6 z-10 animate-scale-in">
+              <%!-- Header --%>
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-white flex items-center">
+                  <.icon name="hero-globe-alt" class="mr-2 h-5 w-5 text-primary-500" />
+                  Add New Country
+                </h3>
+                <button
+                  type="button"
+                  phx-click="close_country_modal"
+                  class="text-gray-400 hover:text-white transition-colors"
+                >
+                  <.icon name="hero-x-mark" class="h-5 w-5" />
+                </button>
+              </div>
+              <%!-- Content --%>
+              <div class="mb-6">
+                <label for="modal-custom-country" class="block text-sm font-medium text-gray-400 mb-2">
+                  Country Name <span class="text-red-500">*</span>
+                </label>
+                <form phx-change="validate_custom_country">
+                  <input
+                    type="text"
+                    id="modal-custom-country"
+                    name="custom_country"
+                    value={@custom_country_input}
+                    placeholder="e.g., Belize, Guyana..."
+                    class={[
+                      "block w-full px-3 py-2 text-white bg-dark-900 border rounded-md shadow-sm sm:text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none transition-colors",
+                      @custom_country_error && "border-red-500",
+                      !@custom_country_error && "border-dark-700"
+                    ]}
+                    phx-hook="AutoFocus"
+                  />
+                </form>
+                <%= if @custom_country_error do %>
+                  <p class="mt-2 text-sm text-red-400">{@custom_country_error}</p>
+                <% end %>
+                <p class="mt-2 text-xs text-gray-500">
+                  This country will be added to the selection list
+                </p>
+              </div>
+              <%!-- Actions --%>
+              <div class="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  phx-click="close_country_modal"
+                  class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 hover:bg-dark-600 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  phx-click="save_custom_country"
+                  phx-value-custom_country={@custom_country_input}
+                  class="px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md shadow-sm transition-colors"
+                >
+                  <span class="flex items-center">
+                    <.icon name="hero-check" class="mr-1 h-4 w-4" /> Add Country
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
     """
   end
