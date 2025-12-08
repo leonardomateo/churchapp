@@ -62,5 +62,16 @@ defmodule Chms.Church do
       define :destroy_report_category_entry, action: :destroy
       define :get_report_category_entry_by_id, action: :read, get_by: [:id]
     end
+
+    # Events / Calendar
+    resource Chms.Church.Events do
+      define :create_event, action: :create
+      define :list_events, action: :read
+      define :list_events_in_range, action: :list_in_range, args: [:start_date, :end_date]
+      define :list_events_by_type, action: :list_by_type, args: [:event_type]
+      define :update_event, action: :update
+      define :destroy_event, action: :destroy
+      define :get_event_by_id, action: :read, get_by: [:id]
+    end
   end
 end

@@ -223,13 +223,6 @@ defmodule Chms.Church.WeekEndingReports do
     end
   end
 
-  aggregates do
-    sum :grand_total, :category_entries, :amount do
-      description "Sum of all category entry amounts"
-      default Decimal.new(0)
-    end
-  end
-
   calculations do
     calculate :date_range_display, :string do
       description "Formatted date range for display"
@@ -241,6 +234,13 @@ defmodule Chms.Church.WeekEndingReports do
           "#{start_str} - #{end_str}"
         end)
       end
+    end
+  end
+
+  aggregates do
+    sum :grand_total, :category_entries, :amount do
+      description "Sum of all category entry amounts"
+      default Decimal.new(0)
     end
   end
 

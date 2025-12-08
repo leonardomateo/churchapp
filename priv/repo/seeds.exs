@@ -741,81 +741,81 @@ else
       }
 
       case Chms.Church.WeekEndingReports
-         |> Ash.Changeset.for_create(:create, report_attrs)
-         |> Ash.create(authorize?: false) do
-      {:ok, report} ->
-        IO.puts("✓ Created report: #{report.report_name}")
+           |> Ash.Changeset.for_create(:create, report_attrs)
+           |> Ash.create(authorize?: false) do
+        {:ok, report} ->
+          IO.puts("✓ Created report: #{report.report_name}")
 
-        # Create category entries with random amounts
-        Enum.each(all_categories, fn category ->
-          # Generate amount based on category group
-          # Some categories are more likely to have amounts
-          amount =
-            case category.group do
-              :offerings ->
-                # Offerings are most common - 90% chance of having value
-                if Enum.random(1..10) <= 9 do
-                  Decimal.new(Enum.random(100..3000))
-                else
-                  Decimal.new(0)
-                end
+          # Create category entries with random amounts
+          Enum.each(all_categories, fn category ->
+            # Generate amount based on category group
+            # Some categories are more likely to have amounts
+            amount =
+              case category.group do
+                :offerings ->
+                  # Offerings are most common - 90% chance of having value
+                  if Enum.random(1..10) <= 9 do
+                    Decimal.new(Enum.random(100..3000))
+                  else
+                    Decimal.new(0)
+                  end
 
-              :ministries ->
-                # Ministries - 60% chance
-                if Enum.random(1..10) <= 6 do
-                  Decimal.new(Enum.random(50..500))
-                else
-                  Decimal.new(0)
-                end
+                :ministries ->
+                  # Ministries - 60% chance
+                  if Enum.random(1..10) <= 6 do
+                    Decimal.new(Enum.random(50..500))
+                  else
+                    Decimal.new(0)
+                  end
 
-              :missions ->
-                # Missions - 40% chance
-                if Enum.random(1..10) <= 4 do
-                  Decimal.new(Enum.random(100..1000))
-                else
-                  Decimal.new(0)
-                end
+                :missions ->
+                  # Missions - 40% chance
+                  if Enum.random(1..10) <= 4 do
+                    Decimal.new(Enum.random(100..1000))
+                  else
+                    Decimal.new(0)
+                  end
 
-              :property ->
-                # Property - 30% chance
-                if Enum.random(1..10) <= 3 do
-                  Decimal.new(Enum.random(200..2000))
-                else
-                  Decimal.new(0)
-                end
+                :property ->
+                  # Property - 30% chance
+                  if Enum.random(1..10) <= 3 do
+                    Decimal.new(Enum.random(200..2000))
+                  else
+                    Decimal.new(0)
+                  end
 
-              _ ->
-                # Custom - 20% chance
-                if Enum.random(1..10) <= 2 do
-                  Decimal.new(Enum.random(25..250))
-                else
-                  Decimal.new(0)
-                end
+                _ ->
+                  # Custom - 20% chance
+                  if Enum.random(1..10) <= 2 do
+                    Decimal.new(Enum.random(25..250))
+                  else
+                    Decimal.new(0)
+                  end
+              end
+
+            # Only create entry if amount > 0
+            if Decimal.compare(amount, Decimal.new(0)) == :gt do
+              entry_attrs = %{
+                week_ending_report_id: report.id,
+                report_category_id: category.id,
+                amount: amount
+              }
+
+              case Chms.Church.ReportCategoryEntries
+                   |> Ash.Changeset.for_create(:create, entry_attrs)
+                   |> Ash.create(authorize?: false) do
+                {:ok, _entry} ->
+                  :ok
+
+                {:error, _} ->
+                  IO.puts("  ✗ Failed to create entry for #{category.display_name}")
+              end
             end
+          end)
 
-          # Only create entry if amount > 0
-          if Decimal.compare(amount, Decimal.new(0)) == :gt do
-            entry_attrs = %{
-              week_ending_report_id: report.id,
-              report_category_id: category.id,
-              amount: amount
-            }
-
-            case Chms.Church.ReportCategoryEntries
-                 |> Ash.Changeset.for_create(:create, entry_attrs)
-                 |> Ash.create(authorize?: false) do
-              {:ok, _entry} ->
-                :ok
-
-              {:error, _} ->
-                IO.puts("  ✗ Failed to create entry for #{category.display_name}")
-            end
-          end
-        end)
-
-      {:error, changeset} ->
-        IO.puts("✗ Failed to create report for week ending #{week_end}")
-        IO.inspect(changeset.errors)
+        {:error, changeset} ->
+          IO.puts("✗ Failed to create report for week ending #{week_end}")
+          IO.inspect(changeset.errors)
       end
     end
   end)
@@ -887,6 +887,143 @@ country_counts =
       []
   end
 
+# Seed Events
+IO.puts("\nSeeding events...")
+
+# Check for existing events to avoid duplicates
+existing_events =
+  case Chms.Church.Events
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, events} -> events
+    _ -> []
+  end
+
+if length(existing_events) > 0 do
+  IO.puts("⊙ Events already exist, skipping seed")
+else
+  # Get current date info
+  today = Date.utc_today()
+
+  # Find next Sunday
+  days_until_sunday = rem(7 - Date.day_of_week(today, :sunday), 7)
+  days_until_sunday = if days_until_sunday == 0, do: 7, else: days_until_sunday
+  next_sunday = Date.add(today, days_until_sunday)
+
+  # Find next Wednesday
+  days_until_wednesday = rem(3 - Date.day_of_week(today, :monday) + 7, 7)
+  days_until_wednesday = if days_until_wednesday == 0, do: 7, else: days_until_wednesday
+  next_wednesday = Date.add(today, days_until_wednesday)
+
+  events_data = [
+    # Regular Sunday Service (recurring)
+    %{
+      title: "Sunday Worship Service",
+      description:
+        "Join us for our weekly worship service with praise, prayer, and biblical teaching.",
+      event_type: :service,
+      start_time: DateTime.new!(next_sunday, ~T[10:00:00], "Etc/UTC"),
+      end_time: DateTime.new!(next_sunday, ~T[12:00:00], "Etc/UTC"),
+      all_day: false,
+      location: "Main Sanctuary",
+      is_recurring: true,
+      recurrence_rule: "FREQ=WEEKLY;BYDAY=SU"
+    },
+    # Midweek Service (recurring)
+    %{
+      title: "Midweek Bible Study",
+      description: "In-depth Bible study and prayer meeting. Come grow deeper in God's Word.",
+      event_type: :midweek_service,
+      start_time: DateTime.new!(next_wednesday, ~T[19:00:00], "Etc/UTC"),
+      end_time: DateTime.new!(next_wednesday, ~T[20:30:00], "Etc/UTC"),
+      all_day: false,
+      location: "Fellowship Hall",
+      is_recurring: true,
+      recurrence_rule: "FREQ=WEEKLY;BYDAY=WE"
+    },
+    # Special Christmas Eve Service
+    %{
+      title: "Christmas Eve Candlelight Service",
+      description:
+        "A special candlelight service celebrating the birth of Jesus Christ. Bring your family for this meaningful Christmas tradition.",
+      event_type: :special_service,
+      start_time: DateTime.new!(~D[2025-12-24], ~T[18:00:00], "Etc/UTC"),
+      end_time: DateTime.new!(~D[2025-12-24], ~T[19:30:00], "Etc/UTC"),
+      all_day: false,
+      location: "Main Sanctuary",
+      is_recurring: false
+    },
+    # New Year's Eve Service
+    %{
+      title: "New Year's Eve Watch Night Service",
+      description:
+        "Ring in the new year with prayer, worship, and thanksgiving. Join us as we reflect on God's faithfulness.",
+      event_type: :special_service,
+      start_time: DateTime.new!(~D[2025-12-31], ~T[22:00:00], "Etc/UTC"),
+      end_time: DateTime.new!(~D[2026-01-01], ~T[00:30:00], "Etc/UTC"),
+      all_day: false,
+      location: "Main Sanctuary",
+      is_recurring: false
+    },
+    # Youth Friday Night
+    %{
+      title: "Youth Friday Night",
+      description: "Fun, fellowship, and faith for teens. Games, worship, and relevant teaching.",
+      event_type: :midweek_service,
+      start_time:
+        DateTime.new!(
+          Date.add(today, rem(5 - Date.day_of_week(today, :monday) + 7, 7)),
+          ~T[19:00:00],
+          "Etc/UTC"
+        ),
+      end_time:
+        DateTime.new!(
+          Date.add(today, rem(5 - Date.day_of_week(today, :monday) + 7, 7)),
+          ~T[21:00:00],
+          "Etc/UTC"
+        ),
+      all_day: false,
+      location: "Youth Center",
+      is_recurring: true,
+      recurrence_rule: "FREQ=WEEKLY;BYDAY=FR"
+    },
+    # Monthly Prayer Breakfast
+    %{
+      title: "Men's Prayer Breakfast",
+      description: "Monthly gathering for men to fellowship over breakfast and pray together.",
+      event_type: :special_service,
+      start_time: DateTime.new!(Date.add(next_sunday, 7), ~T[07:30:00], "Etc/UTC"),
+      end_time: DateTime.new!(Date.add(next_sunday, 7), ~T[09:00:00], "Etc/UTC"),
+      all_day: false,
+      location: "Fellowship Hall",
+      is_recurring: true,
+      recurrence_rule: "FREQ=MONTHLY;BYDAY=1SA"
+    }
+  ]
+
+  Enum.each(events_data, fn attrs ->
+    case Chms.Church.Events
+         |> Ash.Changeset.for_create(:create, attrs)
+         |> Ash.create(authorize?: false) do
+      {:ok, event} ->
+        recurring_text = if event.is_recurring, do: " (recurring)", else: ""
+        IO.puts("✓ Created event: #{event.title}#{recurring_text}")
+
+      {:error, changeset} ->
+        IO.puts("✗ Failed to create event: #{attrs.title}")
+        IO.inspect(changeset.errors)
+    end
+  end)
+end
+
+total_events =
+  case Chms.Church.Events
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, all_events} -> length(all_events)
+    _ -> 0
+  end
+
 IO.puts("\n" <> String.duplicate("=", 50))
 IO.puts("DATABASE STATISTICS")
 IO.puts(String.duplicate("=", 50))
@@ -894,6 +1031,7 @@ IO.puts("Total congregants: #{total_congregants}")
 IO.puts("Total contributions: #{total_contributions}")
 IO.puts("Total ministry fund transactions: #{total_ministry_funds}")
 IO.puts("Total week ending reports: #{total_week_ending_reports}")
+IO.puts("Total events: #{total_events}")
 IO.puts("\nCongregants by Status:")
 
 Enum.each(status_counts, fn {status, count} ->

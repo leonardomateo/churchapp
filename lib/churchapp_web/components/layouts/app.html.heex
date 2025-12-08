@@ -38,6 +38,13 @@
           <.icon name="hero-currency-dollar" class="mr-3 h-5 w-5 flex-shrink-0" /> Ministry Funds
         </.link>
 
+        <.link
+          navigate={~p"/events"}
+          class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+        >
+          <.icon name="hero-calendar-days" class="mr-3 h-5 w-5 flex-shrink-0" /> Calendar
+        </.link>
+
         <%!-- Admin Section - Only visible to admins and super_admins --%>
         <%= if @current_user && @current_user.role in [:super_admin, :admin] do %>
           <div class="pt-4 mt-4 border-t border-dark-700">
@@ -152,6 +159,13 @@
           class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
         >
           <.icon name="hero-currency-dollar" class="mr-3 h-5 w-5" /> Ministry Funds
+        </.link>
+
+        <.link
+          navigate={~p"/events"}
+          class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+        >
+          <.icon name="hero-calendar-days" class="mr-3 h-5 w-5" /> Calendar
         </.link>
 
         <%!-- Admin Section - Only visible to admins and super_admins --%>

@@ -53,7 +53,10 @@ config :spark,
 config :churchapp,
   ecto_repos: [Churchapp.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Chms.Church, Churchapp.Accounts]
+  ash_domains: [Chms.Church, Churchapp.Accounts],
+  # Church timezone for event display (IANA timezone name)
+  # All event times are stored in UTC and converted to this timezone for display
+  church_timezone: "America/New_York"
 
 # Configures the endpoint
 config :churchapp, ChurchappWeb.Endpoint,

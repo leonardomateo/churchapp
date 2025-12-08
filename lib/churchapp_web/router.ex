@@ -90,6 +90,12 @@ defmodule ChurchappWeb.Router do
       live("/ministry-funds/new", MinistryFundsLive.NewLive, :new)
       live("/ministry-funds/:id", MinistryFundsLive.ShowLive, :show)
       live("/ministry-funds/:id/edit", MinistryFundsLive.EditLive, :edit)
+
+      # Events / Calendar
+      live("/events", EventsLive.IndexLive, :index)
+      live("/events/new", EventsLive.NewLive, :new)
+      live("/events/:id", EventsLive.ShowLive, :show)
+      live("/events/:id/edit", EventsLive.EditLive, :edit)
     end
   end
 

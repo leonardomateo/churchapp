@@ -28,6 +28,14 @@ import topbar from "../vendor/topbar"
 // Import Chart.js hooks
 import {BarChart, PieChart, DoughnutChart} from "./hooks/charts.js"
 
+// Import FullCalendar
+import { Calendar } from '@fullcalendar/core'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import timeGridPlugin from '@fullcalendar/timegrid'
+import listPlugin from '@fullcalendar/list'
+import interactionPlugin from '@fullcalendar/interaction'
+import { RRule } from 'rrule'
+
 // Mobile Menu Hook
 const MobileMenu = {
   mounted() {
@@ -278,11 +286,327 @@ const CsvDownload = {
   }
 }
 
+// FullCalendar Hook - Event Calendar with month/week/day/list views
+const EventCalendar = {
+  mounted() {
+    this.calendar = null
+    this.currentFilter = null
+    this.isAdmin = this.el.dataset.isAdmin === "true"
+    
+    this.initCalendar()
+    
+    // Handle events from LiveView
+    this.handleEvent("events_loaded", ({events}) => {
+      this.updateEvents(events)
+    })
+    
+    this.handleEvent("event_created", ({event}) => {
+      this.calendar.addEvent(this.transformEvent(event))
+    })
+    
+    this.handleEvent("event_updated", ({event}) => {
+      const existingEvent = this.calendar.getEventById(event.id)
+      if (existingEvent) {
+        existingEvent.remove()
+      }
+      this.calendar.addEvent(this.transformEvent(event))
+    })
+    
+    this.handleEvent("event_deleted", ({id}) => {
+      const existingEvent = this.calendar.getEventById(id)
+      if (existingEvent) {
+        existingEvent.remove()
+      }
+    })
+    
+    this.handleEvent("filter_changed", ({filter}) => {
+      this.currentFilter = filter
+      this.calendar.refetchEvents()
+    })
+
+    // Handle iCal download
+    this.handleEvent("download_ical", ({content, filename}) => {
+      const blob = new Blob([content], { type: "text/calendar;charset=utf-8;" })
+      const link = document.createElement("a")
+      const url = URL.createObjectURL(blob)
+      link.setAttribute("href", url)
+      link.setAttribute("download", filename)
+      link.style.visibility = "hidden"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    })
+  },
+  
+  initCalendar() {
+    const calendarEl = this.el
+    
+    this.calendar = new Calendar(calendarEl, {
+      plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
+      initialView: 'dayGridMonth',
+      headerToolbar: false, // We use custom header in LiveView
+      height: 'auto',
+      editable: this.isAdmin,
+      selectable: this.isAdmin,
+      selectMirror: true,
+      dayMaxEvents: 3,
+      weekends: true,
+      nowIndicator: true,
+      eventTimeFormat: {
+        hour: 'numeric',
+        minute: '2-digit',
+        meridiem: 'short'
+      },
+      
+      // Event sources - fetch from LiveView
+      events: (info, successCallback, failureCallback) => {
+        this.pushEvent("fetch_events", {
+          start: info.startStr,
+          end: info.endStr,
+          filter: this.currentFilter
+        }, (reply, ref) => {
+          if (reply.events) {
+            const transformedEvents = reply.events.map(e => this.transformEvent(e))
+            // Expand recurring events
+            const expandedEvents = this.expandRecurringEvents(transformedEvents, info.start, info.end)
+            successCallback(expandedEvents)
+          } else {
+            failureCallback(new Error("Failed to fetch events"))
+          }
+        })
+      },
+      
+      // Click on a date to create new event (admin only)
+      dateClick: (info) => {
+        if (this.isAdmin) {
+          this.pushEvent("date_clicked", {
+            date: info.dateStr,
+            allDay: info.allDay
+          })
+        }
+      },
+      
+      // Click on an event to view/edit
+      eventClick: (info) => {
+        const eventId = info.event.id
+        // For recurring event instances, extract the original event ID
+        const originalId = info.event.extendedProps.originalId || eventId
+        this.pushEvent("event_clicked", { id: originalId })
+      },
+      
+      // Drag and drop to reschedule (admin only)
+      eventDrop: (info) => {
+        if (this.isAdmin) {
+          this.pushEvent("event_dropped", {
+            id: info.event.extendedProps.originalId || info.event.id,
+            start: info.event.startStr,
+            end: info.event.endStr,
+            allDay: info.event.allDay
+          })
+        } else {
+          info.revert()
+        }
+      },
+      
+      // Resize event duration (admin only)
+      eventResize: (info) => {
+        if (this.isAdmin) {
+          this.pushEvent("event_resized", {
+            id: info.event.extendedProps.originalId || info.event.id,
+            start: info.event.startStr,
+            end: info.event.endStr
+          })
+        } else {
+          info.revert()
+        }
+      },
+      
+      // Select date range to create event (admin only)
+      select: (info) => {
+        if (this.isAdmin) {
+          this.pushEvent("date_range_selected", {
+            start: info.startStr,
+            end: info.endStr,
+            allDay: info.allDay
+          })
+        }
+      }
+    })
+    
+    this.calendar.render()
+  },
+  
+  transformEvent(event) {
+    return {
+      id: event.id,
+      title: event.title,
+      start: event.start_time,
+      end: event.end_time,
+      allDay: event.all_day,
+      backgroundColor: event.color,
+      borderColor: event.color,
+      extendedProps: {
+        description: event.description,
+        location: event.location,
+        eventType: event.event_type,
+        isRecurring: event.is_recurring,
+        recurrenceRule: event.recurrence_rule,
+        recurrenceEndDate: event.recurrence_end_date,
+        originalId: event.id
+      }
+    }
+  },
+  
+  expandRecurringEvents(events, rangeStart, rangeEnd) {
+    const expandedEvents = []
+    
+    events.forEach(event => {
+      if (event.extendedProps.isRecurring && event.extendedProps.recurrenceRule) {
+        try {
+          // Parse the RRULE
+          const rruleStr = event.extendedProps.recurrenceRule
+          const dtstart = new Date(event.start)
+          
+          // Build RRULE options
+          const options = RRule.parseString(rruleStr)
+          options.dtstart = dtstart
+          
+          // Add until date if specified
+          if (event.extendedProps.recurrenceEndDate) {
+            options.until = new Date(event.extendedProps.recurrenceEndDate)
+          }
+          
+          const rule = new RRule(options)
+          
+          // Get occurrences within the visible range
+          const occurrences = rule.between(rangeStart, rangeEnd, true)
+          
+          // Calculate duration
+          const originalStart = new Date(event.start)
+          const originalEnd = new Date(event.end)
+          const duration = originalEnd - originalStart
+          
+          occurrences.forEach((occurrence, index) => {
+            const occurrenceEnd = new Date(occurrence.getTime() + duration)
+            expandedEvents.push({
+              ...event,
+              id: `${event.id}_${index}`,
+              start: occurrence.toISOString(),
+              end: occurrenceEnd.toISOString(),
+              extendedProps: {
+                ...event.extendedProps,
+                originalId: event.id,
+                isInstance: true
+              }
+            })
+          })
+        } catch (e) {
+          console.error("Error expanding recurring event:", e)
+          // Fall back to showing the original event
+          expandedEvents.push(event)
+        }
+      } else {
+        expandedEvents.push(event)
+      }
+    })
+    
+    return expandedEvents
+  },
+  
+  updateEvents(events) {
+    // Remove all events and add new ones
+    this.calendar.removeAllEvents()
+    events.forEach(event => {
+      this.calendar.addEvent(this.transformEvent(event))
+    })
+  },
+  
+  // Public methods to be called from LiveView
+  changeView(viewName) {
+    this.calendar.changeView(viewName)
+  },
+  
+  today() {
+    this.calendar.today()
+  },
+  
+  prev() {
+    this.calendar.prev()
+  },
+  
+  next() {
+    this.calendar.next()
+  },
+  
+  getTitle() {
+    return this.calendar.view.title
+  },
+  
+  destroyed() {
+    if (this.calendar) {
+      this.calendar.destroy()
+    }
+  },
+  
+  updated() {
+    // Handle view change commands from LiveView
+    const viewCommand = this.el.dataset.viewCommand
+    if (viewCommand) {
+      switch(viewCommand) {
+        case 'month':
+          this.calendar.changeView('dayGridMonth')
+          break
+        case 'week':
+          this.calendar.changeView('timeGridWeek')
+          break
+        case 'day':
+          this.calendar.changeView('timeGridDay')
+          break
+        case 'list':
+          this.calendar.changeView('listMonth')
+          break
+        case 'today':
+          this.calendar.today()
+          break
+        case 'prev':
+          this.calendar.prev()
+          break
+        case 'next':
+          this.calendar.next()
+          break
+      }
+      // Push updated title back to LiveView
+      this.pushEvent("calendar_navigated", { title: this.calendar.view.title })
+      // Clear the command
+      this.el.dataset.viewCommand = ''
+    }
+  }
+}
+
+// IcalDownload Hook - handles iCal file download from LiveView events
+const IcalDownload = {
+  mounted() {
+    this.handleEvent("download_ical", ({content, filename}) => {
+      const blob = new Blob([content], { type: "text/calendar;charset=utf-8;" })
+      const link = document.createElement("a")
+      const url = URL.createObjectURL(blob)
+      link.setAttribute("href", url)
+      link.setAttribute("download", filename)
+      link.style.visibility = "hidden"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    })
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, CsvDownload, BarChart, PieChart, DoughnutChart},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload},
 })
 
 // Show progress bar on live navigation and form submits
