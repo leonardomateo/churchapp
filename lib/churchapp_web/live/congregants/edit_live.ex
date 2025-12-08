@@ -700,20 +700,18 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                   </div>
                 </div>
 
-                <div class="sm:col-span-3">
-                  <label for="is-leader" class="block text-sm font-medium text-gray-400">
-                    Role
+                <div class="sm:col-span-3 flex items-end pb-[10px]">
+                  <label class="inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id={@form[:is_leader].id}
+                      name={@form[:is_leader].name}
+                      value="true"
+                      checked={@form[:is_leader].value == true}
+                      class="h-5 w-5 text-primary-600 bg-dark-700 border-dark-600 rounded focus:ring-primary-500"
+                    />
+                    <span class="ml-3 text-sm text-gray-300">Is a Leader</span>
                   </label>
-                  <div class="mt-1 flex items-center h-[42px]">
-                    <label class="inline-flex items-center cursor-pointer">
-                      <.input
-                        field={@form[:is_leader]}
-                        type="checkbox"
-                        class="h-4 w-4 text-primary-600 bg-dark-700 border-dark-600 rounded form-checkbox focus:ring-primary-500"
-                      />
-                      <span class="ml-2 text-sm text-gray-300">Is a Leader</span>
-                    </label>
-                  </div>
                 </div>
               </div>
             </div>
