@@ -381,6 +381,10 @@ const EventCalendar = {
         meridiem: 'short'
       },
       
+      // List view formatting - show day name in main header, hide side day name
+      listDayFormat: { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' },
+      listDaySideFormat: false,
+      
       // Event sources - fetch from LiveView
       events: (info, successCallback, failureCallback) => {
         this.pushEvent("fetch_events", {

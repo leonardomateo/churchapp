@@ -89,19 +89,18 @@ defmodule ChurchappWeb.EventsLive.ShowLive do
           <div class="flex items-start gap-4">
             <div
               class="w-4 h-4 rounded-full mt-2 flex-shrink-0"
-              style={"background-color: #{@event.color || Events.default_color_for_type(@event.event_type)};"}
+              style={"background-color: #{@event.color || Events.default_color()};"}
             >
             </div>
             <div>
               <h2 class="text-2xl font-bold text-white">{@event.title}</h2>
-              <p class="mt-1 text-sm text-gray-400">
-                {Events.event_type_label(@event.event_type)}
-                <%= if @event.is_recurring do %>
-                  <span class="ml-2 inline-flex items-center text-primary-500">
-                    <.icon name="hero-arrow-path" class="h-4 w-4 mr-1" /> Recurring
+              <%= if @event.is_recurring do %>
+                <p class="mt-1 text-sm text-gray-400">
+                  <span class="inline-flex items-center text-primary-500">
+                    <.icon name="hero-arrow-path" class="h-4 w-4 mr-1" /> Recurring Event
                   </span>
-                <% end %>
-              </p>
+                </p>
+              <% end %>
             </div>
           </div>
 

@@ -15,7 +15,6 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
       |> assign(:is_admin, is_admin)
       |> assign(:current_view, "month")
       |> assign(:calendar_title, format_current_month())
-      |> assign(:event_filter, nil)
       |> assign(:show_export_menu, false)
       |> assign(:view_command, nil)
 
@@ -24,13 +23,7 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
 
   @impl true
   def handle_params(params, _uri, socket) do
-    filter = params["filter"]
-
-    socket =
-      socket
-      |> assign(:event_filter, filter)
-      |> apply_action(socket.assigns.live_action, params)
-
+    socket = apply_action(socket, socket.assigns.live_action, params)
     {:noreply, socket}
   end
 
@@ -147,16 +140,6 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
     {:noreply, assign(socket, :view_command, direction)}
   end
 
-  # Filter change
-  def handle_event("filter_events", %{"filter" => filter}, socket) do
-    filter_value = if filter == "", do: nil, else: filter
-
-    {:noreply,
-     socket
-     |> assign(:event_filter, filter_value)
-     |> push_event("filter_changed", %{filter: filter_value})}
-  end
-
   # Toggle export menu
   def handle_event("toggle_export_menu", _params, socket) do
     {:noreply, assign(socket, :show_export_menu, !socket.assigns.show_export_menu)}
@@ -168,8 +151,8 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
 
   # Export to iCal
   def handle_event("export_ical", _params, socket) do
-    # Fetch all events (or filtered if filter is set)
-    events = fetch_all_events(socket.assigns.event_filter, socket.assigns.current_user)
+    # Fetch all events
+    events = fetch_all_events(nil, socket.assigns.current_user)
     ical_content = Chms.Church.IcalExport.generate_ical(events)
     filename = "church-events-#{Date.utc_today()}.ics"
 
@@ -215,9 +198,7 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
 
   defp parse_datetime(_), do: {:error, :invalid_datetime}
 
-  @valid_event_filters ~w(service midweek_service special_service)
-
-  defp fetch_events(start_date, end_date, filter, actor) do
+  defp fetch_events(start_date, end_date, _filter, actor) do
     query =
       Events
       |> Ash.Query.filter(
@@ -226,32 +207,14 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
              (is_nil(recurrence_end_date) or recurrence_end_date >= ^DateTime.to_date(start_date)))
       )
 
-    query =
-      if filter && filter != "" && filter in @valid_event_filters do
-        filter_atom = String.to_existing_atom(filter)
-        Ash.Query.filter(query, event_type == ^filter_atom)
-      else
-        query
-      end
-
     case Chms.Church.list_events(query: query, actor: actor) do
       {:ok, events} -> events
       _ -> []
     end
   end
 
-  defp fetch_all_events(filter, actor) do
-    query = Events
-
-    query =
-      if filter && filter != "" && filter in @valid_event_filters do
-        filter_atom = String.to_existing_atom(filter)
-        Ash.Query.filter(query, event_type == ^filter_atom)
-      else
-        query
-      end
-
-    case Chms.Church.list_events(query: query, actor: actor) do
+  defp fetch_all_events(_filter, actor) do
+    case Chms.Church.list_events(actor: actor) do
       {:ok, events} -> events
       _ -> []
     end
@@ -262,13 +225,12 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
       id: event.id,
       title: event.title,
       description: event.description,
-      event_type: event.event_type,
       # Format datetime without Z suffix so FullCalendar treats it as local time
       start_time: format_datetime_for_calendar(event.start_time),
       end_time: format_datetime_for_calendar(event.end_time),
       all_day: event.all_day,
       location: event.location,
-      color: event.color || Events.default_color_for_type(event.event_type),
+      color: event.color || Events.default_color(),
       is_recurring: event.is_recurring,
       recurrence_rule: event.recurrence_rule,
       recurrence_end_date: event.recurrence_end_date && Date.to_iso8601(event.recurrence_end_date)
@@ -341,27 +303,8 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
 
         <%!-- Controls Row --%>
         <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-dark-800 rounded-lg p-4 border border-dark-700">
-          <%!-- Left: Filter and View Buttons --%>
+          <%!-- View Toggle Buttons --%>
           <div class="flex flex-wrap items-center gap-3">
-            <%!-- Event Type Filter --%>
-            <select
-              phx-change="filter_events"
-              name="filter"
-              class="calendar-filter-select"
-            >
-              <option value="" selected={@event_filter == nil}>All Events</option>
-              <option value="service" selected={@event_filter == "service"}>
-                Sunday Services
-              </option>
-              <option value="midweek_service" selected={@event_filter == "midweek_service"}>
-                Midweek Services
-              </option>
-              <option value="special_service" selected={@event_filter == "special_service"}>
-                Special Services
-              </option>
-            </select>
-
-            <%!-- View Toggle Buttons --%>
             <div class="flex rounded-lg overflow-hidden border border-dark-600">
               <button
                 type="button"
@@ -414,23 +357,6 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
             </div>
           </div>
 
-        </div>
-
-        <%!-- Event Type Legend --%>
-        <div class="flex flex-wrap items-center gap-4 text-sm text-gray-400">
-          <span class="font-medium">Legend:</span>
-          <div class="flex items-center gap-2">
-            <span class="event-type-indicator" style="background-color: #06b6d4;"></span>
-            <span>Sunday Service</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="event-type-indicator" style="background-color: #8b5cf6;"></span>
-            <span>Midweek Service</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="event-type-indicator" style="background-color: #f59e0b;"></span>
-            <span>Special Service</span>
-          </div>
         </div>
       </div>
 

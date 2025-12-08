@@ -41,7 +41,7 @@ defmodule Chms.Church.IcalExport do
     description = escape_text(event.description || "")
     location = escape_text(event.location || "")
 
-    color_name = color_to_name(event.color || Events.default_color_for_type(event.event_type))
+    color_name = color_to_name(event.color || Events.default_color())
 
     vevent = """
     BEGIN:VEVENT
@@ -54,7 +54,7 @@ defmodule Chms.Church.IcalExport do
 
     vevent = if description != "", do: vevent <> "DESCRIPTION:#{description}\n", else: vevent
     vevent = if location != "", do: vevent <> "LOCATION:#{location}\n", else: vevent
-    vevent = vevent <> "CATEGORIES:#{event_type_category(event.event_type)}\n"
+    vevent = vevent <> "CATEGORIES:CHURCH EVENT\n"
     vevent = vevent <> "COLOR:#{color_name}\n"
 
     # Add recurrence rule if recurring
@@ -105,11 +105,6 @@ defmodule Chms.Church.IcalExport do
     |> String.replace(";", "\\;")
     |> String.replace("\n", "\\n")
   end
-
-  defp event_type_category(:service), do: "CHURCH SERVICE"
-  defp event_type_category(:midweek_service), do: "MIDWEEK SERVICE"
-  defp event_type_category(:special_service), do: "SPECIAL SERVICE"
-  defp event_type_category(_), do: "CHURCH EVENT"
 
   defp color_to_name("#06b6d4"), do: "cyan"
   defp color_to_name("#8b5cf6"), do: "purple"

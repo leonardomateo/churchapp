@@ -34,7 +34,6 @@ defmodule ChurchappWeb.EventsLive.NewLive do
       |> assign(:form, form)
       |> assign(:is_recurring, initial_values[:is_recurring] || false)
       |> assign(:show_recurrence_options, false)
-      |> assign(:event_types, Events.event_types())
       |> assign(:recurrence_presets, recurrence_presets())
       |> assign(:start_time_dropdown_open, false)
       |> assign(:end_time_dropdown_open, false)
@@ -305,28 +304,6 @@ defmodule ChurchappWeb.EventsLive.NewLive do
                 placeholder="e.g., Sunday Worship Service"
                 required
               />
-            </div>
-
-            <%!-- Event Type --%>
-            <div>
-              <label for={@form[:event_type].id} class="block text-sm font-medium text-gray-300 mb-2">
-                Event Type <span class="text-red-500">*</span>
-              </label>
-              <select
-                id={@form[:event_type].id}
-                name={@form[:event_type].name}
-                style="height: 46px; padding: 0.75rem 1rem;"
-                class="w-full text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <%= for event_type <- @event_types do %>
-                  <option
-                    value={event_type.type}
-                    selected={to_string(@form[:event_type].value) == to_string(event_type.type)}
-                  >
-                    {event_type.label}
-                  </option>
-                <% end %>
-              </select>
             </div>
 
             <%!-- Date & Time Section --%>

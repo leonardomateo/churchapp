@@ -29,7 +29,6 @@ defmodule ChurchappWeb.EventsLive.EditLive do
            |> assign(:form, form)
            |> assign(:is_recurring, event.is_recurring)
            |> assign(:show_recurrence_options, event.is_recurring && event.recurrence_rule != nil)
-           |> assign(:event_types, Events.event_types())
            |> assign(:recurrence_presets, recurrence_presets())
            |> assign(:start_time_dropdown_open, false)
            |> assign(:end_time_dropdown_open, false)}
@@ -232,28 +231,6 @@ defmodule ChurchappWeb.EventsLive.EditLive do
               />
             </div>
 
-            <%!-- Event Type --%>
-            <div>
-              <label for={@form[:event_type].id} class="block text-sm font-medium text-gray-300 mb-2">
-                Event Type <span class="text-red-500">*</span>
-              </label>
-              <select
-                id={@form[:event_type].id}
-                name={@form[:event_type].name}
-                style="height: 46px; padding: 0.75rem 1rem;"
-                class="w-full text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              >
-                <%= for event_type <- @event_types do %>
-                  <option
-                    value={event_type.type}
-                    selected={to_string(@form[:event_type].value) == to_string(event_type.type)}
-                  >
-                    {event_type.label}
-                  </option>
-                <% end %>
-              </select>
-            </div>
-
             <%!-- Date & Time Section --%>
             <div class="space-y-4">
               <%!-- Date Row --%>
@@ -428,7 +405,7 @@ defmodule ChurchappWeb.EventsLive.EditLive do
                   type="color"
                   id={@form[:color].id}
                   name={@form[:color].name}
-                  value={@form[:color].value || Events.default_color_for_type(@event.event_type)}
+                  value={@form[:color].value || Events.default_color()}
                   class="h-10 w-20 bg-dark-700 border border-dark-600 rounded cursor-pointer"
                 />
                 <span class="text-sm text-gray-500">
