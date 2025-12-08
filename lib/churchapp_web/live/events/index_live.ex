@@ -263,8 +263,9 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
       title: event.title,
       description: event.description,
       event_type: event.event_type,
-      start_time: DateTime.to_iso8601(event.start_time),
-      end_time: DateTime.to_iso8601(event.end_time),
+      # Format datetime without Z suffix so FullCalendar treats it as local time
+      start_time: format_datetime_for_calendar(event.start_time),
+      end_time: format_datetime_for_calendar(event.end_time),
       all_day: event.all_day,
       location: event.location,
       color: event.color || Events.default_color_for_type(event.event_type),
@@ -273,6 +274,15 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
       recurrence_end_date: event.recurrence_end_date && Date.to_iso8601(event.recurrence_end_date)
     }
   end
+
+  # Format datetime without timezone suffix to prevent FullCalendar timezone conversion
+  defp format_datetime_for_calendar(%DateTime{} = dt) do
+    dt
+    |> DateTime.to_naive()
+    |> NaiveDateTime.to_iso8601()
+  end
+
+  defp format_datetime_for_calendar(nil), do: nil
 
   @impl true
   def render(assigns) do

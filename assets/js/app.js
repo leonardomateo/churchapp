@@ -345,6 +345,7 @@ const EventCalendar = {
     this.calendar = new Calendar(calendarEl, {
       plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
       initialView: 'dayGridMonth',
+      timeZone: 'local',  // Use local timezone without conversion (times are stored as-is)
       headerToolbar: {
         left: 'title',
         center: '',

@@ -30,7 +30,9 @@ defmodule ChurchappWeb.EventsLive.EditLive do
            |> assign(:is_recurring, event.is_recurring)
            |> assign(:show_recurrence_options, event.is_recurring && event.recurrence_rule != nil)
            |> assign(:event_types, Events.event_types())
-           |> assign(:recurrence_presets, recurrence_presets())}
+           |> assign(:recurrence_presets, recurrence_presets())
+           |> assign(:start_time_dropdown_open, false)
+           |> assign(:end_time_dropdown_open, false)}
 
         {:error, _} ->
           {:ok,
@@ -42,19 +44,25 @@ defmodule ChurchappWeb.EventsLive.EditLive do
   end
 
   @impl true
-  def handle_event("validate", %{"form" => params}, socket) do
-    is_recurring = params["is_recurring"] == "true"
+  def handle_event("validate", params, socket) do
+    # Handle both nested "form" params and top-level params
+    form_params = params["form"] || params
+
+    # Combine separate date/time fields into datetime fields
+    form_params = combine_date_time_fields(params, form_params)
+
+    is_recurring = form_params["is_recurring"] == "true"
     was_recurring = socket.assigns.is_recurring
 
     # If recurring was just enabled and no rule is set, apply a default preset
-    params =
-      if is_recurring && !was_recurring && (params["recurrence_rule"] || "") == "" do
-        Map.put(params, "recurrence_rule", "FREQ=WEEKLY;BYDAY=SU")
+    form_params =
+      if is_recurring && !was_recurring && (form_params["recurrence_rule"] || "") == "" do
+        Map.put(form_params, "recurrence_rule", "FREQ=WEEKLY;BYDAY=SU")
       else
-        params
+        form_params
       end
 
-    form = Form.validate(socket.assigns.form, params)
+    form = Form.validate(socket.assigns.form, form_params)
 
     {:noreply,
      socket
@@ -62,8 +70,14 @@ defmodule ChurchappWeb.EventsLive.EditLive do
      |> assign(:is_recurring, is_recurring)}
   end
 
-  def handle_event("save", %{"form" => params}, socket) do
-    case Form.submit(socket.assigns.form, params: params) do
+  def handle_event("save", params, socket) do
+    # Handle both nested "form" params and top-level params
+    form_params = params["form"] || params
+
+    # Combine separate date/time fields into datetime fields (same as validate)
+    form_params = combine_date_time_fields(params, form_params)
+
+    case Form.submit(socket.assigns.form, params: form_params) do
       {:ok, event} ->
         {:noreply,
          socket
@@ -98,6 +112,57 @@ defmodule ChurchappWeb.EventsLive.EditLive do
      |> assign(:form, form)
      |> assign(:is_recurring, true)
      |> assign(:show_recurrence_options, false)}
+  end
+
+  def handle_event("toggle_start_time_dropdown", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:start_time_dropdown_open, !socket.assigns.start_time_dropdown_open)
+     |> assign(:end_time_dropdown_open, false)}
+  end
+
+  def handle_event("toggle_end_time_dropdown", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:end_time_dropdown_open, !socket.assigns.end_time_dropdown_open)
+     |> assign(:start_time_dropdown_open, false)}
+  end
+
+  def handle_event("select_start_time", %{"time" => time}, socket) do
+    # Update the form with the new start time
+    start_date = extract_date(socket.assigns.form[:start_time].value)
+    new_start_time = if start_date != "", do: "#{start_date}T#{time}", else: time
+
+    form_params = socket.assigns.form.params || %{}
+    form_params = Map.put(form_params, "start_time", new_start_time)
+    form = Form.validate(socket.assigns.form, form_params)
+
+    {:noreply,
+     socket
+     |> assign(:form, form)
+     |> assign(:start_time_dropdown_open, false)}
+  end
+
+  def handle_event("select_end_time", %{"time" => time}, socket) do
+    # Update the form with the new end time
+    end_date = extract_date(socket.assigns.form[:end_time].value)
+    new_end_time = if end_date != "", do: "#{end_date}T#{time}", else: time
+
+    form_params = socket.assigns.form.params || %{}
+    form_params = Map.put(form_params, "end_time", new_end_time)
+    form = Form.validate(socket.assigns.form, form_params)
+
+    {:noreply,
+     socket
+     |> assign(:form, form)
+     |> assign(:end_time_dropdown_open, false)}
+  end
+
+  def handle_event("close_time_dropdowns", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:start_time_dropdown_open, false)
+     |> assign(:end_time_dropdown_open, false)}
   end
 
   defp is_admin?(nil), do: false
@@ -156,12 +221,12 @@ defmodule ChurchappWeb.EventsLive.EditLive do
             phx-submit="save"
             class="space-y-6"
           >
-            <%!-- Event Title --%>
+            <%!-- Event / Activity Name --%>
             <div>
               <.input
                 field={@form[:title]}
                 type="text"
-                label="Event Title *"
+                label="Event / Activity Name *"
                 placeholder="e.g., Sunday Worship Service"
                 required
               />
@@ -189,54 +254,139 @@ defmodule ChurchappWeb.EventsLive.EditLive do
               </select>
             </div>
 
-            <%!-- Date & Time Row --%>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label
-                  for={@form[:start_time].id}
-                  class="block text-sm font-medium text-gray-300 mb-2"
-                >
-                  Start Date & Time <span class="text-red-500">*</span>
-                </label>
-                <input
-                  type="datetime-local"
-                  id={@form[:start_time].id}
-                  name={@form[:start_time].name}
-                  value={format_datetime_local(@form[:start_time].value)}
-                  class="w-full px-4 py-2 text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  required
-                />
+            <%!-- Date & Time Section --%>
+            <div class="space-y-4">
+              <%!-- Date Row --%>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">
+                    Start Date <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    id="start_date"
+                    name="start_date"
+                    phx-hook="DatePicker"
+                    value={extract_date(@form[:start_time].value)}
+                    class="w-full px-4 py-3 text-base text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-2">
+                    End Date <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    id="end_date"
+                    name="end_date"
+                    phx-hook="DatePicker"
+                    value={extract_date(@form[:end_time].value)}
+                    class="w-full px-4 py-3 text-base text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    required
+                  />
+                </div>
               </div>
 
-              <div>
-                <label for={@form[:end_time].id} class="block text-sm font-medium text-gray-300 mb-2">
-                  End Date & Time <span class="text-red-500">*</span>
-                </label>
-                <input
-                  type="datetime-local"
-                  id={@form[:end_time].id}
-                  name={@form[:end_time].name}
-                  value={format_datetime_local(@form[:end_time].value)}
-                  class="w-full px-4 py-2 text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  required
-                />
-              </div>
-            </div>
+              <%!-- Time Row with All Day Toggle --%>
+              <div class="flex flex-wrap items-end gap-4">
+                <%!-- Start Time Custom Dropdown --%>
+                <div class="flex-1 min-w-[140px] relative">
+                  <label class="block text-sm font-medium text-gray-300 mb-2">
+                    From <span class="text-red-500">*</span>
+                  </label>
+                  <input type="hidden" name="start_time_only" value={extract_time(@form[:start_time].value)} />
+                  <button
+                    type="button"
+                    phx-click="toggle_start_time_dropdown"
+                    disabled={@form[:all_day].value == true || @form[:all_day].value == "true"}
+                    class={[
+                      "w-full h-[46px] px-4 text-left text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent flex items-center justify-between",
+                      (@form[:all_day].value == true || @form[:all_day].value == "true") && "opacity-50 cursor-not-allowed"
+                    ]}
+                  >
+                    <span>{format_time_label_from_value(extract_time(@form[:start_time].value))}</span>
+                    <.icon name="hero-chevron-down" class="w-4 h-4 text-gray-400" />
+                  </button>
+                  <%= if @start_time_dropdown_open do %>
+                    <div
+                      style="background-color: #2D2D2D;"
+                      class="absolute z-50 mt-1 w-full border border-dark-600 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                      phx-click-away="close_time_dropdowns"
+                    >
+                      <%= for {label, value} <- time_options() do %>
+                        <button
+                          type="button"
+                          phx-click="select_start_time"
+                          phx-value-time={value}
+                          style={if extract_time(@form[:start_time].value) == value, do: "background-color: #06b6d4; color: white;", else: "background-color: #2D2D2D; color: #e5e7eb;"}
+                          class="w-full px-4 py-2.5 text-left text-sm transition-colors time-picker-option"
+                        >
+                          {label}
+                        </button>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
 
-            <%!-- All Day Checkbox --%>
-            <div class="flex items-center gap-3">
-              <input type="hidden" name={@form[:all_day].name} value="false" />
-              <input
-                type="checkbox"
-                id={@form[:all_day].id}
-                name={@form[:all_day].name}
-                value="true"
-                checked={@form[:all_day].value == true || @form[:all_day].value == "true"}
-                class="h-4 w-4"
-              />
-              <label for={@form[:all_day].id} class="text-sm text-gray-300">
-                All-day event
-              </label>
+                <%!-- End Time Custom Dropdown --%>
+                <div class="flex-1 min-w-[140px] relative">
+                  <label class="block text-sm font-medium text-gray-300 mb-2">
+                    To <span class="text-red-500">*</span>
+                  </label>
+                  <input type="hidden" name="end_time_only" value={extract_time(@form[:end_time].value)} />
+                  <button
+                    type="button"
+                    phx-click="toggle_end_time_dropdown"
+                    disabled={@form[:all_day].value == true || @form[:all_day].value == "true"}
+                    class={[
+                      "w-full h-[46px] px-4 text-left text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent flex items-center justify-between",
+                      (@form[:all_day].value == true || @form[:all_day].value == "true") && "opacity-50 cursor-not-allowed"
+                    ]}
+                  >
+                    <span>{format_time_label_from_value(extract_time(@form[:end_time].value))}</span>
+                    <.icon name="hero-chevron-down" class="w-4 h-4 text-gray-400" />
+                  </button>
+                  <%= if @end_time_dropdown_open do %>
+                    <div
+                      style="background-color: #2D2D2D;"
+                      class="absolute z-50 mt-1 w-full border border-dark-600 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                      phx-click-away="close_time_dropdowns"
+                    >
+                      <%= for {label, value} <- time_options() do %>
+                        <button
+                          type="button"
+                          phx-click="select_end_time"
+                          phx-value-time={value}
+                          style={if extract_time(@form[:end_time].value) == value, do: "background-color: #06b6d4; color: white;", else: "background-color: #2D2D2D; color: #e5e7eb;"}
+                          class="w-full px-4 py-2.5 text-left text-sm transition-colors time-picker-option"
+                        >
+                          {label}
+                        </button>
+                      <% end %>
+                    </div>
+                  <% end %>
+                </div>
+
+                <div class="flex items-center gap-2 pb-2">
+                  <input type="hidden" name={@form[:all_day].name} value="false" />
+                  <input
+                    type="checkbox"
+                    id={@form[:all_day].id}
+                    name={@form[:all_day].name}
+                    value="true"
+                    checked={@form[:all_day].value == true || @form[:all_day].value == "true"}
+                    class="h-4 w-4"
+                  />
+                  <label for={@form[:all_day].id} class="text-sm text-gray-300 whitespace-nowrap">
+                    All day
+                  </label>
+                </div>
+              </div>
+
+              <%!-- Hidden inputs for actual start_time and end_time that get submitted --%>
+              <input type="hidden" name={@form[:start_time].name} value={@form[:start_time].value} />
+              <input type="hidden" name={@form[:end_time].name} value={@form[:end_time].value} />
             </div>
 
             <%!-- Location --%>
@@ -428,27 +578,68 @@ defmodule ChurchappWeb.EventsLive.EditLive do
     """
   end
 
-  defp format_datetime_local(nil), do: ""
-  defp format_datetime_local(""), do: ""
-
-  defp format_datetime_local(%DateTime{} = dt) do
-    dt
-    |> DateTime.to_naive()
-    |> NaiveDateTime.to_iso8601()
-    |> String.slice(0, 16)
-  end
-
-  defp format_datetime_local(value) when is_binary(value) do
-    String.slice(value, 0, 16)
-  end
-
-  defp format_datetime_local(_), do: ""
-
   defp format_date(nil), do: ""
   defp format_date(""), do: ""
   defp format_date(%Date{} = date), do: Date.to_iso8601(date)
   defp format_date(value) when is_binary(value), do: value
   defp format_date(_), do: ""
+
+  # Extract date part from datetime value (YYYY-MM-DD)
+  defp extract_date(nil), do: ""
+  defp extract_date(""), do: ""
+
+  defp extract_date(%DateTime{} = dt) do
+    dt |> DateTime.to_date() |> Date.to_iso8601()
+  end
+
+  defp extract_date(value) when is_binary(value) do
+    # Handle "YYYY-MM-DDTHH:MM" or "YYYY-MM-DD" format
+    value |> String.split("T") |> List.first() |> Kernel.||("")
+  end
+
+  defp extract_date(_), do: ""
+
+  # Extract time part from datetime value (HH:MM)
+  defp extract_time(nil), do: "09:00"
+  defp extract_time(""), do: "09:00"
+
+  defp extract_time(%DateTime{} = dt) do
+    dt
+    |> DateTime.to_time()
+    |> Time.to_iso8601()
+    |> String.slice(0, 5)
+  end
+
+  defp extract_time(value) when is_binary(value) do
+    case String.split(value, "T") do
+      [_date, time] -> String.slice(time, 0, 5)
+      _ -> "09:00"
+    end
+  end
+
+  defp extract_time(_), do: "09:00"
+
+  # Combine separate date and time fields into datetime strings
+  defp combine_date_time_fields(params, form_params) do
+    start_date = params["start_date"] || extract_date(form_params["start_time"])
+    end_date = params["end_date"] || extract_date(form_params["end_time"])
+    start_time_only = params["start_time_only"] || "09:00"
+    end_time_only = params["end_time_only"] || "10:00"
+
+    # Only combine if we have date values
+    form_params =
+      if start_date && start_date != "" do
+        Map.put(form_params, "start_time", "#{start_date}T#{start_time_only}")
+      else
+        form_params
+      end
+
+    if end_date && end_date != "" do
+      Map.put(form_params, "end_time", "#{end_date}T#{end_time_only}")
+    else
+      form_params
+    end
+  end
 
   defp format_rrule(nil), do: "Not set"
   defp format_rrule(""), do: "Not set"
@@ -459,4 +650,45 @@ defmodule ChurchappWeb.EventsLive.EditLive do
   defp format_rrule("FREQ=MONTHLY;BYDAY=1SU"), do: "First Sunday of Month"
   defp format_rrule("FREQ=MONTHLY"), do: "Same Day Monthly"
   defp format_rrule(rule), do: rule
+
+  # Generate time options in 30-minute intervals
+  defp time_options do
+    for hour <- 0..23, minute <- [0, 30] do
+      value = format_time_value(hour, minute)
+      label = format_time_label(hour, minute)
+      {label, value}
+    end
+  end
+
+  defp format_time_value(hour, minute) do
+    hour_str = String.pad_leading(Integer.to_string(hour), 2, "0")
+    minute_str = String.pad_leading(Integer.to_string(minute), 2, "0")
+    "#{hour_str}:#{minute_str}"
+  end
+
+  defp format_time_label(hour, minute) do
+    {display_hour, period} =
+      cond do
+        hour == 0 -> {12, "AM"}
+        hour < 12 -> {hour, "AM"}
+        hour == 12 -> {12, "PM"}
+        true -> {hour - 12, "PM"}
+      end
+
+    minute_str = String.pad_leading(Integer.to_string(minute), 2, "0")
+    "#{display_hour}:#{minute_str} #{period}"
+  end
+
+  # Convert a time value (HH:MM) to display label
+  defp format_time_label_from_value(time_value) do
+    case String.split(time_value || "09:00", ":") do
+      [hour_str, min_str] ->
+        hour = String.to_integer(hour_str)
+        minute = String.to_integer(min_str)
+        format_time_label(hour, minute)
+
+      _ ->
+        "9:00 AM"
+    end
+  end
 end
