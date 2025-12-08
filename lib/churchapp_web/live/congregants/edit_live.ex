@@ -804,16 +804,16 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
               >
                 <div
                   :for={ministry <- @selected_ministries}
-                  class="inline-flex items-center px-3 py-1.5 rounded-md text-sm bg-dark-700 text-gray-200 border border-dark-600 hover:border-dark-500 transition-colors"
+                  class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/25 hover:border-cyan-500/40 transition-all duration-200"
                 >
                   <span>{ministry}</span>
                   <button
                     type="button"
                     phx-click="remove_ministry"
                     phx-value-ministry={ministry}
-                    class="ml-2 text-gray-400 hover:text-red-400 transition-colors"
+                    class="ml-2 text-cyan-400/70 hover:text-red-400 transition-colors"
                   >
-                    <.icon name="hero-x-mark" class="h-4 w-4" />
+                    <.icon name="hero-x-mark" class="h-3.5 w-3.5" />
                   </button>
                 </div>
                 <button
