@@ -42,8 +42,18 @@ defmodule ChurchappWeb.EventsLive.NewLive do
 
   @impl true
   def handle_event("validate", %{"form" => params}, socket) do
-    form = Form.validate(socket.assigns.form, params)
     is_recurring = params["is_recurring"] == "true"
+    was_recurring = socket.assigns.is_recurring
+
+    # If recurring was just enabled and no rule is set, apply a default preset
+    params =
+      if is_recurring && !was_recurring && (params["recurrence_rule"] || "") == "" do
+        Map.put(params, "recurrence_rule", "FREQ=WEEKLY;BYDAY=SU")
+      else
+        params
+      end
+
+    form = Form.validate(socket.assigns.form, params)
 
     {:noreply,
      socket
@@ -71,12 +81,16 @@ defmodule ChurchappWeb.EventsLive.NewLive do
   def handle_event("apply_preset", %{"preset" => preset}, socket) do
     rrule = get_preset_rrule(preset)
 
-    form =
-      socket.assigns.form
-      |> Form.validate(%{
+    # Get current form params and merge with new recurrence values
+    current_params = socket.assigns.form.params || %{}
+
+    merged_params =
+      Map.merge(current_params, %{
         "is_recurring" => "true",
         "recurrence_rule" => rrule
       })
+
+    form = Form.validate(socket.assigns.form, merged_params)
 
     {:noreply,
      socket
@@ -229,7 +243,8 @@ defmodule ChurchappWeb.EventsLive.NewLive do
               <select
                 id={@form[:event_type].id}
                 name={@form[:event_type].name}
-                class="w-full px-4 py-2 text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                style="height: 46px; padding: 0.75rem 1rem;"
+                class="w-full text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <%= for event_type <- @event_types do %>
                   <option
@@ -369,6 +384,23 @@ defmodule ChurchappWeb.EventsLive.NewLive do
               </div>
 
               <%= if @is_recurring do %>
+                <%!-- Hidden input for recurrence_rule to ensure it's always submitted --%>
+                <%= if !@show_recurrence_options do %>
+                  <input
+                    type="hidden"
+                    name={@form[:recurrence_rule].name}
+                    value={@form[:recurrence_rule].value}
+                  />
+                <% end %>
+
+                <%!-- Show current recurrence pattern --%>
+                <div class="mb-4 p-3 bg-dark-700/50 rounded-lg">
+                  <p class="text-sm text-gray-300">
+                    <span class="font-medium">Current pattern:</span>
+                    <span class="text-primary-400 ml-2">{format_rrule(@form[:recurrence_rule].value)}</span>
+                  </p>
+                </div>
+
                 <%!-- Recurrence Presets --%>
                 <div class="mb-4">
                   <label class="block text-sm font-medium text-gray-300 mb-2">
@@ -381,7 +413,13 @@ defmodule ChurchappWeb.EventsLive.NewLive do
                           type="button"
                           phx-click="apply_preset"
                           phx-value-preset={preset.id}
-                          class="px-3 py-1.5 text-xs font-medium bg-dark-700 text-gray-300 border border-dark-600 rounded-full hover:bg-dark-600 hover:text-white transition-colors"
+                          class={[
+                            "px-3 py-1.5 text-xs font-medium border rounded-full transition-colors",
+                            if(@form[:recurrence_rule].value == preset.rrule,
+                              do: "bg-primary-500 text-white border-primary-500",
+                              else: "bg-dark-700 text-gray-300 border-dark-600 hover:bg-dark-600 hover:text-white"
+                            )
+                          ]}
                         >
                           {preset.label}
                         </button>
@@ -474,4 +512,14 @@ defmodule ChurchappWeb.EventsLive.NewLive do
   end
 
   defp format_datetime_local(_), do: ""
+
+  defp format_rrule(nil), do: "Not set"
+  defp format_rrule(""), do: "Not set"
+  defp format_rrule("FREQ=WEEKLY;BYDAY=SU"), do: "Every Sunday"
+  defp format_rrule("FREQ=WEEKLY;BYDAY=WE"), do: "Every Wednesday"
+  defp format_rrule("FREQ=WEEKLY;BYDAY=FR"), do: "Every Friday"
+  defp format_rrule("FREQ=WEEKLY;INTERVAL=2"), do: "Every 2 Weeks"
+  defp format_rrule("FREQ=MONTHLY;BYDAY=1SU"), do: "First Sunday of Month"
+  defp format_rrule("FREQ=MONTHLY"), do: "Same Day Monthly"
+  defp format_rrule(rule), do: rule
 end
