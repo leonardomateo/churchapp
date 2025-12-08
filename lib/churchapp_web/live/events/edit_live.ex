@@ -680,8 +680,10 @@ defmodule ChurchappWeb.EventsLive.EditLive do
   end
 
   # Convert a time value (HH:MM) to display label
+  defp format_time_label_from_value(""), do: "9:00 AM"
+
   defp format_time_label_from_value(time_value) do
-    case String.split(time_value || "09:00", ":") do
+    case String.split(time_value, ":") do
       [hour_str, min_str] ->
         hour = String.to_integer(hour_str)
         minute = String.to_integer(min_str)
