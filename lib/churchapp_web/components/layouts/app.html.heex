@@ -64,6 +64,13 @@
               <.icon name="hero-document-chart-bar" class="mr-3 h-5 w-5 flex-shrink-0" />
               Weekly Reports
             </.link>
+            <.link
+              navigate={~p"/admin/events"}
+              class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+            >
+              <.icon name="hero-calendar" class="mr-3 h-5 w-5 flex-shrink-0" />
+              Events/Activities
+            </.link>
           </div>
         <% end %>
       </nav>
@@ -185,6 +192,12 @@
               class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
             >
               <.icon name="hero-document-chart-bar" class="mr-3 h-5 w-5" /> Week Reports
+            </.link>
+            <.link
+              navigate={~p"/admin/events"}
+              class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+            >
+              <.icon name="hero-calendar" class="mr-3 h-5 w-5" /> Events/Activities
             </.link>
           </div>
         <% end %>

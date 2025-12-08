@@ -2,6 +2,7 @@ defmodule ChurchappWeb.EventsLive.EditLive do
   use ChurchappWeb, :live_view
 
   alias Chms.Church.Events
+  alias Chms.Church.EventActivityNames
   alias AshPhoenix.Form
 
   @impl true
@@ -26,13 +27,19 @@ defmodule ChurchappWeb.EventsLive.EditLive do
             |> Form.validate(initial_params)
             |> to_form()
 
+          activity_names = EventActivityNames.all_name_options()
+
           {:ok,
            socket
            |> assign(:page_title, "Edit #{event.title}")
            |> assign(:event, event)
            |> assign(:form, form)
            |> assign(:start_time_dropdown_open, false)
-           |> assign(:end_time_dropdown_open, false)}
+           |> assign(:end_time_dropdown_open, false)
+           |> assign(:activity_names, activity_names)
+           |> assign(:show_custom_name_modal, false)
+           |> assign(:custom_name_input, "")
+           |> assign(:custom_name_error, nil)}
 
         {:error, _} ->
           {:ok,
@@ -128,6 +135,69 @@ defmodule ChurchappWeb.EventsLive.EditLive do
      |> assign(:end_time_dropdown_open, false)}
   end
 
+  def handle_event("open_custom_name_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_custom_name_modal, true)
+     |> assign(:custom_name_input, "")
+     |> assign(:custom_name_error, nil)}
+  end
+
+  def handle_event("close_modal", _params, socket) do
+    {:noreply, assign(socket, :show_custom_name_modal, false)}
+  end
+
+  def handle_event("validate_custom_name", %{"custom_name" => value}, socket) do
+    {:noreply,
+     socket
+     |> assign(:custom_name_input, value)
+     |> assign(:custom_name_error, nil)}
+  end
+
+  def handle_event("save_custom_name", %{"custom_name" => custom_name}, socket) do
+    custom_name = String.trim(custom_name)
+
+    if custom_name == "" do
+      {:noreply,
+       socket
+       |> assign(:custom_name_error, "Please enter an event/activity name")}
+    else
+      # Add the new name to the list and select it in the form
+      updated_names = socket.assigns.activity_names ++ [{custom_name, custom_name}]
+
+      # Update the form with the new custom name
+      form_params = get_current_form_params(socket.assigns.form)
+      form_params = Map.put(form_params, "title", custom_name)
+
+      form =
+        socket.assigns.form.source
+        |> Form.validate(form_params)
+        |> to_form()
+
+      {:noreply,
+       socket
+       |> assign(:activity_names, updated_names)
+       |> assign(:form, form)
+       |> assign(:show_custom_name_modal, false)
+       |> assign(:custom_name_input, "")
+       |> put_flash(:info, "New activity '#{custom_name}' added successfully")}
+    end
+  end
+
+  @impl true
+  def handle_info({:activity_selected, value}, socket) do
+    # Update the form with the selected activity name
+    form_params = get_current_form_params(socket.assigns.form)
+    form_params = Map.put(form_params, "title", value)
+
+    form =
+      socket.assigns.form.source
+      |> Form.validate(form_params)
+      |> to_form()
+
+    {:noreply, assign(socket, :form, form)}
+  end
+
   defp is_admin?(nil), do: false
   defp is_admin?(user), do: user.role in [:super_admin, :admin, :staff]
 
@@ -220,13 +290,35 @@ defmodule ChurchappWeb.EventsLive.EditLive do
           >
             <%!-- Event / Activity Name --%>
             <div>
-              <.input
-                field={@form[:title]}
-                type="text"
-                label="Event / Activity Name *"
-                placeholder="e.g., Sunday Worship Service"
-                required
-              />
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                Event / Activity Name <span class="text-red-500">*</span>
+              </label>
+              <div class="flex gap-2">
+                <div class="flex-1">
+                  <.live_component
+                    module={ChurchappWeb.EventActivitySelector}
+                    id="event-activity-selector-edit"
+                    field={@form[:title]}
+                    form={@form}
+                    activity_names={@activity_names}
+                  />
+                </div>
+                <div class="relative group">
+                  <button
+                    type="button"
+                    phx-click="open_custom_name_modal"
+                    class="flex items-center h-[42px] px-4 text-sm font-medium text-primary-500 bg-primary-500/10 border border-primary-500/20 rounded-md hover:bg-primary-500/20 hover:border-primary-500/30 transition-all duration-200 whitespace-nowrap"
+                  >
+                    <.icon name="hero-plus" class="h-5 w-5 mr-1.5" /> Add Custom
+                  </button>
+                  <%!-- Tooltip --%>
+                  <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-dark-700 text-white text-xs rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                    Create a new event/activity name
+                    <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-dark-700">
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <%!-- Date & Time Section --%>
@@ -450,6 +542,88 @@ defmodule ChurchappWeb.EventsLive.EditLive do
           </.form>
         </div>
       </div>
+
+      <%!-- Custom Activity Name Modal --%>
+      <%= if @show_custom_name_modal do %>
+        <div
+          class="fixed inset-0 z-50 overflow-y-auto animate-fade-in"
+          phx-window-keydown="close_modal"
+          phx-key="escape"
+        >
+          <div class="flex min-h-screen items-center justify-center p-4">
+            <%!-- Backdrop --%>
+            <div
+              class="fixed inset-0 modal-backdrop transition-opacity"
+              phx-click="close_modal"
+            >
+            </div>
+            <%!-- Modal --%>
+            <div class="relative bg-dark-800 rounded-lg shadow-xl border border-dark-700 w-full max-w-md p-6 z-10 animate-scale-in">
+              <%!-- Header --%>
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-white flex items-center">
+                  <.icon name="hero-plus-circle" class="mr-2 h-5 w-5 text-primary-500" />
+                  Add Custom Event/Activity
+                </h3>
+                <button
+                  type="button"
+                  phx-click="close_modal"
+                  class="text-gray-400 hover:text-white transition-colors"
+                >
+                  <.icon name="hero-x-mark" class="h-5 w-5" />
+                </button>
+              </div>
+              <%!-- Content --%>
+              <div class="mb-6">
+                <label for="modal-custom-name" class="block text-sm font-medium text-gray-400 mb-2">
+                  Activity Name <span class="text-red-500">*</span>
+                </label>
+                <form phx-change="validate_custom_name">
+                  <input
+                    type="text"
+                    id="modal-custom-name"
+                    name="custom_name"
+                    value={@custom_name_input}
+                    placeholder="e.g., Sunday Worship Service, Bible Study..."
+                    class={[
+                      "block w-full px-3 py-2 text-white bg-dark-900 border rounded-md shadow-sm sm:text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none transition-colors",
+                      @custom_name_error && "border-red-500",
+                      !@custom_name_error && "border-dark-700"
+                    ]}
+                    phx-hook="AutoFocus"
+                  />
+                </form>
+                <%= if @custom_name_error do %>
+                  <p class="mt-2 text-sm text-red-400">{@custom_name_error}</p>
+                <% end %>
+                <p class="mt-2 text-xs text-gray-500">
+                  This name will be saved and available for future events
+                </p>
+              </div>
+              <%!-- Actions --%>
+              <div class="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  phx-click="close_modal"
+                  class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 hover:bg-dark-600 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  phx-click="save_custom_name"
+                  phx-value-custom_name={@custom_name_input}
+                  class="px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md shadow-sm transition-colors"
+                >
+                  <span class="flex items-center">
+                    <.icon name="hero-check" class="mr-1 h-4 w-4" /> Save
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
     </div>
     """
   end

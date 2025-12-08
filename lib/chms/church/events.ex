@@ -179,10 +179,6 @@ defmodule Chms.Church.Events do
     update_timestamp :updated_at
   end
 
-  identities do
-    identity :unique_event, [:title, :start_time]
-  end
-
   @doc """
   Returns the default color for events.
   """

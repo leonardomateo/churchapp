@@ -117,6 +117,9 @@ defmodule ChurchappWeb.Router do
       live("/week-ending-reports/new", WeekEndingReportsLive.NewLive, :new)
       live("/week-ending-reports/:id", WeekEndingReportsLive.ShowLive, :show)
       live("/week-ending-reports/:id/edit", WeekEndingReportsLive.EditLive, :edit)
+
+      # Events Management
+      live("/events", Admin.EventsLive, :index)
     end
   end
 
