@@ -31,7 +31,6 @@ import {BarChart, PieChart, DoughnutChart} from "./hooks/charts.js"
 // Import FullCalendar
 import { Calendar } from '@fullcalendar/core'
 import dayGridPlugin from '@fullcalendar/daygrid'
-import timeGridPlugin from '@fullcalendar/timegrid'
 import listPlugin from '@fullcalendar/list'
 import interactionPlugin from '@fullcalendar/interaction'
 import { RRule } from 'rrule'
@@ -343,7 +342,7 @@ const EventCalendar = {
     const calendarEl = this.el
     
     this.calendar = new Calendar(calendarEl, {
-      plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
+      plugins: [dayGridPlugin, listPlugin, interactionPlugin],
       initialView: 'dayGridMonth',
       timeZone: 'local',  // Use local timezone without conversion (times are stored as-is)
       headerToolbar: {
@@ -408,7 +407,7 @@ const EventCalendar = {
         if (this.isAdmin) {
           this.pushEvent("date_clicked", {
             date: info.dateStr,
-            allDay: info.allDay
+            allDay: false  // Always default to timed event, not all-day
           })
         }
       },
@@ -427,7 +426,7 @@ const EventCalendar = {
           this.pushEvent("date_range_selected", {
             start: info.startStr,
             end: info.endStr,
-            allDay: info.allDay
+            allDay: false  // Always default to timed event, not all-day
           })
         }
       },
@@ -618,12 +617,6 @@ const EventCalendar = {
       switch(viewCommand) {
         case 'month':
           this.calendar.changeView('dayGridMonth')
-          break
-        case 'week':
-          this.calendar.changeView('timeGridWeek')
-          break
-        case 'day':
-          this.calendar.changeView('timeGridDay')
           break
         case 'list':
           this.calendar.changeView('listMonth')

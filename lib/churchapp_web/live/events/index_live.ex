@@ -296,30 +296,6 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
               <button
                 type="button"
                 phx-click="change_view"
-                phx-value-view="week"
-                class={[
-                  "calendar-view-btn border-r border-dark-600",
-                  @current_view == "week" && "calendar-view-btn-active",
-                  @current_view != "week" && "calendar-view-btn-inactive"
-                ]}
-              >
-                Week
-              </button>
-              <button
-                type="button"
-                phx-click="change_view"
-                phx-value-view="day"
-                class={[
-                  "calendar-view-btn border-r border-dark-600",
-                  @current_view == "day" && "calendar-view-btn-active",
-                  @current_view != "day" && "calendar-view-btn-inactive"
-                ]}
-              >
-                Day
-              </button>
-              <button
-                type="button"
-                phx-click="change_view"
                 phx-value-view="list"
                 class={[
                   "calendar-view-btn",

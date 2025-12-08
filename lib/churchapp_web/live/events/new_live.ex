@@ -331,7 +331,7 @@ defmodule ChurchappWeb.EventsLive.NewLive do
                   <button
                     type="button"
                     phx-click="toggle_start_time_dropdown"
-                    disabled={@form[:all_day].value == true || @form[:all_day].value == "true"}
+                    disabled={@form[:all_day].value == true || @form[:all_day].value == ""}
                     class={[
                       "w-full h-[46px] px-4 text-left text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent flex items-center justify-between",
                       (@form[:all_day].value == true || @form[:all_day].value == "true") && "opacity-50 cursor-not-allowed"
