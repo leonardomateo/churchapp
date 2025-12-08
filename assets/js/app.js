@@ -457,6 +457,68 @@ const EventCalendar = {
             allDay: info.allDay
           })
         }
+      },
+      
+      // Add description and location to list view events
+      eventDidMount: (info) => {
+        // Only enhance list view events
+        if (info.view.type === 'listMonth') {
+          const titleEl = info.el.querySelector('.fc-list-event-title')
+          if (!titleEl) return
+          
+          const location = info.event.extendedProps.location
+          const description = info.event.extendedProps.description
+          
+          // Only add details container if we have location or description
+          if (location || description) {
+            const detailsContainer = document.createElement('div')
+            detailsContainer.className = 'fc-list-event-details'
+            detailsContainer.style.cssText = `
+              margin-top: 6px;
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+            `
+            
+            // Add location if exists
+            if (location) {
+              const locationEl = document.createElement('div')
+              locationEl.className = 'fc-list-event-location'
+              locationEl.innerHTML = `
+                <svg style="display: inline-block; width: 14px; height: 14px; margin-right: 6px; vertical-align: middle; color: #06b6d4;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <span style="color: #d1d5db; font-size: 0.85rem;">${location}</span>
+              `
+              locationEl.style.cssText = `
+                display: flex;
+                align-items: center;
+              `
+              detailsContainer.appendChild(locationEl)
+            }
+            
+            // Add description if exists
+            if (description) {
+              const descEl = document.createElement('div')
+              descEl.className = 'fc-list-event-description'
+              descEl.textContent = description
+              descEl.style.cssText = `
+                font-size: 0.8rem;
+                color: #9ca3af;
+                line-height: 1.4;
+                max-width: 600px;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+              `
+              detailsContainer.appendChild(descEl)
+            }
+            
+            titleEl.appendChild(detailsContainer)
+          }
+        }
       }
     })
     

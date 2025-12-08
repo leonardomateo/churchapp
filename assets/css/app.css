@@ -1516,6 +1516,26 @@ form input[type="checkbox"]:checked::after {
   border-color: currentColor;
 }
 
+/* Custom event details in list view */
+.fc .fc-list-event-title {
+  padding-bottom: 8px;
+}
+
+.fc .fc-list-event-details {
+  border-top: 1px solid #3a3a3a;
+  padding-top: 6px;
+  margin-top: 6px;
+}
+
+.fc .fc-list-event-location {
+  display: flex;
+  align-items: center;
+}
+
+.fc .fc-list-event-description {
+  color: #9ca3af;
+}
+
 /* Scrollgrid table styling */
 .fc .fc-scrollgrid {
   border-color: #2D2D2D;
@@ -1732,6 +1752,19 @@ form input[type="checkbox"]:checked::after {
 
 [data-theme="light"] .fc .fc-list-empty {
   background-color: #ffffff;
+}
+
+/* Light theme - custom event details in list view */
+[data-theme="light"] .fc .fc-list-event-details {
+  border-top-color: #e5e7eb;
+}
+
+[data-theme="light"] .fc .fc-list-event-location span {
+  color: #374151;
+}
+
+[data-theme="light"] .fc .fc-list-event-description {
+  color: #6b7280;
 }
 
 [data-theme="light"] .fc .fc-scrollgrid {
