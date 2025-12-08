@@ -355,7 +355,7 @@ const EventCalendar = {
         today: 'Today'
       },
       height: 'auto',
-      editable: this.isAdmin,
+      editable: false,
       selectable: this.isAdmin,
       selectMirror: true,
       dayMaxEvents: true,  // Show "more" link when events overflow
@@ -419,33 +419,6 @@ const EventCalendar = {
         // For recurring event instances, extract the original event ID
         const originalId = info.event.extendedProps?.originalId || eventId
         this.pushEvent("event_clicked", { id: originalId })
-      },
-      
-      // Drag and drop to reschedule (admin only)
-      eventDrop: (info) => {
-        if (this.isAdmin) {
-          this.pushEvent("event_dropped", {
-            id: info.event.extendedProps.originalId || info.event.id,
-            start: info.event.startStr,
-            end: info.event.endStr,
-            allDay: info.event.allDay
-          })
-        } else {
-          info.revert()
-        }
-      },
-      
-      // Resize event duration (admin only)
-      eventResize: (info) => {
-        if (this.isAdmin) {
-          this.pushEvent("event_resized", {
-            id: info.event.extendedProps.originalId || info.event.id,
-            start: info.event.startStr,
-            end: info.event.endStr
-          })
-        } else {
-          info.revert()
-        }
       },
       
       // Select date range to create event (admin only)

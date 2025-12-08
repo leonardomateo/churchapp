@@ -70,46 +70,6 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
     {:noreply, push_navigate(socket, to: ~p"/events/#{id}")}
   end
 
-  # Handle event drop (drag and drop reschedule)
-  def handle_event("event_dropped", %{"id" => id, "start" => start_str, "end" => end_str}, socket) do
-    if socket.assigns.is_admin do
-      with {:ok, event} <- Chms.Church.get_event_by_id(id),
-           {:ok, start_time} <- parse_datetime(start_str),
-           {:ok, end_time} <- parse_datetime(end_str),
-           {:ok, _updated} <-
-             Chms.Church.update_event(event, %{start_time: start_time, end_time: end_time},
-               actor: socket.assigns.current_user
-             ) do
-        {:noreply, put_flash(socket, :info, "Event rescheduled successfully")}
-      else
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Failed to reschedule event")}
-      end
-    else
-      {:noreply, socket}
-    end
-  end
-
-  # Handle event resize
-  def handle_event("event_resized", %{"id" => id, "start" => start_str, "end" => end_str}, socket) do
-    if socket.assigns.is_admin do
-      with {:ok, event} <- Chms.Church.get_event_by_id(id),
-           {:ok, start_time} <- parse_datetime(start_str),
-           {:ok, end_time} <- parse_datetime(end_str),
-           {:ok, _updated} <-
-             Chms.Church.update_event(event, %{start_time: start_time, end_time: end_time},
-               actor: socket.assigns.current_user
-             ) do
-        {:noreply, put_flash(socket, :info, "Event updated successfully")}
-      else
-        {:error, _} ->
-          {:noreply, put_flash(socket, :error, "Failed to update event")}
-      end
-    else
-      {:noreply, socket}
-    end
-  end
-
   # Fetch events for the calendar (called by JS hook)
   def handle_event(
         "fetch_events",
@@ -393,7 +353,7 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
         <%= if @is_admin do %>
           <p>
             <.icon name="hero-information-circle" class="inline h-4 w-4 mr-1" />
-            Click on a date to create a new event. Click on an event to view, edit, or delete it. Drag events to reschedule.
+            Click on a date to create a new event. Click on an event to view, edit, or delete it.
           </p>
         <% else %>
           <p>
