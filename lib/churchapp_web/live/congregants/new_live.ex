@@ -34,6 +34,9 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
       |> assign(:show_custom_country_modal, false)
       |> assign(:custom_country_input, "")
       |> assign(:custom_country_error, nil)
+      |> assign(:show_custom_ministry_modal, false)
+      |> assign(:custom_ministry_input, "")
+      |> assign(:custom_ministry_error, nil)
       |> allow_upload(:image,
         accept: ~w(.jpg .jpeg .png .gif .webp),
         max_file_size: 5_000_000,
@@ -208,6 +211,77 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
          |> put_flash(:info, "New country '#{custom_country}' added successfully")}
       end
     end
+  end
+
+  # Custom ministry modal handlers
+  def handle_event("open_custom_ministry_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_custom_ministry_modal, true)
+     |> assign(:custom_ministry_input, "")
+     |> assign(:custom_ministry_error, nil)}
+  end
+
+  def handle_event("close_ministry_modal", _params, socket) do
+    {:noreply, assign(socket, :show_custom_ministry_modal, false)}
+  end
+
+  def handle_event("validate_custom_ministry", %{"custom_ministry" => value}, socket) do
+    {:noreply,
+     socket
+     |> assign(:custom_ministry_input, value)
+     |> assign(:custom_ministry_error, nil)}
+  end
+
+  def handle_event("save_custom_ministry", %{"custom_ministry" => custom_ministry}, socket) do
+    custom_ministry = String.trim(custom_ministry)
+
+    if custom_ministry == "" do
+      {:noreply,
+       socket
+       |> assign(:custom_ministry_error, "Please enter a ministry name")}
+    else
+      # Check if ministry already exists
+      existing = Enum.find(socket.assigns.ministries_options, fn {name, _value} ->
+        String.downcase(name) == String.downcase(custom_ministry)
+      end)
+
+      if existing do
+        {:noreply,
+         socket
+         |> assign(:custom_ministry_error, "This ministry already exists")}
+      else
+        # Add the new ministry to the list and select it
+        new_ministry = {custom_ministry, custom_ministry}
+        updated_ministries = (socket.assigns.ministries_options ++ [new_ministry])
+          |> Enum.uniq_by(fn {name, _} -> String.downcase(name) end)
+          |> Enum.sort_by(fn {name, _} -> String.downcase(name) end)
+
+        new_selected = socket.assigns.selected_ministries ++ [custom_ministry]
+
+        {:noreply,
+         socket
+         |> assign(:ministries_options, updated_ministries)
+         |> assign(:selected_ministries, new_selected)
+         |> assign(:show_custom_ministry_modal, false)
+         |> assign(:custom_ministry_input, "")
+         |> put_flash(:info, "New ministry '#{custom_ministry}' added successfully")}
+      end
+    end
+  end
+
+  def handle_event("remove_ministry", %{"ministry" => ministry}, socket) do
+    new_selected = Enum.reject(socket.assigns.selected_ministries, &(&1 == ministry))
+    {:noreply, assign(socket, :selected_ministries, new_selected)}
+  end
+
+  def handle_event("clear_all_ministries", _params, socket) do
+    {:noreply, assign(socket, :selected_ministries, [])}
+  end
+
+  # Handle ministry selection changes from the MinistrySelector component
+  def handle_info({:ministries_changed, selected}, socket) do
+    {:noreply, assign(socket, :selected_ministries, selected)}
   end
 
   def render(assigns) do
@@ -663,27 +737,63 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
               <h3 class="mb-4 flex items-center text-lg font-medium leading-6 text-white">
                 <.icon name="hero-user-group" class="mr-2 h-5 w-5 text-primary-500" /> Ministries
               </h3>
-              <div>
-                <%!-- Hidden input to ensure ministries field is always present --%>
-                <input type="hidden" name="form[ministries][]" value="" />
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  <div :for={{label, value} <- @ministries_options}>
-                    <label class="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        name="form[ministries][]"
-                        value={value}
-                        checked={value in @selected_ministries}
-                        class="h-4 w-4 text-primary-600 bg-dark-700 border-dark-600 rounded focus:ring-primary-500"
-                      />
-                      <span class="text-sm text-gray-300">{label}</span>
-                    </label>
+              <%!-- Selected ministries tags --%>
+              <div
+                :if={length(@selected_ministries) > 0}
+                class="mb-3 flex flex-wrap gap-2 items-center"
+              >
+                <div
+                  :for={ministry <- @selected_ministries}
+                  class="inline-flex items-center px-3 py-1.5 rounded-md text-sm bg-dark-700 text-gray-200 border border-dark-600 hover:border-dark-500 transition-colors"
+                >
+                  <span>{ministry}</span>
+                  <button
+                    type="button"
+                    phx-click="remove_ministry"
+                    phx-value-ministry={ministry}
+                    class="ml-2 text-gray-400 hover:text-red-400 transition-colors"
+                  >
+                    <.icon name="hero-x-mark" class="h-4 w-4" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  phx-click="clear_all_ministries"
+                  class="text-xs text-gray-500 hover:text-red-400 transition-colors ml-1"
+                >
+                  Clear all
+                </button>
+              </div>
+              <%!-- Search box and Add button on same row --%>
+              <div class="flex gap-2 items-center">
+                <div class="flex-1">
+                  <.live_component
+                    module={ChurchappWeb.MinistrySelector}
+                    id="ministry-selector-new"
+                    ministries={@ministries_options}
+                    selected={@selected_ministries}
+                    name="form[ministries][]"
+                  />
+                </div>
+                <div class="relative group">
+                  <button
+                    type="button"
+                    phx-click="open_custom_ministry_modal"
+                    class="flex items-center h-[38px] px-4 text-sm font-medium text-primary-500 bg-primary-500/10 border border-primary-500/20 rounded-md hover:bg-primary-500/20 hover:border-primary-500/30 transition-all duration-200 whitespace-nowrap"
+                  >
+                    <.icon name="hero-plus" class="h-5 w-5 mr-1.5" /> Add Ministry
+                  </button>
+                  <%!-- Tooltip --%>
+                  <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-dark-700 text-white text-xs rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                    Add a new ministry to the list
+                    <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-dark-700">
+                    </div>
                   </div>
                 </div>
-                <p class="mt-3 text-xs text-gray-500">
-                  Select all ministries that apply
-                </p>
               </div>
+              <p class="mt-3 text-xs text-gray-500">
+                Search and select ministries, or add a custom one
+              </p>
             </div>
           </div>
 
@@ -778,6 +888,88 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
                 >
                   <span class="flex items-center">
                     <.icon name="hero-check" class="mr-1 h-4 w-4" /> Add Country
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%!-- Custom Ministry Modal --%>
+      <%= if @show_custom_ministry_modal do %>
+        <div
+          class="fixed inset-0 z-50 overflow-y-auto animate-fade-in"
+          phx-window-keydown="close_ministry_modal"
+          phx-key="escape"
+        >
+          <div class="flex min-h-screen items-center justify-center p-4">
+            <%!-- Backdrop --%>
+            <div
+              class="fixed inset-0 modal-backdrop transition-opacity"
+              phx-click="close_ministry_modal"
+            >
+            </div>
+            <%!-- Modal --%>
+            <div class="relative bg-dark-800 rounded-lg shadow-xl border border-dark-700 w-full max-w-md p-6 z-10 animate-scale-in">
+              <%!-- Header --%>
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-white flex items-center">
+                  <.icon name="hero-user-group" class="mr-2 h-5 w-5 text-primary-500" />
+                  Add New Ministry
+                </h3>
+                <button
+                  type="button"
+                  phx-click="close_ministry_modal"
+                  class="text-gray-400 hover:text-white transition-colors"
+                >
+                  <.icon name="hero-x-mark" class="h-5 w-5" />
+                </button>
+              </div>
+              <%!-- Content --%>
+              <div class="mb-6">
+                <label for="modal-custom-ministry" class="block text-sm font-medium text-gray-400 mb-2">
+                  Ministry Name <span class="text-red-500">*</span>
+                </label>
+                <form phx-change="validate_custom_ministry">
+                  <input
+                    type="text"
+                    id="modal-custom-ministry"
+                    name="custom_ministry"
+                    value={@custom_ministry_input}
+                    placeholder="e.g., Choir, Bible Study..."
+                    class={[
+                      "block w-full px-3 py-2 text-white bg-dark-900 border rounded-md shadow-sm sm:text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none transition-colors",
+                      @custom_ministry_error && "border-red-500",
+                      !@custom_ministry_error && "border-dark-700"
+                    ]}
+                    phx-hook="AutoFocus"
+                  />
+                </form>
+                <%= if @custom_ministry_error do %>
+                  <p class="mt-2 text-sm text-red-400">{@custom_ministry_error}</p>
+                <% end %>
+                <p class="mt-2 text-xs text-gray-500">
+                  This ministry will be added to the selection list and automatically selected
+                </p>
+              </div>
+              <%!-- Actions --%>
+              <div class="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  phx-click="close_ministry_modal"
+                  class="px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 hover:bg-dark-600 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  phx-click="save_custom_ministry"
+                  phx-value-custom_ministry={@custom_ministry_input}
+                  class="px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md shadow-sm transition-colors"
+                >
+                  <span class="flex items-center">
+                    <.icon name="hero-check" class="mr-1 h-4 w-4" /> Add Ministry
                   </span>
                 </button>
               </div>
