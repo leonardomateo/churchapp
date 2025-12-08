@@ -99,6 +99,17 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
             <dl class="ml-6 grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-3">
               <div class="flex flex-col h-full">
                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date of Birth
+                </dt>
+                <dd class="mt-2 text-sm text-white">
+                  {if @congregant.dob,
+                    do: Calendar.strftime(@congregant.dob, "%B %d, %Y"),
+                    else: "Not provided"}
+                </dd>
+              </div>
+
+              <div class="flex flex-col h-full">
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Gender
                 </dt>
                 <dd class="mt-2 text-sm text-white">
@@ -110,16 +121,20 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
 
               <div class="flex flex-col h-full">
                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date of Birth
+                  Status
                 </dt>
                 <dd class="mt-2 text-sm text-white">
-                  {if @congregant.dob,
-                    do: Calendar.strftime(@congregant.dob, "%B %d, %Y"),
-                    else: "Not provided"}
+                  <%= if @congregant.is_leader do %>
+                    <span class="inline-flex items-center text-primary-500">
+                      <.icon name="hero-shield-check" class="mr-1 w-4 h-4" /> Leader
+                    </span>
+                  <% else %>
+                    Member
+                  <% end %>
                 </dd>
               </div>
 
-              <div class="flex flex-col h-full">
+              <div class="flex flex-col h-full sm:col-span-3">
                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ministries
                 </dt>
@@ -135,21 +150,6 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
                     </div>
                   <% else %>
                     <span class="text-gray-500 italic">No ministries assigned</span>
-                  <% end %>
-                </dd>
-              </div>
-
-              <div class="flex flex-col h-full">
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </dt>
-                <dd class="mt-2 text-sm text-white">
-                  <%= if @congregant.is_leader do %>
-                    <span class="inline-flex items-center text-primary-500">
-                      <.icon name="hero-shield-check" class="mr-1 w-4 h-4" /> Leader
-                    </span>
-                  <% else %>
-                    Member
                   <% end %>
                 </dd>
               </div>
@@ -203,10 +203,9 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
             <dl class="ml-6">
               <%= if @congregant.address do %>
                 <dd class="text-sm text-white leading-relaxed">
-                  <div>{@congregant.address}</div>
-                  <%= if @congregant.suite do %>
-                    <div>{@congregant.suite}</div>
-                  <% end %>
+                  <div>
+                    {@congregant.address}<%= if @congregant.suite do %>, {@congregant.suite}<% end %>
+                  </div>
                   <div>
                     {@congregant.city}{if @congregant.city && @congregant.state, do: ", "}{@congregant.state} {@congregant.zip_code}
                   </div>
