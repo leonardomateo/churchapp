@@ -234,7 +234,7 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
                   Record Created
                 </dt>
                 <dd class="mt-2 text-sm text-white">
-                  {Calendar.strftime(@congregant.inserted_at, "%B %d, %Y at %I:%M %p")}
+                  {format_datetime(@congregant.inserted_at)}
                 </dd>
               </div>
 
@@ -243,7 +243,7 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
                   Record Last Updated
                 </dt>
                 <dd class="mt-2 text-sm text-white">
-                  {Calendar.strftime(@congregant.updated_at, "%B %d, %Y at %I:%M %p")}
+                  {format_datetime(@congregant.updated_at)}
                 </dd>
               </div>
             </dl>
@@ -269,5 +269,13 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
         # Return as-is if not 10 digits
         phone
     end
+  end
+
+  defp format_datetime(datetime) do
+    # Subtract 5 hours for Eastern Standard Time (UTC-5)
+    # Note: This doesn't account for DST, but is good enough for display purposes
+    datetime
+    |> DateTime.add(-5 * 3600, :second)
+    |> Calendar.strftime("%B %d, %Y at %I:%M %p")
   end
 end

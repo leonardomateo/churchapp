@@ -27,6 +27,13 @@ defmodule ChurchappWeb.LiveUserAuth do
 
   def on_mount(:live_user_required, _params, _session, socket) do
     if socket.assigns[:current_user] do
+      # Attach hook to capture current path for navigation highlighting
+      socket =
+        attach_hook(socket, :current_path_hook, :handle_params, fn _params, uri, socket ->
+          path = URI.parse(uri).path
+          {:cont, assign(socket, :current_path, path)}
+        end)
+
       {:cont, socket}
     else
       socket =

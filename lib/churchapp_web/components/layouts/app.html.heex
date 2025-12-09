@@ -12,35 +12,65 @@
       <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
         <.link
           navigate={~p"/dashboard"}
-          class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+          class={[
+            "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+            if((@current_path || "") == "/dashboard",
+              do: "bg-primary-500/10 text-primary-500",
+              else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+            )
+          ]}
         >
           <.icon name="hero-chart-bar" class="mr-3 h-5 w-5 flex-shrink-0" /> Dashboard
         </.link>
 
         <.link
           navigate={~p"/congregants"}
-          class="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary-500/10 text-primary-500"
+          class={[
+            "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+            if(String.starts_with?(@current_path || "", "/congregants"),
+              do: "bg-primary-500/10 text-primary-500",
+              else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+            )
+          ]}
         >
           <.icon name="hero-users" class="mr-3 h-5 w-5 flex-shrink-0" /> Members
         </.link>
 
         <.link
           navigate={~p"/contributions"}
-          class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+          class={[
+            "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+            if(String.starts_with?(@current_path || "", "/contributions"),
+              do: "bg-primary-500/10 text-primary-500",
+              else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+            )
+          ]}
         >
           <.icon name="hero-banknotes" class="mr-3 h-5 w-5 flex-shrink-0" /> Contributions
         </.link>
 
         <.link
           navigate={~p"/ministry-funds"}
-          class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+          class={[
+            "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+            if(String.starts_with?(@current_path || "", "/ministry-funds"),
+              do: "bg-primary-500/10 text-primary-500",
+              else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+            )
+          ]}
         >
           <.icon name="hero-currency-dollar" class="mr-3 h-5 w-5 flex-shrink-0" /> Ministry Funds
         </.link>
 
         <.link
           navigate={~p"/events"}
-          class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+          class={[
+            "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+            if((@current_path || "") == "/events",
+              do: "bg-primary-500/10 text-primary-500",
+              else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+            )
+          ]}
         >
           <.icon name="hero-calendar-days" class="mr-3 h-5 w-5 flex-shrink-0" /> Calendar
         </.link>
@@ -53,20 +83,38 @@
             </p>
             <.link
               navigate={~p"/admin/users"}
-              class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+              class={[
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                if(String.starts_with?(@current_path || "", "/admin/users"),
+                  do: "bg-primary-500/10 text-primary-500",
+                  else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+                )
+              ]}
             >
               <.icon name="hero-user-circle" class="mr-3 h-5 w-5 flex-shrink-0" /> User Management
             </.link>
             <.link
               navigate={~p"/admin/week-ending-reports"}
-              class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+              class={[
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                if(String.starts_with?(@current_path || "", "/admin/week-ending-reports"),
+                  do: "bg-primary-500/10 text-primary-500",
+                  else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+                )
+              ]}
             >
               <.icon name="hero-document-chart-bar" class="mr-3 h-5 w-5 flex-shrink-0" />
               Weekly Reports
             </.link>
             <.link
               navigate={~p"/admin/events"}
-              class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+              class={[
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                if(String.starts_with?(@current_path || "", "/admin/events"),
+                  do: "bg-primary-500/10 text-primary-500",
+                  else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+                )
+              ]}
             >
               <.icon name="hero-calendar" class="mr-3 h-5 w-5 flex-shrink-0" />
               Events/Activities
@@ -142,35 +190,65 @@
       <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
         <.link
           navigate={~p"/dashboard"}
-          class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+          class={[
+            "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+            if((@current_path || "") == "/dashboard",
+              do: "bg-primary-500/10 text-primary-500",
+              else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+            )
+          ]}
         >
           <.icon name="hero-chart-bar" class="mr-3 h-5 w-5" /> Dashboard
         </.link>
 
         <.link
           navigate={~p"/congregants"}
-          class="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary-500/10 text-primary-500"
+          class={[
+            "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+            if(String.starts_with?(@current_path || "", "/congregants"),
+              do: "bg-primary-500/10 text-primary-500",
+              else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+            )
+          ]}
         >
           <.icon name="hero-users" class="mr-3 h-5 w-5" /> Members
         </.link>
 
         <.link
           navigate={~p"/contributions"}
-          class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+          class={[
+            "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+            if(String.starts_with?(@current_path || "", "/contributions"),
+              do: "bg-primary-500/10 text-primary-500",
+              else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+            )
+          ]}
         >
           <.icon name="hero-banknotes" class="mr-3 h-5 w-5" /> Contributions
         </.link>
 
         <.link
           navigate={~p"/ministry-funds"}
-          class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+          class={[
+            "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+            if(String.starts_with?(@current_path || "", "/ministry-funds"),
+              do: "bg-primary-500/10 text-primary-500",
+              else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+            )
+          ]}
         >
           <.icon name="hero-currency-dollar" class="mr-3 h-5 w-5" /> Ministry Funds
         </.link>
 
         <.link
           navigate={~p"/events"}
-          class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+          class={[
+            "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+            if((@current_path || "") == "/events",
+              do: "bg-primary-500/10 text-primary-500",
+              else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+            )
+          ]}
         >
           <.icon name="hero-calendar-days" class="mr-3 h-5 w-5" /> Calendar
         </.link>
@@ -183,19 +261,37 @@
             </p>
             <.link
               navigate={~p"/admin/users"}
-              class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+              class={[
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                if(String.starts_with?(@current_path || "", "/admin/users"),
+                  do: "bg-primary-500/10 text-primary-500",
+                  else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+                )
+              ]}
             >
               <.icon name="hero-user-circle" class="mr-3 h-5 w-5" /> User Management
             </.link>
             <.link
               navigate={~p"/admin/week-ending-reports"}
-              class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+              class={[
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                if(String.starts_with?(@current_path || "", "/admin/week-ending-reports"),
+                  do: "bg-primary-500/10 text-primary-500",
+                  else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+                )
+              ]}
             >
               <.icon name="hero-document-chart-bar" class="mr-3 h-5 w-5" /> Week Reports
             </.link>
             <.link
               navigate={~p"/admin/events"}
-              class="flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-md hover:bg-dark-700 hover:text-white transition-colors"
+              class={[
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                if(String.starts_with?(@current_path || "", "/admin/events"),
+                  do: "bg-primary-500/10 text-primary-500",
+                  else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+                )
+              ]}
             >
               <.icon name="hero-calendar" class="mr-3 h-5 w-5" /> Events/Activities
             </.link>
