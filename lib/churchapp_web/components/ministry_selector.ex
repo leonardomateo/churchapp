@@ -1,18 +1,24 @@
 defmodule ChurchappWeb.MinistrySelector do
   @moduledoc """
-  A multi-select searchable dropdown selector for ministries.
-  Displays selected ministries as tags/pills with the ability to search and add more.
+  A searchable dropdown selector for ministries.
+  Supports two modes:
+  - Single-select mode (for Ministry Funds): Uses `form`, `field`, and `ministries`
+  - Multi-select mode (for Congregants): Uses `ministries` and `selected`
   """
   use Phoenix.LiveComponent
   use ChurchappWeb, :html
 
-  def update(%{ministries: ministries, selected: selected} = assigns, socket) do
+  # Multi-select mode (for Congregants) - uses `selected` assign
+  def update(%{ministries: ministries, selected: selected} = assigns, socket) when is_list(selected) do
     socket =
       socket
       |> assign(:id, assigns[:id] || "ministry-selector")
       |> assign(:name, assigns[:name] || "form[ministries][]")
+      |> assign(:mode, :multi)
       |> assign(:all_ministries, ministries)
       |> assign(:selected_ministries, selected || [])
+      |> assign(:selected_value, nil)
+      |> assign(:field, nil)
       |> assign(:query, "")
       |> assign(:filtered_ministries, filter_unselected(ministries, selected || []))
       |> assign(:show_dropdown, false)
@@ -21,15 +27,39 @@ defmodule ChurchappWeb.MinistrySelector do
     {:ok, socket}
   end
 
+  # Single-select mode (for Ministry Funds) - uses `form` and `field` assigns
+  def update(%{ministries: ministries, field: field} = assigns, socket) do
+    current_value = field.value || ""
+
+    socket =
+      socket
+      |> assign(:id, assigns[:id] || "ministry-selector")
+      |> assign(:name, field.name)
+      |> assign(:mode, :single)
+      |> assign(:all_ministries, ministries)
+      |> assign(:selected_ministries, [])
+      |> assign(:selected_value, current_value)
+      |> assign(:field, field)
+      |> assign(:query, current_value)
+      |> assign(:filtered_ministries, search_single(ministries, ""))
+      |> assign(:show_dropdown, false)
+      |> assign(:focused_index, -1)
+
+    {:ok, socket}
+  end
+
   def handle_event("show_dropdown", _params, socket) do
-    filtered = filter_unselected(socket.assigns.all_ministries, socket.assigns.selected_ministries)
+    filtered =
+      case socket.assigns.mode do
+        :multi -> filter_unselected(socket.assigns.all_ministries, socket.assigns.selected_ministries)
+        :single -> search_single(socket.assigns.all_ministries, socket.assigns.query || "")
+      end
 
     {:noreply,
      socket
      |> assign(:show_dropdown, true)
      |> assign(:focused_index, -1)
-     |> assign(:filtered_ministries, filtered)
-     |> assign(:query, "")}
+     |> assign(:filtered_ministries, filtered)}
   end
 
   def handle_event("hide_dropdown", _params, socket) do
@@ -60,7 +90,7 @@ defmodule ChurchappWeb.MinistrySelector do
     if socket.assigns.show_dropdown and socket.assigns.focused_index >= 0 and
          length(socket.assigns.filtered_ministries) > 0 do
       {name, _value} = Enum.at(socket.assigns.filtered_ministries, socket.assigns.focused_index)
-      add_ministry(socket, name)
+      select_ministry(socket, name)
     else
       {:noreply, socket}
     end
@@ -72,7 +102,12 @@ defmodule ChurchappWeb.MinistrySelector do
 
   # Handle typing for search
   def handle_event("handle_key", %{"value" => query}, socket) do
-    filtered = search_ministries(socket.assigns.all_ministries, socket.assigns.selected_ministries, query)
+    filtered =
+      case socket.assigns.mode do
+        :multi -> search_ministries(socket.assigns.all_ministries, socket.assigns.selected_ministries, query)
+        :single -> search_single(socket.assigns.all_ministries, query)
+      end
+
     focused_index = if length(filtered) > 0, do: 0, else: -1
 
     {:noreply,
@@ -84,7 +119,7 @@ defmodule ChurchappWeb.MinistrySelector do
   end
 
   def handle_event("select_ministry", %{"name" => name}, socket) do
-    add_ministry(socket, name)
+    select_ministry(socket, name)
   end
 
   def handle_event("remove_ministry", %{"name" => name}, socket) do
@@ -108,7 +143,17 @@ defmodule ChurchappWeb.MinistrySelector do
      |> assign(:query, "")}
   end
 
-  defp add_ministry(socket, name) do
+  # Single-select mode: select one ministry
+  defp select_ministry(socket, name) when socket.assigns.mode == :single do
+    {:noreply,
+     socket
+     |> assign(:selected_value, name)
+     |> assign(:query, name)
+     |> assign(:show_dropdown, false)}
+  end
+
+  # Multi-select mode: add to selected list
+  defp select_ministry(socket, name) do
     if name in socket.assigns.selected_ministries do
       {:noreply, socket}
     else
@@ -129,6 +174,18 @@ defmodule ChurchappWeb.MinistrySelector do
     Enum.reject(all_ministries, fn {_name, value} -> value in selected end)
   end
 
+  defp search_single(all_ministries, query) when query == "" or is_nil(query) do
+    all_ministries
+  end
+
+  defp search_single(all_ministries, query) do
+    query_lower = String.downcase(query)
+
+    Enum.filter(all_ministries, fn {name, _value} ->
+      String.contains?(String.downcase(name), query_lower)
+    end)
+  end
+
   defp search_ministries(all_ministries, selected, query) when query == "" or is_nil(query) do
     filter_unselected(all_ministries, selected)
   end
@@ -146,29 +203,54 @@ defmodule ChurchappWeb.MinistrySelector do
   def render(assigns) do
     ~H"""
     <div class="relative" id={@id}>
-      <%!-- Hidden inputs for form submission --%>
-      <input type="hidden" name={@name} value="" />
-      <input :for={ministry <- @selected_ministries} type="hidden" name={@name} value={ministry} />
+      <%= if @mode == :single do %>
+        <%!-- Single-select mode: hidden input with selected value --%>
+        <input type="hidden" name={@name} value={@selected_value || ""} />
 
-      <%!-- Search input --%>
-      <div class="relative">
-        <input
-          type="text"
-          id={"#{@id}-input"}
-          value={@query}
-          phx-focus="show_dropdown"
-          phx-keyup="handle_key"
-          phx-target={@myself}
-          phx-debounce="150"
-          autocomplete="off"
-          placeholder="Search ministries to add..."
-          class="block w-full px-3 py-2 pr-10 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500 cursor-pointer"
-        />
-        <.icon
-          name="hero-magnifying-glass"
-          class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none"
-        />
-      </div>
+        <%!-- Search input for single select --%>
+        <div class="relative">
+          <input
+            type="text"
+            id={"#{@id}-input"}
+            value={@query}
+            phx-focus="show_dropdown"
+            phx-keyup="handle_key"
+            phx-target={@myself}
+            phx-debounce="150"
+            autocomplete="off"
+            placeholder="Search or select a ministry..."
+            class="block w-full px-3 py-2 pr-10 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500 cursor-pointer"
+          />
+          <.icon
+            name="hero-chevron-down"
+            class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none"
+          />
+        </div>
+      <% else %>
+        <%!-- Multi-select mode: hidden inputs for each selected ministry --%>
+        <input type="hidden" name={@name} value="" />
+        <input :for={ministry <- @selected_ministries} type="hidden" name={@name} value={ministry} />
+
+        <%!-- Search input for multi-select --%>
+        <div class="relative">
+          <input
+            type="text"
+            id={"#{@id}-input"}
+            value={@query}
+            phx-focus="show_dropdown"
+            phx-keyup="handle_key"
+            phx-target={@myself}
+            phx-debounce="150"
+            autocomplete="off"
+            placeholder="Search ministries to add..."
+            class="block w-full px-3 py-2 pr-10 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500 cursor-pointer"
+          />
+          <.icon
+            name="hero-magnifying-glass"
+            class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none"
+          />
+        </div>
+      <% end %>
 
       <%!-- Dropdown --%>
       <div
@@ -182,7 +264,7 @@ defmodule ChurchappWeb.MinistrySelector do
           <%= if @query != "" do %>
             No ministries found matching "{@query}"
           <% else %>
-            All ministries selected
+            <%= if @mode == :single, do: "No ministries available", else: "All ministries selected" %>
           <% end %>
         </div>
 
@@ -200,7 +282,7 @@ defmodule ChurchappWeb.MinistrySelector do
           <div class="flex items-center justify-between">
             <div class="font-medium">{name}</div>
             <%= if index == @focused_index do %>
-              <.icon name="hero-plus" class="h-4 w-4" />
+              <.icon name="hero-check" class="h-4 w-4" />
             <% end %>
           </div>
         </div>
