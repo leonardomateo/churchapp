@@ -357,6 +357,7 @@ defmodule ChurchappWeb.WeekEndingReportsLive.EditLive do
                       id="week_start_date"
                       name="week_start_date"
                       value={@week_start_date}
+                      phx-hook="DatePicker"
                       class={[
                         "block w-full px-3 py-2 text-white bg-dark-900 border rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500",
                         if(@errors[:week_start_date], do: "border-red-500", else: "border-dark-700")
@@ -378,6 +379,7 @@ defmodule ChurchappWeb.WeekEndingReportsLive.EditLive do
                       id="week_end_date"
                       name="week_end_date"
                       value={@week_end_date}
+                      phx-hook="DatePicker"
                       class={[
                         "block w-full px-3 py-2 text-white bg-dark-900 border rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500",
                         if(@errors[:week_end_date], do: "border-red-500", else: "border-dark-700")

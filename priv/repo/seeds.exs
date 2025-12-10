@@ -707,7 +707,9 @@ else
   today = Date.utc_today()
 
   # Find the most recent Sunday (end of week)
-  days_since_sunday = Date.day_of_week(today, :sunday)
+  # In Elixir, Date.day_of_week returns 1-7 where 1=Monday, 7=Sunday
+  current_day_of_week = Date.day_of_week(today)
+  days_since_sunday = if current_day_of_week == 7, do: 0, else: current_day_of_week
   last_sunday = Date.add(today, -days_since_sunday)
 
   # Generate 8 weeks of reports

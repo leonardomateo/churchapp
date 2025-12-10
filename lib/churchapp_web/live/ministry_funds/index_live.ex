@@ -475,6 +475,7 @@ defmodule ChurchappWeb.MinistryFundsLive.IndexLive do
                       id="filter-date-from"
                       name="date_from"
                       value={@date_from}
+                      phx-hook="DatePicker"
                       placeholder="From"
                       class="w-full px-3 py-2 text-sm text-white bg-dark-900 border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
@@ -485,6 +486,7 @@ defmodule ChurchappWeb.MinistryFundsLive.IndexLive do
                       id="filter-date-to"
                       name="date_to"
                       value={@date_to}
+                      phx-hook="DatePicker"
                       placeholder="To"
                       class="w-full px-3 py-2 text-sm text-white bg-dark-900 border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
