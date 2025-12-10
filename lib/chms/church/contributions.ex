@@ -68,7 +68,9 @@ defmodule Chms.Church.Contributions do
       allow_nil? false
     end
 
-    attribute :notes, :string
+    attribute :notes, :string do
+      allow_nil? false
+    end
 
     attribute :contribution_date, :utc_datetime_usec do
       default &DateTime.utc_now/0
