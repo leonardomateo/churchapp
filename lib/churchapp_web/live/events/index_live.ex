@@ -146,8 +146,6 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
 
   # Update print dates (from form change)
   def handle_event("update_print_dates", %{"start_date" => start_date, "end_date" => end_date}, socket) do
-    IO.inspect({start_date, end_date}, label: "update_print_dates params")
-
     socket =
       case Date.from_iso8601(start_date) do
         {:ok, date} -> assign(socket, :print_start_date, date)
@@ -160,7 +158,6 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
         _ -> socket
       end
 
-    IO.inspect({socket.assigns.print_start_date, socket.assigns.print_end_date}, label: "Updated dates")
     {:noreply, socket}
   end
 
@@ -171,17 +168,12 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
     end_date = socket.assigns.print_end_date
     layout = socket.assigns.print_layout
 
-    IO.inspect({start_date, end_date, layout}, label: "generate_print - dates and layout")
-
     # Convert dates to DateTime for querying
     start_datetime = DateTime.new!(start_date, ~T[00:00:00], "Etc/UTC")
     end_datetime = DateTime.new!(end_date, ~T[23:59:59], "Etc/UTC")
 
     # Fetch events for the selected date range
     events = fetch_events(start_datetime, end_datetime, nil, socket.assigns.current_user)
-
-    IO.inspect(length(events), label: "Number of events fetched")
-    IO.inspect(Enum.map(events, fn e -> {e.title, e.start_time} end), label: "Events")
 
     # Generate print HTML based on layout
     print_html = generate_print_html(events, start_date, end_date, layout)
@@ -387,7 +379,8 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
 
       # Get days of the month
       days_in_month = Date.days_in_month(month)
-      first_day_weekday = Date.day_of_week(month_start)
+      # Convert ISO weekday (1=Mon, 7=Sun) to Sunday-first (0=Sun, 6=Sat) for grid alignment
+      first_day_weekday = rem(Date.day_of_week(month_start), 7)
 
       # Build calendar grid with inline styles for reliable printing
       """
