@@ -647,8 +647,6 @@ const EventCalendar = {
 // PrintCalendar Hook - handles print preview generation and printing
 const PrintCalendar = {
   mounted() {
-    this.printContainer = document.getElementById('print-preview-container')
-    
     // Handle iCal download (merged from IcalDownload hook)
     this.handleEvent("download_ical", ({content, filename}) => {
       const blob = new Blob([content], { type: "text/calendar;charset=utf-8;" })
@@ -663,35 +661,209 @@ const PrintCalendar = {
       URL.revokeObjectURL(url)
     })
     
-    // Handle print preview
+    // Handle print preview using new window for proper multi-page support
     this.handleEvent("show_print_preview", ({html}) => {
-      if (this.printContainer) {
-        // Set the HTML content
-        this.printContainer.innerHTML = html
+      // Build the full HTML document
+      const printDocument = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Print Calendar</title>
+          <style>
+            /* Force all elements to be visible */
+            *, *::before, *::after {
+              box-sizing: border-box;
+              visibility: visible !important;
+            }
+            html, body {
+              font-family: Arial, sans-serif;
+              margin: 0;
+              padding: 20px;
+              background: #ffffff !important;
+              color: #000000 !important;
+              width: 100%;
+              height: auto;
+            }
+            @media print {
+              html, body {
+                padding: 0;
+                margin: 0;
+                background: #ffffff !important;
+              }
+              * {
+                visibility: visible !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              @page {
+                size: portrait;
+                margin: 0.5in;
+              }
+            }
+            /* Grid layout styles */
+            .print-grid, .print-agenda {
+              width: 100%;
+              background: #ffffff;
+              color: #000000;
+            }
+            .month-grid {
+              page-break-inside: avoid;
+              margin-bottom: 30px;
+            }
+            .calendar-grid {
+              border: 1px solid #cccccc;
+            }
+            .day-headers {
+              display: grid !important;
+              grid-template-columns: repeat(7, 1fr);
+              background: #f5f5f5;
+              border-bottom: 1px solid #cccccc;
+            }
+            .day-header {
+              padding: 8px 4px;
+              text-align: center;
+              font-weight: bold;
+              font-size: 12px;
+              border-right: 1px solid #cccccc;
+              color: #333333;
+            }
+            .day-header:last-child {
+              border-right: none;
+            }
+            .calendar-week {
+              display: grid !important;
+              grid-template-columns: repeat(7, 1fr);
+              border-bottom: 1px solid #cccccc;
+            }
+            .calendar-week:last-child {
+              border-bottom: none;
+            }
+            .calendar-day {
+              min-height: 80px;
+              padding: 4px;
+              border-right: 1px solid #cccccc;
+              vertical-align: top;
+              background: #ffffff;
+            }
+            .calendar-day:last-child {
+              border-right: none;
+            }
+            .calendar-day.empty {
+              background: #f9f9f9;
+            }
+            .day-number {
+              font-weight: bold;
+              font-size: 14px;
+              margin-bottom: 4px;
+              color: #000000;
+            }
+            .day-event {
+              font-size: 10px;
+              padding: 2px 4px;
+              margin-bottom: 2px;
+              border-radius: 2px;
+              color: #ffffff;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+            }
+            .day-events {
+              display: flex !important;
+              flex-direction: column;
+              gap: 2px;
+            }
+            /* Agenda layout styles */
+            .agenda-content {
+              display: flex !important;
+              flex-direction: column;
+            }
+            .agenda-day {
+              margin-bottom: 20px;
+              page-break-inside: avoid;
+            }
+            .agenda-events {
+              display: flex !important;
+              flex-direction: column;
+              gap: 8px;
+            }
+            .agenda-event {
+              display: flex !important;
+              gap: 12px;
+              padding: 12px;
+              border: 1px solid #dddddd;
+              border-radius: 4px;
+              background: #ffffff;
+            }
+            /* Grid content */
+            .grid-content {
+              display: flex !important;
+              flex-direction: column;
+              gap: 32px;
+            }
+            .calendar-days {
+              display: block !important;
+            }
+            /* Headers */
+            .print-header {
+              text-align: center;
+              margin-bottom: 24px;
+              padding-bottom: 16px;
+              border-bottom: 3px double #333333;
+            }
+            .print-header h1 {
+              font-size: 28px;
+              font-weight: bold;
+              margin: 0 0 4px 0;
+              color: #000000;
+            }
+            .month-title {
+              font-size: 20px;
+              font-weight: bold;
+              color: #000000;
+              margin: 0 0 16px 0;
+              padding-bottom: 8px;
+              border-bottom: 2px solid #333333;
+            }
+          </style>
+        </head>
+        <body>
+          ${html}
+        </body>
+        </html>
+      `
+      
+      // Open new window for printing (more reliable than iframe)
+      const printWindow = window.open('', '_blank', 'width=800,height=600')
+      if (printWindow) {
+        printWindow.document.open()
+        printWindow.document.write(printDocument)
+        printWindow.document.close()
         
-        // Small delay to ensure DOM is ready, then print
+        // Wait for content to render, then print
         setTimeout(() => {
-          window.print()
-        }, 100)
-      }
-    })
-    
-    // Clean up print preview after printing
-    window.addEventListener('afterprint', () => {
-      if (this.printContainer) {
-        // Clear content after print dialog closes
-        setTimeout(() => {
-          this.printContainer.innerHTML = ''
+          printWindow.focus()
+          printWindow.print()
+          
+          // Close the window after printing
+          printWindow.onafterprint = () => {
+            printWindow.close()
+          }
+          
+          // Fallback: close after a delay if onafterprint doesn't fire
+          setTimeout(() => {
+            if (!printWindow.closed) {
+              printWindow.close()
+            }
+          }, 60000) // Close after 60 seconds if still open
         }, 500)
+      } else {
+        alert('Please allow popups to print the calendar')
       }
     })
   },
   
   destroyed() {
-    // Clean up if needed
-    if (this.printContainer) {
-      this.printContainer.innerHTML = ''
-    }
+    // No cleanup needed for new window approach
   }
 }
 

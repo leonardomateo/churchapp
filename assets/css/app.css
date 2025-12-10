@@ -2067,76 +2067,74 @@ form input[type="checkbox"]:checked::after {
     padding: 0 !important;
     width: 100% !important;
     height: auto !important;
-  }
-
-  /* Hide everything except print preview using visibility trick */
-  body * {
-    visibility: hidden;
-  }
-
-  /* Show print preview container and contents */
-  #print-preview-container,
-  #print-preview-container *,
-  .print-preview-container,
-  .print-preview-container * {
-    visibility: visible !important;
-  }
-
-  /* Position print preview at top-left corner */
-  #print-preview-container,
-  .print-preview-container {
-    display: block !important;
-    visibility: visible !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: auto !important;
-    background: #ffffff !important;
-    z-index: 999999 !important;
-    padding: 0 !important;
-    margin: 0 !important;
     overflow: visible !important;
   }
 
-  /* Ensure content displays properly */
-  #print-preview-container .print-agenda,
-  #print-preview-container .print-grid,
-  .print-preview-container .print-agenda,
-  .print-preview-container .print-grid {
-    display: block !important;
-    visibility: visible !important;
-    background: #ffffff !important;
-    color: #000000 !important;
+  /* Hide everything by default */
+  body * {
+    visibility: hidden !important;
   }
 
-  /* Restore flex layouts */
+  /* Show print preview container and ALL descendants */
+  #print-preview-container,
+  #print-preview-container * {
+    visibility: visible !important;
+  }
+
+  /* Position the print preview container absolutely to break out of parent */
+  #print-preview-container {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: #ffffff !important;
+    padding: 20px !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    z-index: 999999 !important;
+  }
+
+  /* Ensure print content displays properly */
+  #print-preview-container .print-agenda,
+  #print-preview-container .print-grid {
+    display: block !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+  }
+
+  /* Restore flex layouts for agenda */
   #print-preview-container .agenda-content,
-  #print-preview-container .agenda-events,
-  .print-preview-container .agenda-content,
-  .print-preview-container .agenda-events {
+  #print-preview-container .agenda-events {
     display: flex !important;
     flex-direction: column !important;
   }
 
-  #print-preview-container .agenda-event,
-  .print-preview-container .agenda-event {
+  #print-preview-container .agenda-event {
     display: flex !important;
     flex-direction: row !important;
   }
 
-  /* Restore grid layouts */
+  /* Restore grid layouts for calendar */
   #print-preview-container .day-headers,
-  #print-preview-container .calendar-week,
-  .print-preview-container .day-headers,
-  .print-preview-container .calendar-week {
+  #print-preview-container .calendar-week {
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
   }
 
+  #print-preview-container .calendar-days {
+    display: block !important;
+  }
+
+  #print-preview-container .day-events {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
   /* Allow colored backgrounds */
-  #print-preview-container [style*="background"],
-  .print-preview-container [style*="background"] {
+  #print-preview-container [style*="background"] {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -2316,6 +2314,7 @@ form input[type="checkbox"]:checked::after {
 
   .print-grid .month-grid {
     page-break-inside: avoid;
+    page-break-after: auto;
   }
 
   .print-grid .month-title {

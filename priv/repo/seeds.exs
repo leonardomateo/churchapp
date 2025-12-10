@@ -903,8 +903,8 @@ get_day_of_week = fn date ->
   end
 end
 
-# Function to generate events for December 2025, January 2026, and February 2026
-generate_events_for_winter_months = fn ->
+# Function to generate events for December 2025 through May 2026 (8 events per month)
+generate_events_for_months = fn ->
   # Event templates with different types
   event_templates = [
     %{
@@ -962,52 +962,87 @@ generate_events_for_winter_months = fn ->
       locations: ["Church Grounds", "Local Park", "Community Center"],
       colors: ["#16a34a", "#15803d", "#166534"],
       time_ranges: [{10, 16}, {11, 17}, {9, 15}]
-    }
-  ]
-
-  # Generate dates for December 2025, January 2026, and February 2026
-  dates = [
-    # December 2025 (skip Christmas Eve and Christmas Day as they're already covered)
-    ~D[2025-12-05], ~D[2025-12-08], ~D[2025-12-12], ~D[2025-12-15], ~D[2025-12-19],
-    # January 2026
-    ~D[2026-01-03], ~D[2026-01-10], ~D[2026-01-17], ~D[2026-01-24], ~D[2026-01-31],
-    # February 2026
-    ~D[2026-02-07], ~D[2026-02-14], ~D[2026-02-21], ~D[2026-02-28]
-  ]
-
-  # Generate about 10 events
-  Enum.take_random(0..(length(dates) - 1), 10)
-  |> Enum.map(fn index ->
-    date = Enum.at(dates, index)
-    template = Enum.random(event_templates)
-    location = Enum.random(template.locations)
-    color = Enum.random(template.colors)
-    {start_hour, end_hour} = Enum.random(template.time_ranges)
-
-    # Create some recurring events (30% chance)
-    is_recurring = Enum.random(1..10) <= 3
-
-    recurrence_rule = if is_recurring do
-      case Enum.random(1..3) do
-        1 -> "FREQ=WEEKLY;BYDAY=#{get_day_of_week.(date)}"
-        2 -> "FREQ=MONTHLY;BYMONTHDAY=#{date.day}"
-        3 -> "FREQ=WEEKLY;INTERVAL=2;BYDAY=#{get_day_of_week.(date)}"
-      end
-    else
-      nil
-    end
-
+    },
     %{
-      title: template.title,
-      description: template.description,
-      start_time: DateTime.new!(date, Time.new!(start_hour, 0, 0), "Etc/UTC"),
-      end_time: DateTime.new!(date, Time.new!(end_hour, 0, 0), "Etc/UTC"),
-      all_day: false,
-      location: location,
-      color: color,
-      is_recurring: is_recurring,
-      recurrence_rule: recurrence_rule
+      title: "Women's Ministry Meeting",
+      description: "Monthly gathering for women to fellowship and grow together in faith.",
+      locations: ["Fellowship Hall", "Women's Room", "Library"],
+      colors: ["#f472b6", "#ec4899", "#db2777"],
+      time_ranges: [{10, 12}, {18, 20}, {14, 16}]
+    },
+    %{
+      title: "Men's Breakfast",
+      description: "Monthly breakfast and fellowship for men of the church.",
+      locations: ["Fellowship Hall", "Cafeteria"],
+      colors: ["#0284c7", "#0369a1", "#075985"],
+      time_ranges: [{7, 9}, {8, 10}]
+    },
+    %{
+      title: "Choir Practice",
+      description: "Weekly choir rehearsal for upcoming services and special events.",
+      locations: ["Choir Room", "Main Sanctuary"],
+      colors: ["#8b5cf6", "#7c3aed", "#6d28d9"],
+      time_ranges: [{18, 20}, {19, 21}]
+    },
+    %{
+      title: "Children's Ministry",
+      description: "Fun and educational activities for children to learn about God's love.",
+      locations: ["Children's Wing", "Classroom B", "Playground"],
+      colors: ["#f97316", "#ea580c", "#c2410c"],
+      time_ranges: [{10, 12}, {14, 16}]
     }
+  ]
+
+  # Define months to generate events for (December 2025 through May 2026)
+  months = [
+    {2025, 12},  # December 2025
+    {2026, 1},   # January 2026
+    {2026, 2},   # February 2026
+    {2026, 3},   # March 2026
+    {2026, 4},   # April 2026
+    {2026, 5}    # May 2026
+  ]
+
+  # Generate 8 events per month
+  Enum.flat_map(months, fn {year, month} ->
+    days_in_month = Date.days_in_month(Date.new!(year, month, 1))
+
+    # Generate 8 random days spread across the month (avoiding day 1 to not conflict with recurring events)
+    available_days = 2..days_in_month |> Enum.to_list()
+    selected_days = Enum.take_random(available_days, 8)
+
+    Enum.map(selected_days, fn day ->
+      date = Date.new!(year, month, day)
+      template = Enum.random(event_templates)
+      location = Enum.random(template.locations)
+      color = Enum.random(template.colors)
+      {start_hour, end_hour} = Enum.random(template.time_ranges)
+
+      # Create some recurring events (30% chance)
+      is_recurring = Enum.random(1..10) <= 3
+
+      recurrence_rule = if is_recurring do
+        case Enum.random(1..3) do
+          1 -> "FREQ=WEEKLY;BYDAY=#{get_day_of_week.(date)}"
+          2 -> "FREQ=MONTHLY;BYMONTHDAY=#{date.day}"
+          3 -> "FREQ=WEEKLY;INTERVAL=2;BYDAY=#{get_day_of_week.(date)}"
+        end
+      else
+        nil
+      end
+
+      %{
+        title: template.title,
+        description: template.description,
+        start_time: DateTime.new!(date, Time.new!(start_hour, 0, 0), "Etc/UTC"),
+        end_time: DateTime.new!(date, Time.new!(end_hour, 0, 0), "Etc/UTC"),
+        all_day: false,
+        location: location,
+        color: color,
+        is_recurring: is_recurring,
+        recurrence_rule: recurrence_rule
+      }
+    end)
   end)
 end
 
@@ -1020,14 +1055,14 @@ existing_events =
     _ -> []
   end
 
-# Always seed base events if none exist, then add winter months events
+# Always seed base events if none exist, then add monthly events
 if length(existing_events) > 0 do
-  IO.puts("⊙ Base events already exist, adding winter months events...")
+  IO.puts("⊙ Base events already exist, adding monthly events (8 per month, Dec 2025 - May 2026)...")
 
-  # Generate the 10 winter months events
-  winter_events = generate_events_for_winter_months.()
+  # Generate events for each month (8 per month)
+  monthly_events = generate_events_for_months.()
 
-  Enum.each(winter_events, fn attrs ->
+  Enum.each(monthly_events, fn attrs ->
     case Chms.Church.Events
          |> Ash.Changeset.for_create(:create, attrs)
          |> Ash.create(authorize?: false) do
@@ -1140,8 +1175,8 @@ else
     }
   ]
 
-  # Generate additional events for December 2025, January 2026, and February 2026
-  additional_events = generate_events_for_winter_months.()
+  # Generate additional events for December 2025 through May 2026 (8 per month)
+  additional_events = generate_events_for_months.()
 
   all_events = events_data ++ additional_events
 
