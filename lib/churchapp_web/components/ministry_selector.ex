@@ -143,30 +143,32 @@ defmodule ChurchappWeb.MinistrySelector do
      |> assign(:query, "")}
   end
 
-  # Single-select mode: select one ministry
-  defp select_ministry(socket, name) when socket.assigns.mode == :single do
-    {:noreply,
-     socket
-     |> assign(:selected_value, name)
-     |> assign(:query, name)
-     |> assign(:show_dropdown, false)}
-  end
-
-  # Multi-select mode: add to selected list
   defp select_ministry(socket, name) do
-    if name in socket.assigns.selected_ministries do
-      {:noreply, socket}
-    else
-      new_selected = socket.assigns.selected_ministries ++ [name]
-      filtered = filter_unselected(socket.assigns.all_ministries, new_selected)
-      send(self(), {:ministries_changed, new_selected})
+    case socket.assigns.mode do
+      :single ->
+        # Single-select mode: select one ministry
+        {:noreply,
+         socket
+         |> assign(:selected_value, name)
+         |> assign(:query, name)
+         |> assign(:show_dropdown, false)}
 
-      {:noreply,
-       socket
-       |> assign(:selected_ministries, new_selected)
-       |> assign(:filtered_ministries, filtered)
-       |> assign(:query, "")
-       |> assign(:show_dropdown, false)}
+      :multi ->
+        # Multi-select mode: add to selected list
+        if name in socket.assigns.selected_ministries do
+          {:noreply, socket}
+        else
+          new_selected = socket.assigns.selected_ministries ++ [name]
+          filtered = filter_unselected(socket.assigns.all_ministries, new_selected)
+          send(self(), {:ministries_changed, new_selected})
+
+          {:noreply,
+           socket
+           |> assign(:selected_ministries, new_selected)
+           |> assign(:filtered_ministries, filtered)
+           |> assign(:query, "")
+           |> assign(:show_dropdown, false)}
+        end
     end
   end
 
