@@ -175,10 +175,6 @@ defmodule ChurchappWeb.ContributionsLive.ShowLive do
                   <.icon name="hero-calendar" class="h-4 w-4" />
                   {Calendar.strftime(@contribution.contribution_date, "%B %d, %Y at %I:%M %p")}
                 </span>
-                <span class="flex items-center gap-1.5">
-                  <.icon name="hero-user" class="h-4 w-4" />
-                  {@contribution.congregant.first_name} {@contribution.congregant.last_name}
-                </span>
               </div>
             </div>
           </div>
@@ -186,6 +182,40 @@ defmodule ChurchappWeb.ContributionsLive.ShowLive do
 
         <%!-- Contribution Details --%>
         <div class="p-8">
+          <%!-- Congregant Information --%>
+          <div class="py-8">
+            <h3 class="mb-6 ml-6 flex items-center text-lg font-medium leading-6 text-white">
+              <.icon name="hero-user-circle" class="mr-2 h-5 w-5 text-primary-500" />
+              Contributor Information
+            </h3>
+            <dl class="ml-6 grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-3">
+              <div class="flex flex-col h-full">
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Name
+                </dt>
+                <dd class="mt-2 text-sm text-white">
+                  <.link
+                    navigate={~p"/congregants/#{@contribution.congregant}"}
+                    class="text-primary-500 hover:text-primary-400 transition-colors"
+                  >
+                    {@contribution.congregant.first_name} {@contribution.congregant.last_name}
+                  </.link>
+                </dd>
+              </div>
+
+              <div class="flex flex-col h-full">
+                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Member ID
+                </dt>
+                <dd class="mt-2 text-sm text-white">
+                  #{@contribution.congregant.member_id}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          <hr class="border-dark-700" />
+
           <%!-- Contribution Information --%>
           <div class="py-8">
             <h3 class="mb-6 ml-6 flex items-center text-lg font-medium leading-6 text-white">
@@ -219,40 +249,6 @@ defmodule ChurchappWeb.ContributionsLive.ShowLive do
                 </dt>
                 <dd class="mt-2 text-sm text-white">
                   {Calendar.strftime(@contribution.contribution_date, "%B %d, %Y at %I:%M %p")}
-                </dd>
-              </div>
-            </dl>
-          </div>
-
-          <hr class="border-dark-700" />
-
-          <%!-- Congregant Information --%>
-          <div class="py-8">
-            <h3 class="mb-6 ml-6 flex items-center text-lg font-medium leading-6 text-white">
-              <.icon name="hero-user-circle" class="mr-2 h-5 w-5 text-primary-500" />
-              Contributor Information
-            </h3>
-            <dl class="ml-6 grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-3">
-              <div class="flex flex-col h-full">
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </dt>
-                <dd class="mt-2 text-sm text-white">
-                  <.link
-                    navigate={~p"/congregants/#{@contribution.congregant}"}
-                    class="text-primary-500 hover:text-primary-400 transition-colors"
-                  >
-                    {@contribution.congregant.first_name} {@contribution.congregant.last_name}
-                  </.link>
-                </dd>
-              </div>
-
-              <div class="flex flex-col h-full">
-                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Member ID
-                </dt>
-                <dd class="mt-2 text-sm text-white">
-                  #{@contribution.congregant.member_id}
                 </dd>
               </div>
             </dl>
