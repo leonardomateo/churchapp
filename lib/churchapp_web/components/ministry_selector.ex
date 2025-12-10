@@ -16,11 +16,11 @@ defmodule ChurchappWeb.MinistrySelector do
       |> assign(:name, assigns[:name] || "form[ministries][]")
       |> assign(:mode, :multi)
       |> assign(:all_ministries, ministries)
-      |> assign(:selected_ministries, selected || [])
+      |> assign(:selected_ministries, selected)
       |> assign(:selected_value, nil)
       |> assign(:field, nil)
       |> assign(:query, "")
-      |> assign(:filtered_ministries, filter_unselected(ministries, selected || []))
+      |> assign(:filtered_ministries, filter_unselected(ministries, selected))
       |> assign(:show_dropdown, false)
       |> assign(:focused_index, -1)
 
