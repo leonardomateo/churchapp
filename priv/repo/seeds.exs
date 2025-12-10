@@ -890,7 +890,128 @@ country_counts =
 # Seed Events
 IO.puts("\nSeeding events...")
 
-# Check for existing events to avoid duplicates
+# Helper function to get day of week abbreviation
+get_day_of_week = fn date ->
+  case Date.day_of_week(date) do
+    1 -> "MO"
+    2 -> "TU"
+    3 -> "WE"
+    4 -> "TH"
+    5 -> "FR"
+    6 -> "SA"
+    7 -> "SU"
+  end
+end
+
+# Function to generate events for December 2025, January 2026, and February 2026
+generate_events_for_winter_months = fn ->
+  # Event templates with different types
+  event_templates = [
+    %{
+      title: "Community Outreach",
+      description: "Serving the local community through various outreach programs and activities.",
+      locations: ["Community Center", "Local Park", "Downtown Area"],
+      colors: ["#10b981", "#059669", "#047857"],
+      time_ranges: [{9, 12}, {14, 17}, {10, 13}]
+    },
+    %{
+      title: "Prayer Meeting",
+      description: "A time of dedicated prayer for our church, community, and world.",
+      locations: ["Prayer Room", "Main Sanctuary", "Fellowship Hall"],
+      colors: ["#7c3aed", "#6d28d9", "#5b21b6"],
+      time_ranges: [{18, 19}, {19, 20}, {7, 8}]
+    },
+    %{
+      title: "Worship Team Practice",
+      description: "Practice session for the worship team to prepare for upcoming services.",
+      locations: ["Main Sanctuary", "Rehearsal Room"],
+      colors: ["#f59e0b", "#d97706", "#b45309"],
+      time_ranges: [{19, 21}, {18, 20}, {20, 22}]
+    },
+    %{
+      title: "Bible Study Group",
+      description: "Small group Bible study for deeper understanding of Scripture.",
+      locations: ["Fellowship Hall", "Classroom A", "Library"],
+      colors: ["#0891b2", "#0e7490", "#155e75"],
+      time_ranges: [{19, 20}, {10, 11}, {14, 15}]
+    },
+    %{
+      title: "Youth Fellowship",
+      description: "Fun activities and spiritual growth for young people.",
+      locations: ["Youth Center", "Gym", "Fellowship Hall"],
+      colors: ["#ec4899", "#db2777", "#be185d"],
+      time_ranges: [{18, 20}, {19, 21}, {15, 17}]
+    },
+    %{
+      title: "Seniors Luncheon",
+      description: "Monthly gathering for senior members to fellowship over lunch.",
+      locations: ["Fellowship Hall", "Community Room"],
+      colors: ["#6b7280", "#4b5563", "#374151"],
+      time_ranges: [{12, 14}, {11, 13}]
+    },
+    %{
+      title: "Mission Planning Meeting",
+      description: "Planning session for upcoming mission trips and outreach activities.",
+      locations: ["Conference Room", "Library", "Office"],
+      colors: ["#dc2626", "#b91c1c", "#991b1b"],
+      time_ranges: [{19, 21}, {18, 20}, {14, 16}]
+    },
+    %{
+      title: "Family Fun Day",
+      description: "A day of fun activities for the whole family to enjoy together.",
+      locations: ["Church Grounds", "Local Park", "Community Center"],
+      colors: ["#16a34a", "#15803d", "#166534"],
+      time_ranges: [{10, 16}, {11, 17}, {9, 15}]
+    }
+  ]
+
+  # Generate dates for December 2025, January 2026, and February 2026
+  dates = [
+    # December 2025 (skip Christmas Eve and Christmas Day as they're already covered)
+    ~D[2025-12-05], ~D[2025-12-08], ~D[2025-12-12], ~D[2025-12-15], ~D[2025-12-19],
+    # January 2026
+    ~D[2026-01-03], ~D[2026-01-10], ~D[2026-01-17], ~D[2026-01-24], ~D[2026-01-31],
+    # February 2026
+    ~D[2026-02-07], ~D[2026-02-14], ~D[2026-02-21], ~D[2026-02-28]
+  ]
+
+  # Generate about 10 events
+  Enum.take_random(0..(length(dates) - 1), 10)
+  |> Enum.map(fn index ->
+    date = Enum.at(dates, index)
+    template = Enum.random(event_templates)
+    location = Enum.random(template.locations)
+    color = Enum.random(template.colors)
+    {start_hour, end_hour} = Enum.random(template.time_ranges)
+
+    # Create some recurring events (30% chance)
+    is_recurring = Enum.random(1..10) <= 3
+
+    recurrence_rule = if is_recurring do
+      case Enum.random(1..3) do
+        1 -> "FREQ=WEEKLY;BYDAY=#{get_day_of_week.(date)}"
+        2 -> "FREQ=MONTHLY;BYMONTHDAY=#{date.day}"
+        3 -> "FREQ=WEEKLY;INTERVAL=2;BYDAY=#{get_day_of_week.(date)}"
+      end
+    else
+      nil
+    end
+
+    %{
+      title: template.title,
+      description: template.description,
+      start_time: DateTime.new!(date, Time.new!(start_hour, 0, 0), "Etc/UTC"),
+      end_time: DateTime.new!(date, Time.new!(end_hour, 0, 0), "Etc/UTC"),
+      all_day: false,
+      location: location,
+      color: color,
+      is_recurring: is_recurring,
+      recurrence_rule: recurrence_rule
+    }
+  end)
+end
+
+# Check for existing events
 existing_events =
   case Chms.Church.Events
        |> Ash.Query.for_read(:read)
@@ -899,8 +1020,26 @@ existing_events =
     _ -> []
   end
 
+# Always seed base events if none exist, then add winter months events
 if length(existing_events) > 0 do
-  IO.puts("⊙ Events already exist, skipping seed")
+  IO.puts("⊙ Base events already exist, adding winter months events...")
+
+  # Generate the 10 winter months events
+  winter_events = generate_events_for_winter_months.()
+
+  Enum.each(winter_events, fn attrs ->
+    case Chms.Church.Events
+         |> Ash.Changeset.for_create(:create, attrs)
+         |> Ash.create(authorize?: false) do
+      {:ok, event} ->
+        recurring_text = if event.is_recurring, do: " (recurring)", else: ""
+        IO.puts("✓ Created event: #{event.title} on #{Date.to_string(DateTime.to_date(event.start_time))}#{recurring_text}")
+
+      {:error, changeset} ->
+        IO.puts("✗ Failed to create event: #{attrs.title}")
+        IO.inspect(changeset.errors)
+    end
+  end)
 else
   # Get current date info
   today = Date.utc_today()
@@ -921,11 +1060,11 @@ else
       title: "Sunday Worship Service",
       description:
         "Join us for our weekly worship service with praise, prayer, and biblical teaching.",
-      event_type: :service,
       start_time: DateTime.new!(next_sunday, ~T[10:00:00], "Etc/UTC"),
       end_time: DateTime.new!(next_sunday, ~T[12:00:00], "Etc/UTC"),
       all_day: false,
       location: "Main Sanctuary",
+      color: "#06b6d4",
       is_recurring: true,
       recurrence_rule: "FREQ=WEEKLY;BYDAY=SU"
     },
@@ -933,11 +1072,11 @@ else
     %{
       title: "Midweek Bible Study",
       description: "In-depth Bible study and prayer meeting. Come grow deeper in God's Word.",
-      event_type: :midweek_service,
       start_time: DateTime.new!(next_wednesday, ~T[19:00:00], "Etc/UTC"),
       end_time: DateTime.new!(next_wednesday, ~T[20:30:00], "Etc/UTC"),
       all_day: false,
       location: "Fellowship Hall",
+      color: "#10b981",
       is_recurring: true,
       recurrence_rule: "FREQ=WEEKLY;BYDAY=WE"
     },
@@ -946,11 +1085,11 @@ else
       title: "Christmas Eve Candlelight Service",
       description:
         "A special candlelight service celebrating the birth of Jesus Christ. Bring your family for this meaningful Christmas tradition.",
-      event_type: :special_service,
       start_time: DateTime.new!(~D[2025-12-24], ~T[18:00:00], "Etc/UTC"),
       end_time: DateTime.new!(~D[2025-12-24], ~T[19:30:00], "Etc/UTC"),
       all_day: false,
       location: "Main Sanctuary",
+      color: "#dc2626",
       is_recurring: false
     },
     # New Year's Eve Service
@@ -958,18 +1097,17 @@ else
       title: "New Year's Eve Watch Night Service",
       description:
         "Ring in the new year with prayer, worship, and thanksgiving. Join us as we reflect on God's faithfulness.",
-      event_type: :special_service,
       start_time: DateTime.new!(~D[2025-12-31], ~T[22:00:00], "Etc/UTC"),
       end_time: DateTime.new!(~D[2026-01-01], ~T[00:30:00], "Etc/UTC"),
       all_day: false,
       location: "Main Sanctuary",
+      color: "#7c3aed",
       is_recurring: false
     },
     # Youth Friday Night
     %{
       title: "Youth Friday Night",
       description: "Fun, fellowship, and faith for teens. Games, worship, and relevant teaching.",
-      event_type: :midweek_service,
       start_time:
         DateTime.new!(
           Date.add(today, rem(5 - Date.day_of_week(today, :monday) + 7, 7)),
@@ -984,6 +1122,7 @@ else
         ),
       all_day: false,
       location: "Youth Center",
+      color: "#f59e0b",
       is_recurring: true,
       recurrence_rule: "FREQ=WEEKLY;BYDAY=FR"
     },
@@ -991,17 +1130,22 @@ else
     %{
       title: "Men's Prayer Breakfast",
       description: "Monthly gathering for men to fellowship over breakfast and pray together.",
-      event_type: :special_service,
       start_time: DateTime.new!(Date.add(next_sunday, 7), ~T[07:30:00], "Etc/UTC"),
       end_time: DateTime.new!(Date.add(next_sunday, 7), ~T[09:00:00], "Etc/UTC"),
       all_day: false,
       location: "Fellowship Hall",
+      color: "#0891b2",
       is_recurring: true,
       recurrence_rule: "FREQ=MONTHLY;BYDAY=1SA"
     }
   ]
 
-  Enum.each(events_data, fn attrs ->
+  # Generate additional events for December 2025, January 2026, and February 2026
+  additional_events = generate_events_for_winter_months.()
+
+  all_events = events_data ++ additional_events
+
+  Enum.each(all_events, fn attrs ->
     case Chms.Church.Events
          |> Ash.Changeset.for_create(:create, attrs)
          |> Ash.create(authorize?: false) do
