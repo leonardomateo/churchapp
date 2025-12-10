@@ -144,30 +144,26 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
     {:noreply, assign(socket, :print_layout, layout)}
   end
 
-  # Update print start date
-  def handle_event("update_print_start_date", %{"value" => start_date}, socket) do
-    case Date.from_iso8601(start_date) do
-      {:ok, date} ->
-        {:noreply, assign(socket, :print_start_date, date)}
-      _ ->
-        {:noreply, socket}
-    end
-  end
+  # Update print dates (from form change)
+  def handle_event("update_print_dates", %{"start_date" => start_date, "end_date" => end_date}, socket) do
+    IO.inspect({start_date, end_date}, label: "update_print_dates params")
 
-  # Update print end date
-  def handle_event("update_print_end_date", %{"value" => end_date}, socket) do
-    case Date.from_iso8601(end_date) do
-      {:ok, date} ->
-        {:noreply, assign(socket, :print_end_date, date)}
-      _ ->
-        {:noreply, socket}
-    end
-  end
+    socket =
+      case Date.from_iso8601(start_date) do
+        {:ok, date} -> assign(socket, :print_start_date, date)
+        _ -> socket
+      end
 
-  # Handle date picker blur (no-op, just for phx-blur)
-  def handle_event("date_picker_closed", _params, socket) do
+    socket =
+      case Date.from_iso8601(end_date) do
+        {:ok, date} -> assign(socket, :print_end_date, date)
+        _ -> socket
+      end
+
+    IO.inspect({socket.assigns.print_start_date, socket.assigns.print_end_date}, label: "Updated dates")
     {:noreply, socket}
   end
+
 
   # Generate print view
   def handle_event("generate_print", _params, socket) do
@@ -175,12 +171,17 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
     end_date = socket.assigns.print_end_date
     layout = socket.assigns.print_layout
 
+    IO.inspect({start_date, end_date, layout}, label: "generate_print - dates and layout")
+
     # Convert dates to DateTime for querying
     start_datetime = DateTime.new!(start_date, ~T[00:00:00], "Etc/UTC")
     end_datetime = DateTime.new!(end_date, ~T[23:59:59], "Etc/UTC")
 
     # Fetch events for the selected date range
     events = fetch_events(start_datetime, end_datetime, nil, socket.assigns.current_user)
+
+    IO.inspect(length(events), label: "Number of events fetched")
+    IO.inspect(Enum.map(events, fn e -> {e.title, e.start_time} end), label: "Events")
 
     # Generate print HTML based on layout
     print_html = generate_print_html(events, start_date, end_date, layout)
@@ -289,43 +290,54 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
       </header>
 
       <div class="agenda-content" style="display: flex; flex-direction: column; gap: 0;">
-        #{for {date, day_events} <- events_by_date do
+        #{Enum.map_join(events_by_date, "\n", fn {date, day_events} ->
           day_events = Enum.sort_by(day_events, & &1.start_time)
+
+          events_html = Enum.map_join(day_events, "\n", fn event ->
+            location_html = if event.location do
+              """
+              <div class="event-location" style="font-size: 14px; color: #555555; display: flex; align-items: center; gap: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                #{event.location}
+              </div>
+              """
+            else
+              ""
+            end
+
+            description_html = if event.description do
+              """
+              <div class="event-description" style="font-size: 13px; color: #666666; margin-top: 4px; line-height: 1.4;">#{event.description}</div>
+              """
+            else
+              ""
+            end
+
+            """
+            <div class="agenda-event" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px; border: 1px solid #dddddd; border-radius: 4px; background: #ffffff; page-break-inside: avoid;">
+              <div class="event-time" style="font-size: 14px; font-weight: 600; color: #333333; min-width: 110px; flex-shrink: 0; padding-top: 2px;">#{format_event_time(event)}</div>
+              <div class="event-details" style="flex: 1; min-width: 0;">
+                <h3 class="event-title" style="font-size: 16px; font-weight: 600; color: #000000; margin: 0 0 4px 0; line-height: 1.3;">#{event.title}</h3>
+                #{location_html}
+                #{description_html}
+              </div>
+              <div class="event-color-indicator" style="width: 4px; min-height: 40px; border-radius: 2px; background-color: #{event.color || "#06b6d4"}; flex-shrink: 0;"></div>
+            </div>
+            """
+          end)
+
           """
           <div class="agenda-day" style="margin-bottom: 20px; page-break-inside: avoid;">
             <h2 class="agenda-date" style="font-size: 16px; font-weight: bold; color: #000000; margin: 0 0 8px 0; padding: 8px 12px; background: #f0f0f0; border-left: 4px solid #333333;">#{format_date_header(date)}</h2>
             <div class="agenda-events" style="display: flex; flex-direction: column; gap: 8px; padding-left: 12px;">
-              #{for event <- day_events do
-                """
-                <div class="agenda-event" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px; border: 1px solid #dddddd; border-radius: 4px; background: #ffffff; page-break-inside: avoid;">
-                  <div class="event-time" style="font-size: 14px; font-weight: 600; color: #333333; min-width: 110px; flex-shrink: 0; padding-top: 2px;">#{format_event_time(event)}</div>
-                  <div class="event-details" style="flex: 1; min-width: 0;">
-                    <h3 class="event-title" style="font-size: 16px; font-weight: 600; color: #000000; margin: 0 0 4px 0; line-height: 1.3;">#{event.title}</h3>
-                    #{if event.location do
-                      """
-                      <div class="event-location" style="font-size: 14px; color: #555555; display: flex; align-items: center; gap: 4px;">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                          <circle cx="12" cy="10" r="3"></circle>
-                        </svg>
-                        #{event.location}
-                      </div>
-                      """
-                    end}
-                    #{if event.description do
-                      """
-                      <div class="event-description" style="font-size: 13px; color: #666666; margin-top: 4px; line-height: 1.4;">#{event.description}</div>
-                      """
-                    end}
-                  </div>
-                  <div class="event-color-indicator" style="width: 4px; min-height: 40px; border-radius: 2px; background-color: #{event.color || "#06b6d4"}; flex-shrink: 0;"></div>
-                </div>
-                """
-              end}
+              #{events_html}
             </div>
           </div>
           """
-        end}
+        end)}
       </div>
     </div>
     """
@@ -368,7 +380,7 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
     # Generate month grids for each month in the date range
     months = generate_month_list(start_date, end_date)
 
-    for month <- months do
+    Enum.map_join(months, "\n", fn month ->
       month_start = Date.beginning_of_month(month)
       _month_end = Date.end_of_month(month)
       month_name = Calendar.strftime(month, "%B %Y")
@@ -392,8 +404,8 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
             <div class="day-header" style="padding: 8px 4px; text-align: center; font-weight: bold; font-size: 12px; color: #333333;">Sat</div>
           </div>
           <div class="calendar-days" style="background: #ffffff;">
-            #{for week_offset <- 0..5 do
-              week_days = for day_of_week <- 0..6 do
+            #{Enum.map_join(0..5, "\n", fn week_offset ->
+              week_days = Enum.map_join(0..6, "", fn day_of_week ->
                 day_num = week_offset * 7 + day_of_week - first_day_weekday + 1
                 border_right = if day_of_week < 6, do: "border-right: 1px solid #cccccc;", else: ""
 
@@ -401,22 +413,28 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
                   current_date = Date.new!(month.year, month.month, day_num)
                   day_events = Map.get(events_by_date, current_date, [])
 
+                  events_html = Enum.map_join(Enum.take(day_events, 3), "", fn event ->
+                    """
+                    <div class="day-event" style="font-size: 10px; padding: 2px 4px; border-radius: 2px; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background-color: #{event.color || "#06b6d4"};">
+                      #{event.title}
+                    </div>
+                    """
+                  end)
+
+                  more_html = if length(day_events) > 3 do
+                    """
+                    <div class="more-events" style="font-size: 10px; color: #666666; font-style: italic;">+#{length(day_events) - 3} more</div>
+                    """
+                  else
+                    ""
+                  end
+
                   """
                   <div class="calendar-day" style="min-height: 80px; padding: 4px; #{border_right} background: #ffffff; vertical-align: top;">
                     <div class="day-number" style="font-size: 14px; font-weight: bold; color: #000000; margin-bottom: 4px;">#{day_num}</div>
                     <div class="day-events" style="display: flex; flex-direction: column; gap: 2px;">
-                      #{for event <- Enum.take(day_events, 3) do
-                        """
-                        <div class="day-event" style="font-size: 10px; padding: 2px 4px; border-radius: 2px; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background-color: #{event.color || "#06b6d4"};">
-                          #{event.title}
-                        </div>
-                        """
-                      end}
-                      #{if length(day_events) > 3 do
-                        """
-                        <div class="more-events" style="font-size: 10px; color: #666666; font-style: italic;">+#{length(day_events) - 3} more</div>
-                        """
-                      end}
+                      #{events_html}
+                      #{more_html}
                     </div>
                   </div>
                   """
@@ -425,19 +443,19 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
                   <div class="calendar-day empty" style="min-height: 80px; padding: 4px; #{border_right} background: #f9f9f9;"></div>
                   """
                 end
-              end
+              end)
 
               """
               <div class="calendar-week" style="display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid #cccccc;">
                 #{week_days}
               </div>
               """
-            end}
+            end)}
           </div>
         </div>
       </div>
       """
-    end
+    end)
   end
 
   defp generate_month_list(start_date, end_date) do
@@ -663,15 +681,13 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
 
               <div class="mb-6">
                 <label class="block text-sm font-medium text-gray-300 mb-3">Date Range</label>
-                <div class="flex gap-4 items-center">
+                <form phx-change="update_print_dates" class="flex gap-4 items-center">
                   <div class="flex-1">
                     <label class="block text-xs text-gray-400 mb-1">Start Date</label>
                     <input
                       type="date"
                       name="start_date"
                       value={Date.to_iso8601(@print_start_date)}
-                      phx-change="update_print_start_date"
-                      phx-blur="date_picker_closed"
                       class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-md text-white focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
@@ -682,12 +698,10 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
                       type="date"
                       name="end_date"
                       value={Date.to_iso8601(@print_end_date)}
-                      phx-change="update_print_end_date"
-                      phx-blur="date_picker_closed"
                       class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-md text-white focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
-                </div>
+                </form>
               </div>
 
               <div class="flex justify-end gap-3 pt-4 border-t border-dark-700">
