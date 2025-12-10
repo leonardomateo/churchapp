@@ -146,7 +146,11 @@ defmodule ChurchappWeb.MinistrySelector do
   defp select_ministry(socket, name) do
     case socket.assigns.mode do
       :single ->
-        # Single-select mode: select one ministry
+        # Single-select mode: select one ministry and update the form field
+        if socket.assigns.field do
+          Phoenix.LiveView.JS.push("change", to: "##{socket.assigns.field.form.id}", value: %{socket.assigns.field.name => name})
+        end
+
         {:noreply,
          socket
          |> assign(:selected_value, name)
@@ -173,7 +177,7 @@ defmodule ChurchappWeb.MinistrySelector do
   end
 
   defp filter_unselected(all_ministries, selected) do
-    Enum.reject(all_ministries, fn {_name, value} -> value in selected end)
+    Enum.reject(all_ministries, fn {name, _value} -> name in selected end)
   end
 
   defp search_single(all_ministries, query) when query == "" or is_nil(query) do
@@ -196,7 +200,7 @@ defmodule ChurchappWeb.MinistrySelector do
     query_lower = String.downcase(query)
 
     all_ministries
-    |> Enum.reject(fn {_name, value} -> value in selected end)
+    |> Enum.reject(fn {name, _value} -> name in selected end)
     |> Enum.filter(fn {name, _value} ->
       String.contains?(String.downcase(name), query_lower)
     end)
