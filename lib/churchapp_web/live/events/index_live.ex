@@ -16,6 +16,10 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
       |> assign(:current_view, "month")
       |> assign(:calendar_title, format_current_month())
       |> assign(:show_export_menu, false)
+      |> assign(:show_print_modal, false)
+      |> assign(:print_layout, "agenda")
+      |> assign(:print_start_date, Date.beginning_of_month(Date.utc_today()))
+      |> assign(:print_end_date, Date.end_of_month(Date.utc_today()))
       |> assign(:view_command, nil)
 
     {:ok, socket}
@@ -127,7 +131,64 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
     {:noreply,
      socket
      |> assign(:show_export_menu, false)
-     |> push_event("print_calendar", %{})}
+     |> assign(:show_print_modal, true)}
+  end
+
+  # Close print modal
+  def handle_event("close_print_modal", _params, socket) do
+    {:noreply, assign(socket, :show_print_modal, false)}
+  end
+
+  # Update print layout selection
+  def handle_event("update_print_layout", %{"layout" => layout}, socket) do
+    {:noreply, assign(socket, :print_layout, layout)}
+  end
+
+  # Update print start date
+  def handle_event("update_print_start_date", %{"value" => start_date}, socket) do
+    case Date.from_iso8601(start_date) do
+      {:ok, date} ->
+        {:noreply, assign(socket, :print_start_date, date)}
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  # Update print end date
+  def handle_event("update_print_end_date", %{"value" => end_date}, socket) do
+    case Date.from_iso8601(end_date) do
+      {:ok, date} ->
+        {:noreply, assign(socket, :print_end_date, date)}
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  # Handle date picker blur (no-op, just for phx-blur)
+  def handle_event("date_picker_closed", _params, socket) do
+    {:noreply, socket}
+  end
+
+  # Generate print view
+  def handle_event("generate_print", _params, socket) do
+    start_date = socket.assigns.print_start_date
+    end_date = socket.assigns.print_end_date
+    layout = socket.assigns.print_layout
+
+    # Convert dates to DateTime for querying
+    start_datetime = DateTime.new!(start_date, ~T[00:00:00], "Etc/UTC")
+    end_datetime = DateTime.new!(end_date, ~T[23:59:59], "Etc/UTC")
+
+    # Fetch events for the selected date range
+    events = fetch_events(start_datetime, end_datetime, nil, socket.assigns.current_user)
+
+    # Generate print HTML based on layout
+    print_html = generate_print_html(events, start_date, end_date, layout)
+
+    {:noreply,
+     socket
+     |> assign(:print_html, print_html)
+     |> push_event("show_print_preview", %{html: print_html})}
   end
 
   # Helper functions
@@ -206,10 +267,216 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
 
   defp format_datetime_for_calendar(nil), do: nil
 
+  # Generate print-optimized HTML
+  defp generate_print_html(events, start_date, end_date, "agenda") do
+    # Group events by date
+    events_by_date =
+      events
+      |> Enum.group_by(fn event ->
+        DateTime.to_date(event.start_time)
+      end)
+      |> Enum.sort_by(fn {date, _events} -> date end)
+
+    # Format date range for header
+    date_range = format_date_range(start_date, end_date)
+
+    # Build agenda HTML
+    agenda_html = """
+    <div class="print-agenda">
+      <header class="print-header">
+        <h1>PACHMS Event Calendar</h1>
+        <p class="date-range">#{date_range}</p>
+      </header>
+
+      <div class="agenda-content">
+        #{for {date, day_events} <- events_by_date do
+          day_events = Enum.sort_by(day_events, & &1.start_time)
+          """
+          <div class="agenda-day">
+            <h2 class="agenda-date">#{format_date_header(date)}</h2>
+            <div class="agenda-events">
+              #{for event <- day_events do
+                """
+                <div class="agenda-event">
+                  <div class="event-time">#{format_event_time(event)}</div>
+                  <div class="event-details">
+                    <h3 class="event-title">#{event.title}</h3>
+                    #{if event.location do
+                      """
+                      <div class="event-location">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                          <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        #{event.location}
+                      </div>
+                      """
+                    end}
+                    #{if event.description do
+                      """
+                      <div class="event-description">#{event.description}</div>
+                      """
+                    end}
+                  </div>
+                  <div class="event-color-indicator" style="background-color: #{event.color || "#06b6d4"}"></div>
+                </div>
+                """
+              end}
+            </div>
+          </div>
+          """
+        end}
+      </div>
+    </div>
+    """
+
+    agenda_html
+  end
+
+  defp generate_print_html(events, start_date, end_date, "grid") do
+    # Group events by date for grid layout
+    events_by_date =
+      events
+      |> Enum.group_by(fn event ->
+        DateTime.to_date(event.start_time)
+      end)
+      |> Enum.into(%{}, fn {date, day_events} ->
+        {date, Enum.sort_by(day_events, & &1.start_time)}
+      end)
+
+    # Format date range for header
+    date_range = format_date_range(start_date, end_date)
+
+    # Build grid HTML (month by month)
+    grid_html = """
+    <div class="print-grid">
+      <header class="print-header">
+        <h1>PACHMS Event Calendar</h1>
+        <p class="date-range">#{date_range}</p>
+      </header>
+
+      <div class="grid-content">
+        #{generate_month_grids(start_date, end_date, events_by_date)}
+      </div>
+    </div>
+    """
+
+    grid_html
+  end
+
+  defp generate_month_grids(start_date, end_date, events_by_date) do
+    # Generate month grids for each month in the date range
+    months = generate_month_list(start_date, end_date)
+
+    for month <- months do
+      month_start = Date.beginning_of_month(month)
+      _month_end = Date.end_of_month(month)
+      month_name = Calendar.strftime(month, "%B %Y")
+
+      # Get days of the month
+      days_in_month = Date.days_in_month(month)
+      first_day_weekday = Date.day_of_week(month_start)
+
+      # Build calendar grid
+      """
+      <div class="month-grid">
+        <h2 class="month-title">#{month_name}</h2>
+        <div class="calendar-grid">
+          <div class="day-headers">
+            <div class="day-header">Sun</div>
+            <div class="day-header">Mon</div>
+            <div class="day-header">Tue</div>
+            <div class="day-header">Wed</div>
+            <div class="day-header">Thu</div>
+            <div class="day-header">Fri</div>
+            <div class="day-header">Sat</div>
+          </div>
+          <div class="calendar-days">
+            #{for week_offset <- 0..5 do
+              week_days = for day_of_week <- 0..6 do
+                day_num = week_offset * 7 + day_of_week - first_day_weekday + 1
+
+                if day_num > 0 and day_num <= days_in_month do
+                  current_date = Date.new!(month.year, month.month, day_num)
+                  day_events = Map.get(events_by_date, current_date, [])
+
+                  """
+                  <div class="calendar-day">
+                    <div class="day-number">#{day_num}</div>
+                    <div class="day-events">
+                      #{for event <- Enum.take(day_events, 3) do
+                        """
+                        <div class="day-event" style="background-color: #{event.color || "#06b6d4"}">
+                          #{event.title}
+                        </div>
+                        """
+                      end}
+                      #{if length(day_events) > 3 do
+                        """
+                        <div class="more-events">+#{length(day_events) - 3} more</div>
+                        """
+                      end}
+                    </div>
+                  </div>
+                  """
+                else
+                  """
+                  <div class="calendar-day empty"></div>
+                  """
+                end
+              end
+
+              """
+              <div class="calendar-week">
+                #{week_days}
+              </div>
+              """
+            end}
+          </div>
+        </div>
+      </div>
+      """
+    end
+  end
+
+  defp generate_month_list(start_date, end_date) do
+    # Generate list of months between start_date and end_date
+    start_month = Date.beginning_of_month(start_date)
+    end_month = Date.beginning_of_month(end_date)
+
+    Stream.iterate(start_month, fn date ->
+      Date.add(date, Date.days_in_month(date))
+      |> Date.beginning_of_month()
+    end)
+    |> Enum.take_while(fn date -> Date.compare(date, end_month) in [:lt, :eq] end)
+  end
+
+  defp format_date_range(start_date, end_date) do
+    if start_date.month == end_date.month and start_date.year == end_date.year do
+      Calendar.strftime(start_date, "%B %Y")
+    else
+      "#{Calendar.strftime(start_date, "%B %d, %Y")} - #{Calendar.strftime(end_date, "%B %d, %Y")}"
+    end
+  end
+
+  defp format_date_header(date) do
+    Calendar.strftime(date, "%A, %B %d, %Y")
+  end
+
+  defp format_event_time(event) do
+    if event.all_day do
+      "All day"
+    else
+      start_time = Calendar.strftime(event.start_time, "%I:%M %p")
+      end_time = Calendar.strftime(event.end_time, "%I:%M %p")
+      "#{start_time} - #{end_time}"
+    end
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="view-container active" phx-hook="IcalDownload" id="events-container">
+    <div class="view-container active" phx-hook="PrintCalendar" id="events-container">
       <%!-- Print Header (only visible when printing) --%>
       <div class="print-header">
         <h1>PACHMS Event Calendar</h1>
@@ -253,7 +520,7 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
                   </button>
                   <button
                     type="button"
-                    onclick="window.print()"
+                    phx-click="print_calendar"
                     style="background-color: #1E1E1E;"
                     class="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-300 hover:bg-dark-700 hover:text-white transition-colors border-t border-dark-600"
                   >
@@ -337,6 +604,115 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
           </p>
         <% end %>
       </div>
+
+      <%!-- Print Modal --%>
+      <%= if @show_print_modal do %>
+        <div class="fixed inset-0 z-50 flex items-center justify-center">
+          <%!-- Backdrop --%>
+          <div
+            class="absolute inset-0 bg-black/50"
+            phx-click="close_print_modal"
+          >
+          </div>
+          <%!-- Modal Content --%>
+          <div class="relative bg-dark-800 rounded-lg shadow-xl max-w-2xl w-full mx-4">
+            <div class="border-b border-dark-700 px-6 py-4 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-white">Print Calendar</h3>
+              <button
+                type="button"
+                phx-click="close_print_modal"
+                class="text-gray-400 hover:text-white transition-colors"
+              >
+                <.icon name="hero-x-mark" class="h-5 w-5" />
+              </button>
+            </div>
+
+            <div class="p-6">
+              <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-300 mb-3">Layout Style</label>
+                <div class="grid grid-cols-2 gap-4">
+                  <div
+                    phx-click="update_print_layout"
+                    phx-value-layout="agenda"
+                    class={[
+                      "flex flex-col items-center p-4 border-2 rounded-lg cursor-pointer transition-all",
+                      @print_layout == "agenda" && "border-primary-500 bg-primary-500/10",
+                      @print_layout != "agenda" && "border-dark-600 hover:border-dark-500"
+                    ]}
+                  >
+                    <.icon name="hero-list-bullet" class="h-8 w-8 text-gray-300 mb-2" />
+                    <span class="text-gray-300 font-medium">Agenda Style</span>
+                    <span class="text-xs text-gray-500 mt-1 text-center">Events grouped by date</span>
+                  </div>
+                  <div
+                    phx-click="update_print_layout"
+                    phx-value-layout="grid"
+                    class={[
+                      "flex flex-col items-center p-4 border-2 rounded-lg cursor-pointer transition-all",
+                      @print_layout == "grid" && "border-primary-500 bg-primary-500/10",
+                      @print_layout != "grid" && "border-dark-600 hover:border-dark-500"
+                    ]}
+                  >
+                    <.icon name="hero-calendar-days" class="h-8 w-8 text-gray-300 mb-2" />
+                    <span class="text-gray-300 font-medium">Monthly Grid</span>
+                    <span class="text-xs text-gray-500 mt-1 text-center">Traditional calendar view</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-300 mb-3">Date Range</label>
+                <div class="flex gap-4 items-center">
+                  <div class="flex-1">
+                    <label class="block text-xs text-gray-400 mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      name="start_date"
+                      value={Date.to_iso8601(@print_start_date)}
+                      phx-change="update_print_start_date"
+                      phx-blur="date_picker_closed"
+                      class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-md text-white focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                  <span class="text-gray-500 pt-5">to</span>
+                  <div class="flex-1">
+                    <label class="block text-xs text-gray-400 mb-1">End Date</label>
+                    <input
+                      type="date"
+                      name="end_date"
+                      value={Date.to_iso8601(@print_end_date)}
+                      phx-change="update_print_end_date"
+                      phx-blur="date_picker_closed"
+                      class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-md text-white focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex justify-end gap-3 pt-4 border-t border-dark-700">
+                <button
+                  type="button"
+                  phx-click="close_print_modal"
+                  class="px-4 py-2 text-gray-300 bg-dark-700 hover:bg-dark-600 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  phx-click="generate_print"
+                  class="px-4 py-2 text-white bg-primary-500 hover:bg-primary-600 rounded-md transition-colors inline-flex items-center gap-2"
+                >
+                  <.icon name="hero-printer" class="h-4 w-4" />
+                  Print
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <%!-- Hidden Print Preview Container --%>
+      <div id="print-preview-container" class="print-preview-container"></div>
     </div>
     """
   end

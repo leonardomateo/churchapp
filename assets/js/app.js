@@ -644,7 +644,58 @@ const EventCalendar = {
   }
 }
 
-// IcalDownload Hook - handles iCal file download from LiveView events
+// PrintCalendar Hook - handles print preview generation and printing
+const PrintCalendar = {
+  mounted() {
+    this.printContainer = document.getElementById('print-preview-container')
+    
+    // Handle iCal download (merged from IcalDownload hook)
+    this.handleEvent("download_ical", ({content, filename}) => {
+      const blob = new Blob([content], { type: "text/calendar;charset=utf-8;" })
+      const link = document.createElement("a")
+      const url = URL.createObjectURL(blob)
+      link.setAttribute("href", url)
+      link.setAttribute("download", filename)
+      link.style.visibility = "hidden"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    })
+    
+    // Handle print preview
+    this.handleEvent("show_print_preview", ({html}) => {
+      if (this.printContainer) {
+        // Set the HTML content
+        this.printContainer.innerHTML = html
+        
+        // Small delay to ensure DOM is ready, then print
+        setTimeout(() => {
+          window.print()
+        }, 100)
+      }
+    })
+    
+    // Clean up print preview after printing
+    window.addEventListener('afterprint', () => {
+      if (this.printContainer) {
+        // Clear content after print dialog closes
+        setTimeout(() => {
+          this.printContainer.innerHTML = ''
+        }, 500)
+      }
+    })
+  },
+  
+  destroyed() {
+    // Clean up if needed
+    if (this.printContainer) {
+      this.printContainer.innerHTML = ''
+    }
+  }
+}
+
+// IcalDownload Hook - handles iCal file download from LiveView events (kept for backwards compatibility)
 const IcalDownload = {
   mounted() {
     this.handleEvent("download_ical", ({content, filename}) => {
@@ -666,7 +717,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar},
 })
 
 // Show progress bar on live navigation and form submits

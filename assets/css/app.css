@@ -2052,88 +2052,324 @@ form input[type="checkbox"]:checked::after {
    Print Styles
    ============================================ */
 
+/* Hide print preview container by default (screen) */
+.print-preview-container {
+  display: none;
+}
+
+/* When printing, show only the print preview */
 @media print {
-  /* Hide non-essential elements */
+  /* Hide everything except print preview */
+  body > *:not(.print-preview-container),
   aside,
   nav,
   header,
+  .view-container > *:not(.print-preview-container),
+  .calendar-container,
   .calendar-toolbar-actions,
   .calendar-nav-btn,
   .calendar-view-btn,
   .calendar-filter-select,
   button,
-  .no-print {
+  .no-print,
+  #event-calendar {
     display: none !important;
   }
 
-  /* Reset colors for print */
-  body,
-  .fc,
-  .fc .fc-daygrid-day,
-  .fc .fc-col-header-cell,
-  .fc .fc-list-day-cushion,
-  .fc .fc-list-event {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-  }
-
-  .fc {
-    --fc-border-color: #cccccc !important;
-    --fc-page-bg-color: #ffffff !important;
-    --fc-neutral-bg-color: #f5f5f5 !important;
-    --fc-today-bg-color: #e6f7fa !important;
-  }
-
-  .fc .fc-toolbar-title,
-  .fc .fc-col-header-cell-cushion,
-  .fc .fc-daygrid-day-number,
-  .fc .fc-list-event-title,
-  .fc .fc-list-event-time {
-    color: #000000 !important;
-  }
-
-  .fc .fc-event {
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
+  /* Show and style print preview container */
+  .print-preview-container {
+    display: block !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: white !important;
+    z-index: 99999 !important;
   }
 
   /* Page setup */
   @page {
-    size: landscape;
-    margin: 1cm;
+    size: portrait;
+    margin: 0.75in;
   }
 
-  /* Calendar takes full width */
-  .calendar-container {
-    width: 100% !important;
-    max-width: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
+  /* Print colors */
+  * {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
   }
 
-  /* Print header */
-  .print-header {
+  /* =============================================
+     Agenda Layout Print Styles
+     ============================================= */
+  .print-agenda {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    color: #000;
+    background: #fff;
+    padding: 0;
+    max-width: 100%;
+  }
+
+  .print-agenda .print-header {
     display: block !important;
     text-align: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #000000;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px double #333;
   }
 
-  .print-header h1 {
+  .print-agenda .print-header h1 {
+    font-size: 1.75rem;
+    font-weight: bold;
+    margin: 0 0 0.25rem 0;
+    color: #000;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .print-agenda .print-header .date-range {
+    font-size: 1rem;
+    color: #444;
+    margin: 0;
+    font-style: italic;
+  }
+
+  .print-agenda .agenda-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .print-agenda .agenda-day {
+    margin-bottom: 1.25rem;
+    page-break-inside: avoid;
+  }
+
+  .print-agenda .agenda-date {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #000;
+    margin: 0 0 0.5rem 0;
+    padding: 0.5rem 0.75rem;
+    background: #f0f0f0;
+    border-left: 4px solid #333;
+  }
+
+  .print-agenda .agenda-events {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-left: 0.75rem;
+  }
+
+  .print-agenda .agenda-event {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    page-break-inside: avoid;
+  }
+
+  .print-agenda .event-time {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #333;
+    min-width: 110px;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  .print-agenda .event-details {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .print-agenda .event-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #000;
+    margin: 0 0 0.25rem 0;
+    line-height: 1.3;
+  }
+
+  .print-agenda .event-location {
+    font-size: 0.85rem;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .print-agenda .event-location svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    color: #666;
+  }
+
+  .print-agenda .event-description {
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.4;
+    margin-top: 0.25rem;
+  }
+
+  .print-agenda .event-color-indicator {
+    width: 6px;
+    height: 100%;
+    min-height: 40px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* =============================================
+     Grid Layout Print Styles
+     ============================================= */
+  .print-grid {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: #000;
+    background: #fff;
+    padding: 0;
+    max-width: 100%;
+  }
+
+  .print-grid .print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px double #333;
+  }
+
+  .print-grid .print-header h1 {
     font-size: 1.5rem;
     font-weight: bold;
+    margin: 0 0 0.25rem 0;
+    color: #000;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .print-grid .print-header .date-range {
+    font-size: 0.9rem;
+    color: #444;
     margin: 0;
   }
 
-  .print-header p {
-    font-size: 0.875rem;
-    color: #666666;
-    margin: 0.25rem 0 0 0;
+  .print-grid .grid-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .print-grid .month-grid {
+    page-break-inside: avoid;
+  }
+
+  .print-grid .month-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    text-align: center;
+    margin: 0 0 0.75rem 0;
+    color: #000;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #333;
+  }
+
+  .print-grid .calendar-grid {
+    border: 1px solid #333;
+  }
+
+  .print-grid .day-headers {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #f0f0f0;
+    border-bottom: 1px solid #333;
+  }
+
+  .print-grid .day-header {
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.75rem;
+    padding: 0.5rem 0.25rem;
+    text-transform: uppercase;
+    color: #333;
+    border-right: 1px solid #ccc;
+  }
+
+  .print-grid .day-header:last-child {
+    border-right: none;
+  }
+
+  .print-grid .calendar-days {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .print-grid .calendar-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid #ddd;
+  }
+
+  .print-grid .calendar-week:last-child {
+    border-bottom: none;
+  }
+
+  .print-grid .calendar-day {
+    min-height: 70px;
+    padding: 0.25rem;
+    border-right: 1px solid #ddd;
+    background: #fff;
+    vertical-align: top;
+  }
+
+  .print-grid .calendar-day:last-child {
+    border-right: none;
+  }
+
+  .print-grid .calendar-day.empty {
+    background: #f9f9f9;
+  }
+
+  .print-grid .day-number {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.25rem;
+  }
+
+  .print-grid .day-events {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .print-grid .day-event {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+    border-radius: 2px;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+  }
+
+  .print-grid .more-events {
+    font-size: 0.55rem;
+    color: #666;
+    font-style: italic;
+    padding: 1px 4px;
   }
 }
 
-/* Hide print header by default */
+/* Hide print header by default (old fallback) */
 .print-header {
   display: none;
 }
