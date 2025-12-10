@@ -267,7 +267,7 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
 
   defp format_datetime_for_calendar(nil), do: nil
 
-  # Generate print-optimized HTML
+  # Generate print-optimized HTML with inline styles for reliable printing
   defp generate_print_html(events, start_date, end_date, "agenda") do
     # Group events by date
     events_by_date =
@@ -280,30 +280,30 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
     # Format date range for header
     date_range = format_date_range(start_date, end_date)
 
-    # Build agenda HTML
+    # Build agenda HTML with inline styles for reliable printing
     agenda_html = """
-    <div class="print-agenda">
-      <header class="print-header">
-        <h1>PACHMS Event Calendar</h1>
-        <p class="date-range">#{date_range}</p>
+    <div class="print-agenda" style="background: #ffffff; color: #000000; font-family: Georgia, 'Times New Roman', serif; padding: 20px; max-width: 100%;">
+      <header class="print-header" style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 3px double #333333;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0 0 4px 0; color: #000000; letter-spacing: 0.05em; text-transform: uppercase;">PACHMS Event Calendar</h1>
+        <p class="date-range" style="font-size: 16px; color: #444444; margin: 0; font-style: italic;">#{date_range}</p>
       </header>
 
-      <div class="agenda-content">
+      <div class="agenda-content" style="display: flex; flex-direction: column; gap: 0;">
         #{for {date, day_events} <- events_by_date do
           day_events = Enum.sort_by(day_events, & &1.start_time)
           """
-          <div class="agenda-day">
-            <h2 class="agenda-date">#{format_date_header(date)}</h2>
-            <div class="agenda-events">
+          <div class="agenda-day" style="margin-bottom: 20px; page-break-inside: avoid;">
+            <h2 class="agenda-date" style="font-size: 16px; font-weight: bold; color: #000000; margin: 0 0 8px 0; padding: 8px 12px; background: #f0f0f0; border-left: 4px solid #333333;">#{format_date_header(date)}</h2>
+            <div class="agenda-events" style="display: flex; flex-direction: column; gap: 8px; padding-left: 12px;">
               #{for event <- day_events do
                 """
-                <div class="agenda-event">
-                  <div class="event-time">#{format_event_time(event)}</div>
-                  <div class="event-details">
-                    <h3 class="event-title">#{event.title}</h3>
+                <div class="agenda-event" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px; border: 1px solid #dddddd; border-radius: 4px; background: #ffffff; page-break-inside: avoid;">
+                  <div class="event-time" style="font-size: 14px; font-weight: 600; color: #333333; min-width: 110px; flex-shrink: 0; padding-top: 2px;">#{format_event_time(event)}</div>
+                  <div class="event-details" style="flex: 1; min-width: 0;">
+                    <h3 class="event-title" style="font-size: 16px; font-weight: 600; color: #000000; margin: 0 0 4px 0; line-height: 1.3;">#{event.title}</h3>
                     #{if event.location do
                       """
-                      <div class="event-location">
+                      <div class="event-location" style="font-size: 14px; color: #555555; display: flex; align-items: center; gap: 4px;">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                           <circle cx="12" cy="10" r="3"></circle>
@@ -314,11 +314,11 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
                     end}
                     #{if event.description do
                       """
-                      <div class="event-description">#{event.description}</div>
+                      <div class="event-description" style="font-size: 13px; color: #666666; margin-top: 4px; line-height: 1.4;">#{event.description}</div>
                       """
                     end}
                   </div>
-                  <div class="event-color-indicator" style="background-color: #{event.color || "#06b6d4"}"></div>
+                  <div class="event-color-indicator" style="width: 4px; min-height: 40px; border-radius: 2px; background-color: #{event.color || "#06b6d4"}; flex-shrink: 0;"></div>
                 </div>
                 """
               end}
@@ -347,15 +347,15 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
     # Format date range for header
     date_range = format_date_range(start_date, end_date)
 
-    # Build grid HTML (month by month)
+    # Build grid HTML with inline styles for reliable printing
     grid_html = """
-    <div class="print-grid">
-      <header class="print-header">
-        <h1>PACHMS Event Calendar</h1>
-        <p class="date-range">#{date_range}</p>
+    <div class="print-grid" style="background: #ffffff; color: #000000; font-family: Arial, sans-serif; padding: 20px; max-width: 100%;">
+      <header class="print-header" style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 3px double #333333;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0 0 4px 0; color: #000000; letter-spacing: 0.05em; text-transform: uppercase;">PACHMS Event Calendar</h1>
+        <p class="date-range" style="font-size: 16px; color: #444444; margin: 0; font-style: italic;">#{date_range}</p>
       </header>
 
-      <div class="grid-content">
+      <div class="grid-content" style="display: flex; flex-direction: column; gap: 32px;">
         #{generate_month_grids(start_date, end_date, events_by_date)}
       </div>
     </div>
@@ -377,43 +377,44 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
       days_in_month = Date.days_in_month(month)
       first_day_weekday = Date.day_of_week(month_start)
 
-      # Build calendar grid
+      # Build calendar grid with inline styles for reliable printing
       """
-      <div class="month-grid">
-        <h2 class="month-title">#{month_name}</h2>
-        <div class="calendar-grid">
-          <div class="day-headers">
-            <div class="day-header">Sun</div>
-            <div class="day-header">Mon</div>
-            <div class="day-header">Tue</div>
-            <div class="day-header">Wed</div>
-            <div class="day-header">Thu</div>
-            <div class="day-header">Fri</div>
-            <div class="day-header">Sat</div>
+      <div class="month-grid" style="background: #ffffff; margin-bottom: 32px; page-break-inside: avoid;">
+        <h2 class="month-title" style="font-size: 20px; font-weight: bold; color: #000000; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #333333;">#{month_name}</h2>
+        <div class="calendar-grid" style="border: 1px solid #cccccc;">
+          <div class="day-headers" style="display: grid; grid-template-columns: repeat(7, 1fr); background: #f5f5f5; border-bottom: 1px solid #cccccc;">
+            <div class="day-header" style="padding: 8px 4px; text-align: center; font-weight: bold; font-size: 12px; color: #333333; border-right: 1px solid #cccccc;">Sun</div>
+            <div class="day-header" style="padding: 8px 4px; text-align: center; font-weight: bold; font-size: 12px; color: #333333; border-right: 1px solid #cccccc;">Mon</div>
+            <div class="day-header" style="padding: 8px 4px; text-align: center; font-weight: bold; font-size: 12px; color: #333333; border-right: 1px solid #cccccc;">Tue</div>
+            <div class="day-header" style="padding: 8px 4px; text-align: center; font-weight: bold; font-size: 12px; color: #333333; border-right: 1px solid #cccccc;">Wed</div>
+            <div class="day-header" style="padding: 8px 4px; text-align: center; font-weight: bold; font-size: 12px; color: #333333; border-right: 1px solid #cccccc;">Thu</div>
+            <div class="day-header" style="padding: 8px 4px; text-align: center; font-weight: bold; font-size: 12px; color: #333333; border-right: 1px solid #cccccc;">Fri</div>
+            <div class="day-header" style="padding: 8px 4px; text-align: center; font-weight: bold; font-size: 12px; color: #333333;">Sat</div>
           </div>
-          <div class="calendar-days">
+          <div class="calendar-days" style="background: #ffffff;">
             #{for week_offset <- 0..5 do
               week_days = for day_of_week <- 0..6 do
                 day_num = week_offset * 7 + day_of_week - first_day_weekday + 1
+                border_right = if day_of_week < 6, do: "border-right: 1px solid #cccccc;", else: ""
 
                 if day_num > 0 and day_num <= days_in_month do
                   current_date = Date.new!(month.year, month.month, day_num)
                   day_events = Map.get(events_by_date, current_date, [])
 
                   """
-                  <div class="calendar-day">
-                    <div class="day-number">#{day_num}</div>
-                    <div class="day-events">
+                  <div class="calendar-day" style="min-height: 80px; padding: 4px; #{border_right} background: #ffffff; vertical-align: top;">
+                    <div class="day-number" style="font-size: 14px; font-weight: bold; color: #000000; margin-bottom: 4px;">#{day_num}</div>
+                    <div class="day-events" style="display: flex; flex-direction: column; gap: 2px;">
                       #{for event <- Enum.take(day_events, 3) do
                         """
-                        <div class="day-event" style="background-color: #{event.color || "#06b6d4"}">
+                        <div class="day-event" style="font-size: 10px; padding: 2px 4px; border-radius: 2px; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background-color: #{event.color || "#06b6d4"};">
                           #{event.title}
                         </div>
                         """
                       end}
                       #{if length(day_events) > 3 do
                         """
-                        <div class="more-events">+#{length(day_events) - 3} more</div>
+                        <div class="more-events" style="font-size: 10px; color: #666666; font-style: italic;">+#{length(day_events) - 3} more</div>
                         """
                       end}
                     </div>
@@ -421,13 +422,13 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
                   """
                 else
                   """
-                  <div class="calendar-day empty"></div>
+                  <div class="calendar-day empty" style="min-height: 80px; padding: 4px; #{border_right} background: #f9f9f9;"></div>
                   """
                 end
               end
 
               """
-              <div class="calendar-week">
+              <div class="calendar-week" style="display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid #cccccc;">
                 #{week_days}
               </div>
               """

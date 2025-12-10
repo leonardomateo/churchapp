@@ -2053,51 +2053,98 @@ form input[type="checkbox"]:checked::after {
    ============================================ */
 
 /* Hide print preview container by default (screen) */
-.print-preview-container {
+.print-preview-container,
+#print-preview-container {
   display: none;
 }
 
 /* When printing, show only the print preview */
 @media print {
-  /* Hide everything except print preview */
-  body > *:not(.print-preview-container),
-  aside,
-  nav,
-  header,
-  .view-container > *:not(.print-preview-container),
-  .calendar-container,
-  .calendar-toolbar-actions,
-  .calendar-nav-btn,
-  .calendar-view-btn,
-  .calendar-filter-select,
-  button,
-  .no-print,
-  #event-calendar {
-    display: none !important;
+  /* Reset and force white background */
+  html, body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
   }
 
-  /* Show and style print preview container */
+  /* Hide everything except print preview using visibility trick */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show print preview container and contents */
+  #print-preview-container,
+  #print-preview-container *,
+  .print-preview-container,
+  .print-preview-container * {
+    visibility: visible !important;
+  }
+
+  /* Position print preview at top-left corner */
+  #print-preview-container,
   .print-preview-container {
     display: block !important;
+    visibility: visible !important;
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
     height: auto !important;
-    background: white !important;
-    z-index: 99999 !important;
+    background: #ffffff !important;
+    z-index: 999999 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Ensure content displays properly */
+  #print-preview-container .print-agenda,
+  #print-preview-container .print-grid,
+  .print-preview-container .print-agenda,
+  .print-preview-container .print-grid {
+    display: block !important;
+    visibility: visible !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Restore flex layouts */
+  #print-preview-container .agenda-content,
+  #print-preview-container .agenda-events,
+  .print-preview-container .agenda-content,
+  .print-preview-container .agenda-events {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  #print-preview-container .agenda-event,
+  .print-preview-container .agenda-event {
+    display: flex !important;
+    flex-direction: row !important;
+  }
+
+  /* Restore grid layouts */
+  #print-preview-container .day-headers,
+  #print-preview-container .calendar-week,
+  .print-preview-container .day-headers,
+  .print-preview-container .calendar-week {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+  }
+
+  /* Allow colored backgrounds */
+  #print-preview-container [style*="background"],
+  .print-preview-container [style*="background"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* Page setup */
   @page {
     size: portrait;
-    margin: 0.75in;
-  }
-
-  /* Print colors */
-  * {
-    print-color-adjust: exact !important;
-    -webkit-print-color-adjust: exact !important;
+    margin: 0.5in;
   }
 
   /* =============================================
