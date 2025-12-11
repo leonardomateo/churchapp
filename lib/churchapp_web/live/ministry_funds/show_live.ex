@@ -155,7 +155,13 @@ defmodule ChurchappWeb.MinistryFundsLive.ShowLive do
               <label class="block text-sm font-medium text-gray-400 mb-2">
                 Transaction Date
               </label>
-              <p class="text-white">
+              <p
+                class="text-white"
+                id="transaction-date-display"
+                phx-hook="LocalTime"
+                data-utc={DateTime.to_iso8601(@ministry_fund.transaction_date)}
+                data-format="datetime"
+              >
                 {Calendar.strftime(@ministry_fund.transaction_date, "%B %d, %Y at %I:%M %p")}
               </p>
             </div>
@@ -174,13 +180,25 @@ defmodule ChurchappWeb.MinistryFundsLive.ShowLive do
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <span class="text-gray-400">Created:</span>
-                <span class="text-white ml-2">
+                <span
+                  class="text-white ml-2"
+                  id="created-at-display"
+                  phx-hook="LocalTime"
+                  data-utc={DateTime.to_iso8601(@ministry_fund.inserted_at)}
+                  data-format="datetime"
+                >
                   {Calendar.strftime(@ministry_fund.inserted_at, "%B %d, %Y at %I:%M %p")}
                 </span>
               </div>
               <div>
                 <span class="text-gray-400">Last Updated:</span>
-                <span class="text-white ml-2">
+                <span
+                  class="text-white ml-2"
+                  id="updated-at-display"
+                  phx-hook="LocalTime"
+                  data-utc={DateTime.to_iso8601(@ministry_fund.updated_at)}
+                  data-format="datetime"
+                >
                   {Calendar.strftime(@ministry_fund.updated_at, "%B %d, %Y at %I:%M %p")}
                 </span>
               </div>
@@ -234,7 +252,14 @@ defmodule ChurchappWeb.MinistryFundsLive.ShowLive do
                   class="border-b border-dark-700 hover:bg-dark-700/40 transition-colors"
                 >
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    {Calendar.strftime(transaction.transaction_date, "%B %d, %Y")}
+                    <span
+                      id={"recent-date-#{transaction.id}"}
+                      phx-hook="LocalTime"
+                      data-utc={DateTime.to_iso8601(transaction.transaction_date)}
+                      data-format="date"
+                    >
+                      {Calendar.strftime(transaction.transaction_date, "%B %d, %Y")}
+                    </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span class={[

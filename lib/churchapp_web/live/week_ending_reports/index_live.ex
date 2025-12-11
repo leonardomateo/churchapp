@@ -531,7 +531,14 @@ defmodule ChurchappWeb.WeekEndingReportsLive.IndexLive do
                   phx-click={JS.navigate(~p"/admin/week-ending-reports/#{report}")}
                 >
                   <div class="text-sm text-gray-400">
-                    {Calendar.strftime(report.inserted_at, "%b %d, %Y at %I:%M %p")}
+                    <span
+                      id={"report-created-#{report.id}"}
+                      phx-hook="LocalTime"
+                      data-utc={DateTime.to_iso8601(report.inserted_at)}
+                      data-format="datetime"
+                    >
+                      {Calendar.strftime(report.inserted_at, "%b %d, %Y at %I:%M %p")}
+                    </span>
                   </div>
                 </td>
                 <td class="px-6 py-5 text-right">

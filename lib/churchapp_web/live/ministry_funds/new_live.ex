@@ -227,6 +227,7 @@ defmodule ChurchappWeb.MinistryFundsLive.NewLive do
                   <.input
                     field={@form[:transaction_date]}
                     type="datetime-local"
+                    id="transaction-date-input"
                     phx-hook="DatePicker"
                     max={
                       DateTime.utc_now()

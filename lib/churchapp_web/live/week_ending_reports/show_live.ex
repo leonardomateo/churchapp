@@ -264,10 +264,28 @@ defmodule ChurchappWeb.WeekEndingReportsLive.ShowLive do
         <%!-- Report Metadata --%>
         <div class="px-6 py-3 bg-dark-900/30 print:bg-gray-50 border-t border-dark-700 print:border-gray-200">
           <div class="flex flex-wrap gap-4 text-xs text-gray-500 print:text-gray-600">
-            <span>Created: {Calendar.strftime(@report.inserted_at, "%B %d, %Y at %I:%M %p")}</span>
+            <span>
+              Created:
+              <span
+                id="report-created-at"
+                phx-hook="LocalTime"
+                data-utc={DateTime.to_iso8601(@report.inserted_at)}
+                data-format="datetime"
+              >
+                {Calendar.strftime(@report.inserted_at, "%B %d, %Y at %I:%M %p")}
+              </span>
+            </span>
             <%= if @report.updated_at != @report.inserted_at do %>
               <span>
-                Last updated: {Calendar.strftime(@report.updated_at, "%B %d, %Y at %I:%M %p")}
+                Last updated:
+                <span
+                  id="report-updated-at"
+                  phx-hook="LocalTime"
+                  data-utc={DateTime.to_iso8601(@report.updated_at)}
+                  data-format="datetime"
+                >
+                  {Calendar.strftime(@report.updated_at, "%B %d, %Y at %I:%M %p")}
+                </span>
               </span>
             <% end %>
           </div>

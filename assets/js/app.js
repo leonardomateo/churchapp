@@ -233,6 +233,87 @@ const ImageUpload = {
   }
 }
 
+// LocalTime Hook - displays UTC datetime in user's local timezone
+const LocalTime = {
+  mounted() {
+    this.formatTime()
+  },
+  
+  updated() {
+    this.formatTime()
+  },
+  
+  formatTime() {
+    const utcValue = this.el.dataset.utc
+    const format = this.el.dataset.format || "full" // full, date, time
+    
+    if (!utcValue) return
+    
+    try {
+      // Parse the UTC datetime
+      let date
+      if (utcValue.endsWith('Z') || utcValue.includes('+')) {
+        date = new Date(utcValue)
+      } else {
+        // Treat as UTC if no timezone indicator
+        date = new Date(utcValue + 'Z')
+      }
+      
+      if (isNaN(date.getTime())) return
+      
+      let formatted
+      switch(format) {
+        case "date":
+          formatted = date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })
+          break
+        case "time":
+          formatted = date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          })
+          break
+        case "datetime":
+          formatted = date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }) + ' at ' + date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          })
+          break
+        case "short":
+          formatted = date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+          })
+          break
+        default: // "full"
+          formatted = date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }) + ' at ' + date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          })
+      }
+      
+      this.el.textContent = formatted
+    } catch (e) {
+      console.error("Error formatting local time:", e)
+    }
+  }
+}
+
 // AutoFocus Hook - automatically focuses an input element when mounted
 const AutoFocus = {
   mounted() {
@@ -244,19 +325,106 @@ const AutoFocus = {
   }
 }
 
-// DatePicker Hook - closes the date picker when a date is selected
+// DatePicker Hook - handles date/datetime inputs with timezone conversion
+// For datetime-local inputs: converts UTC from server to local for display,
+// and converts local input back to UTC for form submission
 const DatePicker = {
   mounted() {
     this.el.addEventListener("change", this.handleChange.bind(this))
+    this.el.addEventListener("input", this.handleInput.bind(this))
+    
+    // For datetime-local inputs, convert UTC value to local time for display
+    if (this.el.type === "datetime-local" && this.el.value) {
+      this.convertUTCToLocal()
+    }
   },
 
-  handleChange() {
+  // Convert UTC datetime to local time for display in the input
+  convertUTCToLocal() {
+    const utcValue = this.el.value
+    if (!utcValue) return
+    
+    try {
+      // The server sends ISO format like "2025-12-10T23:55:00Z" or "2025-12-10T23:55:00"
+      let date
+      if (utcValue.endsWith('Z') || utcValue.includes('+')) {
+        date = new Date(utcValue)
+      } else {
+        // Treat as UTC if no timezone indicator
+        date = new Date(utcValue + 'Z')
+      }
+      
+      if (!isNaN(date.getTime())) {
+        // Format for datetime-local input in local time
+        const localValue = this.formatDatetimeLocal(date)
+        this.el.value = localValue
+        // Store original UTC for reference
+        this.el.dataset.utcValue = utcValue
+      }
+    } catch (e) {
+      console.error("Error converting UTC to local:", e)
+    }
+  },
+
+  formatDatetimeLocal(date) {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+  },
+
+  // Convert local datetime to UTC ISO string
+  localToUTC(localValue) {
+    if (!localValue) return localValue
+    try {
+      // datetime-local value is interpreted as local time by the browser
+      const localDate = new Date(localValue)
+      if (!isNaN(localDate.getTime())) {
+        return localDate.toISOString()
+      }
+    } catch (e) {
+      console.error("Error converting local to UTC:", e)
+    }
+    return localValue
+  },
+
+  handleInput(e) {
+    // For datetime-local, immediately convert to UTC and update the actual value
+    // that will be sent to the server
+    if (this.el.type === "datetime-local" && this.el.value) {
+      const utcValue = this.localToUTC(this.el.value)
+      this.el.dataset.utcValue = utcValue
+    }
+  },
+
+  handleChange(e) {
+    // For datetime-local inputs, we need to send UTC to the server
+    // Override the value temporarily for the LiveView event
+    if (this.el.type === "datetime-local" && this.el.value) {
+      const localValue = this.el.value
+      const utcValue = this.localToUTC(localValue)
+      
+      // Temporarily set the value to UTC for the phx-change event
+      this.el.value = utcValue
+      
+      // Trigger a new input event so LiveView gets the UTC value
+      this.el.dispatchEvent(new Event('input', { bubbles: true }))
+      
+      // Restore the local display value after a tick
+      requestAnimationFrame(() => {
+        this.el.value = localValue
+      })
+    }
+    
     // Blur the input to close the date picker
     this.el.blur()
   },
 
   destroyed() {
     this.el.removeEventListener("change", this.handleChange.bind(this))
+    this.el.removeEventListener("input", this.handleInput.bind(this))
   }
 }
 
@@ -889,7 +1057,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, LocalTime, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar},
 })
 
 // Show progress bar on live navigation and form submits

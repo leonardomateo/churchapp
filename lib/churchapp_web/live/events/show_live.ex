@@ -201,12 +201,26 @@ defmodule ChurchappWeb.EventsLive.ShowLive do
             <div class="flex flex-wrap gap-6 text-sm text-gray-500">
               <div>
                 <span class="font-medium">Created:</span>
-                {Calendar.strftime(@event.inserted_at, "%B %d, %Y at %I:%M %p")}
+                <span
+                  id="event-created-at"
+                  phx-hook="LocalTime"
+                  data-utc={DateTime.to_iso8601(@event.inserted_at)}
+                  data-format="datetime"
+                >
+                  {Calendar.strftime(@event.inserted_at, "%B %d, %Y at %I:%M %p")}
+                </span>
               </div>
               <%= if @event.updated_at != @event.inserted_at do %>
                 <div>
                   <span class="font-medium">Last updated:</span>
-                  {Calendar.strftime(@event.updated_at, "%B %d, %Y at %I:%M %p")}
+                  <span
+                    id="event-updated-at"
+                    phx-hook="LocalTime"
+                    data-utc={DateTime.to_iso8601(@event.updated_at)}
+                    data-format="datetime"
+                  >
+                    {Calendar.strftime(@event.updated_at, "%B %d, %Y at %I:%M %p")}
+                  </span>
                 </div>
               <% end %>
             </div>
