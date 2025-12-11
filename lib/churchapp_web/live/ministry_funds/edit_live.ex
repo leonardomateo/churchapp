@@ -230,18 +230,11 @@ defmodule ChurchappWeb.MinistryFundsLive.EditLive do
                 </div>
 
                 <div class="sm:col-span-3">
-                  <.input
+                  <.datetime_input
                     field={@form[:transaction_date]}
-                    type="datetime-local"
-                    id="transaction-date-input"
-                    phx-hook="DatePicker"
-                    max={
-                      DateTime.utc_now()
-                      |> DateTime.to_naive()
-                      |> NaiveDateTime.to_iso8601()
-                      |> String.slice(0, 16)
-                    }
                     label="Transaction Date"
+                    required={true}
+                    max={DateTime.utc_now() |> DateTime.to_iso8601() |> String.slice(0, 16)}
                   />
                 </div>
               </div>

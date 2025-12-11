@@ -325,6 +325,74 @@ const AutoFocus = {
   }
 }
 
+// DateTimeInput Hook - handles UTC <-> local conversion for datetime inputs
+// Used with the DatetimeInput component for proper timezone handling
+const DateTimeInput = {
+  mounted() {
+    this.localInput = this.el.querySelector('input[type="datetime-local"]')
+    this.hiddenInput = this.el.querySelector('input[type="hidden"]')
+    
+    if (!this.localInput || !this.hiddenInput) return
+    
+    // Convert existing UTC value to local for display
+    const utcValue = this.localInput.dataset.utcValue
+    if (utcValue) {
+      try {
+        const date = new Date(utcValue)
+        if (!isNaN(date.getTime())) {
+          this.localInput.value = this.formatDatetimeLocal(date)
+        }
+      } catch (e) {
+        console.error("Error parsing UTC value:", e)
+      }
+    }
+    
+    // On change, convert local to UTC and update hidden input
+    this.localInput.addEventListener("change", this.handleChange.bind(this))
+    this.localInput.addEventListener("input", this.handleInput.bind(this))
+  },
+  
+  handleChange() {
+    this.updateHiddenInput()
+    // Close the picker
+    this.localInput.blur()
+  },
+  
+  handleInput() {
+    this.updateHiddenInput()
+  },
+  
+  updateHiddenInput() {
+    if (this.localInput.value) {
+      // datetime-local value is in local time, convert to UTC ISO string
+      const localDate = new Date(this.localInput.value)
+      if (!isNaN(localDate.getTime())) {
+        this.hiddenInput.value = localDate.toISOString()
+      }
+    } else {
+      this.hiddenInput.value = ""
+    }
+    // Trigger input event on hidden input for LiveView form tracking
+    this.hiddenInput.dispatchEvent(new Event('input', { bubbles: true }))
+  },
+  
+  formatDatetimeLocal(date) {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+  },
+  
+  destroyed() {
+    if (this.localInput) {
+      this.localInput.removeEventListener("change", this.handleChange.bind(this))
+      this.localInput.removeEventListener("input", this.handleInput.bind(this))
+    }
+  }
+}
+
 // DatePickerClose Hook - simple hook to close date picker after selection
 const DatePickerClose = {
   mounted() {
@@ -1027,7 +1095,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, DatePickerClose, LocalTime, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, DatePickerClose, DateTimeInput, LocalTime, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar},
 })
 
 // Show progress bar on live navigation and form submits

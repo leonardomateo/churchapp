@@ -658,7 +658,14 @@ defmodule ChurchappWeb.MinistryFundsLive.IndexLive do
                 class="px-6 py-5 whitespace-nowrap text-sm text-gray-300 cursor-pointer"
                 phx-click={JS.navigate(~p"/ministry-funds/#{fund}")}
               >
-                {Calendar.strftime(fund.transaction_date, "%B %d, %Y")}
+                <span
+                  id={"date-#{fund.id}"}
+                  phx-hook="LocalTime"
+                  data-utc={DateTime.to_iso8601(fund.transaction_date)}
+                  data-format="date"
+                >
+                  {Calendar.strftime(fund.transaction_date, "%B %d, %Y")}
+                </span>
               </td>
               <td
                 class="px-6 py-5 whitespace-nowrap text-sm text-white cursor-pointer"

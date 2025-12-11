@@ -89,6 +89,8 @@ defmodule ChurchappWeb do
       import ChurchappWeb.CoreComponents
       # Auth UI components
       import ChurchappWeb.AuthComponents
+      # Datetime input component with timezone handling
+      import ChurchappWeb.DatetimeInput
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

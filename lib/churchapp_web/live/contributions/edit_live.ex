@@ -146,16 +146,12 @@ defmodule ChurchappWeb.ContributionsLive.EditLive do
                 </div>
 
                 <div class="sm:col-span-3">
-                  <label for="contribution-date" class="block text-sm font-medium text-gray-400">
-                    Date <span class="text-red-500">*</span>
-                  </label>
-                  <div class="mt-1">
-                    <.input
-                      field={@form[:contribution_date]}
-                      type="datetime-local"
-                      class="block w-full px-3 py-2 text-white bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  </div>
+                  <.datetime_input
+                    field={@form[:contribution_date]}
+                    label="Date"
+                    required={true}
+                    max={DateTime.utc_now() |> DateTime.to_iso8601() |> String.slice(0, 16)}
+                  />
                 </div>
 
                 <div class="sm:col-span-6">
