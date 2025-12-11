@@ -449,9 +449,9 @@ defmodule ChurchappWeb.EventsLive.NewLive do
               </div>
 
               <%!-- Time Row with All Day Toggle --%>
-              <div class="flex flex-wrap items-end gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-4 items-start">
                 <%!-- Start Time Custom Dropdown --%>
-                <div class="flex-1 min-w-[140px]">
+                <div>
                   <label class="block text-sm font-medium text-gray-300 mb-2">
                     From <span class="text-red-500">*</span>
                   </label>
@@ -500,17 +500,10 @@ defmodule ChurchappWeb.EventsLive.NewLive do
                       </div>
                     <% end %>
                   </div>
-                  <p
-                    :for={msg <- get_field_errors(@form[:start_time])}
-                    class="mt-1.5 flex gap-2 items-center text-sm text-red-400"
-                  >
-                    <.icon name="hero-exclamation-circle" class="h-5 w-5" />
-                    {msg}
-                  </p>
                 </div>
 
                 <%!-- End Time Custom Dropdown --%>
-                <div class="flex-1 min-w-[140px]">
+                <div>
                   <label class="block text-sm font-medium text-gray-300 mb-2">
                     To <span class="text-red-500">*</span>
                   </label>
@@ -566,7 +559,7 @@ defmodule ChurchappWeb.EventsLive.NewLive do
                   </p>
                 </div>
 
-                <div class="flex items-center gap-2 pb-2">
+                <div class="flex items-center gap-2 mt-8">
                   <input type="hidden" name={@form[:all_day].name} value="false" />
                   <input
                     type="checkbox"
