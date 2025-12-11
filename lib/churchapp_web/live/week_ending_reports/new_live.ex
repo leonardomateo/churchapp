@@ -46,7 +46,7 @@ defmodule ChurchappWeb.WeekEndingReportsLive.NewLive do
   defp initialize_category_amounts(categories_grouped) do
     categories_grouped
     |> Enum.flat_map(fn {_group, cats} -> cats end)
-    |> Enum.map(fn cat -> {cat.id, "0.00"} end)
+    |> Enum.map(fn cat -> {cat.id, ""} end)
     |> Enum.into(%{})
   end
 
@@ -112,7 +112,7 @@ defmodule ChurchappWeb.WeekEndingReportsLive.NewLive do
         {:ok, new_category} ->
           # Refresh categories and add amount for new category
           categories = fetch_categories_grouped(actor)
-          category_amounts = Map.put(socket.assigns.category_amounts, new_category.id, "0.00")
+          category_amounts = Map.put(socket.assigns.category_amounts, new_category.id, "")
 
           {:noreply,
            socket
@@ -227,15 +227,19 @@ defmodule ChurchappWeb.WeekEndingReportsLive.NewLive do
   end
 
   defp clean_amount(value) when is_binary(value) do
-    value
-    |> String.replace(~r/[^\d.]/, "")
-    |> case do
-      "" -> "0.00"
-      cleaned -> cleaned
+    cleaned =
+      value
+      |> String.replace(~r/[^\d.]/, "")
+
+    # Return empty string if no digits entered, otherwise return cleaned value
+    if cleaned == "" or cleaned == "." do
+      ""
+    else
+      cleaned
     end
   end
 
-  defp clean_amount(_), do: "0.00"
+  defp clean_amount(_), do: ""
 
   defp parse_amount(value) when is_binary(value) do
     case Decimal.parse(clean_amount(value)) do
@@ -267,7 +271,7 @@ defmodule ChurchappWeb.WeekEndingReportsLive.NewLive do
 
   defp calculate_group_subtotal(categories, category_amounts) do
     categories
-    |> Enum.map(fn cat -> parse_amount(Map.get(category_amounts, cat.id, "0.00")) end)
+    |> Enum.map(fn cat -> parse_amount(Map.get(category_amounts, cat.id, "")) end)
     |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
   end
 
@@ -428,10 +432,10 @@ defmodule ChurchappWeb.WeekEndingReportsLive.NewLive do
                             type="text"
                             id={"amount-#{category.id}"}
                             name={"amounts[#{category.id}]"}
-                            value={Map.get(@category_amounts, category.id, "0.00")}
+                            value={Map.get(@category_amounts, category.id, "")}
                             phx-blur="update_amount"
                             phx-value-category_id={category.id}
-                            phx-value-value={Map.get(@category_amounts, category.id, "0.00")}
+                            phx-value-value={Map.get(@category_amounts, category.id, "")}
                             placeholder="0.00"
                             class="block w-full pl-7 pr-3 py-2 text-white text-right bg-dark-900 border border-dark-700 rounded-md shadow-sm sm:text-sm focus:ring-primary-500 focus:border-primary-500"
                           />
