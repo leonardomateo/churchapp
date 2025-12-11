@@ -325,41 +325,54 @@ const AutoFocus = {
   }
 }
 
-// DatePicker Hook - handles date/datetime inputs with timezone conversion
-// For datetime-local inputs: converts UTC from server to local for display,
-// and converts local input back to UTC for form submission
+// DatePickerClose Hook - simple hook to close date picker after selection
+const DatePickerClose = {
+  mounted() {
+    this.el.addEventListener("change", this.handleChange.bind(this))
+  },
+
+  handleChange() {
+    // Blur the input to close the date picker
+    this.el.blur()
+  },
+
+  destroyed() {
+    this.el.removeEventListener("change", this.handleChange.bind(this))
+  }
+}
+
+// DatePicker Hook - handles date/datetime inputs
+// For datetime-local inputs on EDIT forms: converts UTC from server to local for display
+// New entries work normally - user enters local time, server stores as UTC
 const DatePicker = {
   mounted() {
     this.el.addEventListener("change", this.handleChange.bind(this))
-    this.el.addEventListener("input", this.handleInput.bind(this))
     
-    // For datetime-local inputs, convert UTC value to local time for display
+    // For datetime-local inputs with existing values, convert UTC to local for display
+    // Only do this if the value looks like a UTC datetime (contains Z or full ISO format)
     if (this.el.type === "datetime-local" && this.el.value) {
-      this.convertUTCToLocal()
+      this.convertUTCToLocalIfNeeded()
     }
   },
 
-  // Convert UTC datetime to local time for display in the input
-  convertUTCToLocal() {
+  // Convert UTC datetime to local time for display in the input (edit forms only)
+  convertUTCToLocalIfNeeded() {
     const utcValue = this.el.value
     if (!utcValue) return
     
+    // Only convert if this looks like a UTC ISO string (has Z or timezone offset)
+    // datetime-local format is YYYY-MM-DDTHH:mm - if it matches exactly, leave it alone
+    if (!utcValue.endsWith('Z') && !utcValue.includes('+') && utcValue.length <= 16) {
+      return // Already in local datetime-local format
+    }
+    
     try {
-      // The server sends ISO format like "2025-12-10T23:55:00Z" or "2025-12-10T23:55:00"
-      let date
-      if (utcValue.endsWith('Z') || utcValue.includes('+')) {
-        date = new Date(utcValue)
-      } else {
-        // Treat as UTC if no timezone indicator
-        date = new Date(utcValue + 'Z')
-      }
+      const date = new Date(utcValue)
       
       if (!isNaN(date.getTime())) {
         // Format for datetime-local input in local time
         const localValue = this.formatDatetimeLocal(date)
         this.el.value = localValue
-        // Store original UTC for reference
-        this.el.dataset.utcValue = utcValue
       }
     } catch (e) {
       console.error("Error converting UTC to local:", e)
@@ -375,56 +388,13 @@ const DatePicker = {
     return `${year}-${month}-${day}T${hours}:${minutes}`
   },
 
-  // Convert local datetime to UTC ISO string
-  localToUTC(localValue) {
-    if (!localValue) return localValue
-    try {
-      // datetime-local value is interpreted as local time by the browser
-      const localDate = new Date(localValue)
-      if (!isNaN(localDate.getTime())) {
-        return localDate.toISOString()
-      }
-    } catch (e) {
-      console.error("Error converting local to UTC:", e)
-    }
-    return localValue
-  },
-
-  handleInput(e) {
-    // For datetime-local, immediately convert to UTC and update the actual value
-    // that will be sent to the server
-    if (this.el.type === "datetime-local" && this.el.value) {
-      const utcValue = this.localToUTC(this.el.value)
-      this.el.dataset.utcValue = utcValue
-    }
-  },
-
-  handleChange(e) {
-    // For datetime-local inputs, we need to send UTC to the server
-    // Override the value temporarily for the LiveView event
-    if (this.el.type === "datetime-local" && this.el.value) {
-      const localValue = this.el.value
-      const utcValue = this.localToUTC(localValue)
-      
-      // Temporarily set the value to UTC for the phx-change event
-      this.el.value = utcValue
-      
-      // Trigger a new input event so LiveView gets the UTC value
-      this.el.dispatchEvent(new Event('input', { bubbles: true }))
-      
-      // Restore the local display value after a tick
-      requestAnimationFrame(() => {
-        this.el.value = localValue
-      })
-    }
-    
+  handleChange() {
     // Blur the input to close the date picker
     this.el.blur()
   },
 
   destroyed() {
     this.el.removeEventListener("change", this.handleChange.bind(this))
-    this.el.removeEventListener("input", this.handleInput.bind(this))
   }
 }
 
@@ -1057,7 +1027,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, LocalTime, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, DatePickerClose, LocalTime, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar},
 })
 
 // Show progress bar on live navigation and form submits

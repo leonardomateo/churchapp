@@ -155,13 +155,7 @@ defmodule ChurchappWeb.MinistryFundsLive.ShowLive do
               <label class="block text-sm font-medium text-gray-400 mb-2">
                 Transaction Date
               </label>
-              <p
-                class="text-white"
-                id="transaction-date-display"
-                phx-hook="LocalTime"
-                data-utc={DateTime.to_iso8601(@ministry_fund.transaction_date)}
-                data-format="datetime"
-              >
+              <p class="text-white">
                 {Calendar.strftime(@ministry_fund.transaction_date, "%B %d, %Y at %I:%M %p")}
               </p>
             </div>
@@ -252,14 +246,7 @@ defmodule ChurchappWeb.MinistryFundsLive.ShowLive do
                   class="border-b border-dark-700 hover:bg-dark-700/40 transition-colors"
                 >
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    <span
-                      id={"recent-date-#{transaction.id}"}
-                      phx-hook="LocalTime"
-                      data-utc={DateTime.to_iso8601(transaction.transaction_date)}
-                      data-format="date"
-                    >
-                      {Calendar.strftime(transaction.transaction_date, "%B %d, %Y")}
-                    </span>
+                    {Calendar.strftime(transaction.transaction_date, "%B %d, %Y")}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span class={[

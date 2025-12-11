@@ -173,14 +173,7 @@ defmodule ChurchappWeb.ContributionsLive.ShowLive do
               <div class="flex flex-wrap items-center gap-4 text-sm text-gray-400">
                 <span class="flex items-center gap-1.5">
                   <.icon name="hero-calendar" class="h-4 w-4" />
-                  <span
-                    id="contribution-date-header"
-                    phx-hook="LocalTime"
-                    data-utc={DateTime.to_iso8601(@contribution.contribution_date)}
-                    data-format="datetime"
-                  >
-                    {Calendar.strftime(@contribution.contribution_date, "%B %d, %Y at %I:%M %p")}
-                  </span>
+                  {Calendar.strftime(@contribution.contribution_date, "%B %d, %Y at %I:%M %p")}
                 </span>
               </div>
             </div>
@@ -255,14 +248,7 @@ defmodule ChurchappWeb.ContributionsLive.ShowLive do
                   Date & Time
                 </dt>
                 <dd class="mt-2 text-sm text-white">
-                  <span
-                    id="contribution-date-detail"
-                    phx-hook="LocalTime"
-                    data-utc={DateTime.to_iso8601(@contribution.contribution_date)}
-                    data-format="datetime"
-                  >
-                    {Calendar.strftime(@contribution.contribution_date, "%B %d, %Y at %I:%M %p")}
-                  </span>
+                  {Calendar.strftime(@contribution.contribution_date, "%B %d, %Y at %I:%M %p")}
                 </dd>
               </div>
             </dl>
@@ -458,17 +444,10 @@ defmodule ChurchappWeb.ContributionsLive.ShowLive do
                     class="hover:bg-dark-700/30 transition-colors"
                   >
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                      <span
-                        id={"related-contrib-date-#{related_contribution.id}"}
-                        phx-hook="LocalTime"
-                        data-utc={DateTime.to_iso8601(related_contribution.contribution_date)}
-                        data-format="datetime"
-                      >
-                        {Calendar.strftime(
-                          related_contribution.contribution_date,
-                          "%b %d, %Y at %I:%M %p"
-                        )}
-                      </span>
+                      {Calendar.strftime(
+                        related_contribution.contribution_date,
+                        "%b %d, %Y at %I:%M %p"
+                      )}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-500/10 text-primary-500 border border-primary-500/20">
