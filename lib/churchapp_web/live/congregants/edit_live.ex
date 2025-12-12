@@ -229,9 +229,10 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
        |> assign(:custom_country_error, "Please enter a country name")}
     else
       # Check if country already exists
-      existing = Enum.find(socket.assigns.countries, fn {name, _code} ->
-        String.downcase(name) == String.downcase(custom_country)
-      end)
+      existing =
+        Enum.find(socket.assigns.countries, fn {name, _code} ->
+          String.downcase(name) == String.downcase(custom_country)
+        end)
 
       if existing do
         {:noreply,
@@ -288,9 +289,10 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
        |> assign(:custom_ministry_error, "Please enter a ministry name")}
     else
       # Check if ministry already exists
-      existing = Enum.find(socket.assigns.ministries_options, fn {name, _value} ->
-        String.downcase(name) == String.downcase(custom_ministry)
-      end)
+      existing =
+        Enum.find(socket.assigns.ministries_options, fn {name, _value} ->
+          String.downcase(name) == String.downcase(custom_ministry)
+        end)
 
       if existing do
         {:noreply,
@@ -299,7 +301,9 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
       else
         # Add the new ministry to the list and select it
         new_ministry = {custom_ministry, custom_ministry}
-        updated_ministries = (socket.assigns.ministries_options ++ [new_ministry])
+
+        updated_ministries =
+          (socket.assigns.ministries_options ++ [new_ministry])
           |> Enum.uniq_by(fn {name, _} -> String.downcase(name) end)
           |> Enum.sort_by(fn {name, _} -> String.downcase(name) end)
 
@@ -988,7 +992,10 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
               </div>
               <%!-- Content --%>
               <div class="mb-6">
-                <label for="modal-custom-ministry" class="block text-sm font-medium text-gray-400 mb-2">
+                <label
+                  for="modal-custom-ministry"
+                  class="block text-sm font-medium text-gray-400 mb-2"
+                >
                   Ministry Name <span class="text-red-500">*</span>
                 </label>
                 <form phx-change="validate_custom_ministry">

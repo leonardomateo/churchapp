@@ -101,7 +101,8 @@ defmodule ChurchappWeb.Admin.EventsLive do
        |> assign(:custom_name_error, "Please enter an event/activity name")}
     else
       # Check if name already exists
-      existing_names = Enum.map(socket.assigns.activity_names, fn {name, _} -> String.downcase(name) end)
+      existing_names =
+        Enum.map(socket.assigns.activity_names, fn {name, _} -> String.downcase(name) end)
 
       if String.downcase(custom_name) in existing_names do
         {:noreply,
@@ -116,7 +117,10 @@ defmodule ChurchappWeb.Admin.EventsLive do
          |> assign(:activity_names, updated_names)
          |> assign(:show_new_activity_modal, false)
          |> assign(:custom_name_input, "")
-         |> put_flash(:info, "Activity \"#{custom_name}\" added successfully. Create an event to use it.")}
+         |> put_flash(
+           :info,
+           "Activity \"#{custom_name}\" added successfully. Create an event to use it."
+         )}
       end
     end
   end
@@ -172,7 +176,9 @@ defmodule ChurchappWeb.Admin.EventsLive do
           <div class="p-8 text-center">
             <.icon name="hero-calendar" class="mx-auto h-12 w-12 text-gray-500" />
             <h3 class="mt-2 text-sm font-medium text-white">No events scheduled</h3>
-            <p class="mt-1 text-sm text-gray-400">Events created from the calendar will appear here.</p>
+            <p class="mt-1 text-sm text-gray-400">
+              Events created from the calendar will appear here.
+            </p>
           </div>
         <% else %>
           <table class="min-w-full divide-y divide-dark-700">
@@ -303,8 +309,7 @@ defmodule ChurchappWeb.Admin.EventsLive do
         >
           <div class="flex min-h-screen items-center justify-center p-4">
             <%!-- Backdrop --%>
-            <div class="fixed inset-0 bg-black/50 transition-opacity" phx-click="close_modal">
-            </div>
+            <div class="fixed inset-0 bg-black/50 transition-opacity" phx-click="close_modal"></div>
             <%!-- Modal --%>
             <div class="relative bg-dark-800 rounded-lg shadow-xl border border-dark-700 w-full max-w-md p-6 z-10">
               <div class="flex items-center justify-between mb-4">
@@ -381,8 +386,7 @@ defmodule ChurchappWeb.Admin.EventsLive do
         >
           <div class="flex min-h-screen items-center justify-center p-4">
             <%!-- Backdrop --%>
-            <div class="fixed inset-0 bg-black/50 transition-opacity" phx-click="close_modal">
-            </div>
+            <div class="fixed inset-0 bg-black/50 transition-opacity" phx-click="close_modal"></div>
             <%!-- Modal --%>
             <div class="relative bg-dark-800 rounded-lg shadow-xl border border-dark-700 w-full max-w-md p-6 z-10">
               <div class="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-full bg-red-500/10">

@@ -204,7 +204,10 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
               <%= if @congregant.address do %>
                 <dd class="text-sm text-white leading-relaxed">
                   <div>
-                    {@congregant.address}<%= if @congregant.suite do %>, {@congregant.suite}<% end %>
+                    {@congregant.address}
+                    <%= if @congregant.suite do %>
+                      , {@congregant.suite}
+                    <% end %>
                   </div>
                   <div>
                     {@congregant.city}{if @congregant.city && @congregant.state, do: ", "}{@congregant.state} {@congregant.zip_code}

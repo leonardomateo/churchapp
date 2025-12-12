@@ -9,7 +9,8 @@ defmodule ChurchappWeb.MinistrySelector do
   use ChurchappWeb, :html
 
   # Multi-select mode (for Congregants) - uses `selected` assign
-  def update(%{ministries: ministries, selected: selected} = assigns, socket) when is_list(selected) do
+  def update(%{ministries: ministries, selected: selected} = assigns, socket)
+      when is_list(selected) do
     socket =
       socket
       |> assign(:id, assigns[:id] || "ministry-selector")
@@ -51,8 +52,11 @@ defmodule ChurchappWeb.MinistrySelector do
   def handle_event("show_dropdown", _params, socket) do
     filtered =
       case socket.assigns.mode do
-        :multi -> filter_unselected(socket.assigns.all_ministries, socket.assigns.selected_ministries)
-        :single -> search_single(socket.assigns.all_ministries, socket.assigns.query || "")
+        :multi ->
+          filter_unselected(socket.assigns.all_ministries, socket.assigns.selected_ministries)
+
+        :single ->
+          search_single(socket.assigns.all_ministries, socket.assigns.query || "")
       end
 
     {:noreply,
@@ -104,8 +108,15 @@ defmodule ChurchappWeb.MinistrySelector do
   def handle_event("handle_key", %{"value" => query}, socket) do
     filtered =
       case socket.assigns.mode do
-        :multi -> search_ministries(socket.assigns.all_ministries, socket.assigns.selected_ministries, query)
-        :single -> search_single(socket.assigns.all_ministries, query)
+        :multi ->
+          search_ministries(
+            socket.assigns.all_ministries,
+            socket.assigns.selected_ministries,
+            query
+          )
+
+        :single ->
+          search_single(socket.assigns.all_ministries, query)
       end
 
     focused_index = if length(filtered) > 0, do: 0, else: -1
@@ -148,7 +159,10 @@ defmodule ChurchappWeb.MinistrySelector do
       :single ->
         # Single-select mode: select one ministry and update the form field
         if socket.assigns.field do
-          Phoenix.LiveView.JS.push("change", to: "##{socket.assigns.field.form.id}", value: %{socket.assigns.field.name => name})
+          Phoenix.LiveView.JS.push("change",
+            to: "##{socket.assigns.field.form.id}",
+            value: %{socket.assigns.field.name => name}
+          )
         end
 
         {:noreply,
@@ -270,7 +284,7 @@ defmodule ChurchappWeb.MinistrySelector do
           <%= if @query != "" do %>
             No ministries found matching "{@query}"
           <% else %>
-            <%= if @mode == :single, do: "No ministries available", else: "All ministries selected" %>
+            {if @mode == :single, do: "No ministries available", else: "All ministries selected"}
           <% end %>
         </div>
 

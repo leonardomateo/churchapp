@@ -145,7 +145,11 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
   end
 
   # Update print dates (from form change)
-  def handle_event("update_print_dates", %{"start_date" => start_date, "end_date" => end_date}, socket) do
+  def handle_event(
+        "update_print_dates",
+        %{"start_date" => start_date, "end_date" => end_date},
+        socket
+      ) do
     socket =
       case Date.from_iso8601(start_date) do
         {:ok, date} -> assign(socket, :print_start_date, date)
@@ -160,7 +164,6 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
 
     {:noreply, socket}
   end
-
 
   # Generate print view
   def handle_event("generate_print", _params, socket) do
@@ -283,53 +286,53 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
 
       <div class="agenda-content" style="display: flex; flex-direction: column; gap: 0;">
         #{Enum.map_join(events_by_date, "\n", fn {date, day_events} ->
-          day_events = Enum.sort_by(day_events, & &1.start_time)
+      day_events = Enum.sort_by(day_events, & &1.start_time)
 
-          events_html = Enum.map_join(day_events, "\n", fn event ->
-            location_html = if event.location do
-              """
-              <div class="event-location" style="font-size: 14px; color: #555555; display: flex; align-items: center; gap: 4px;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                  <circle cx="12" cy="10" r="3"></circle>
-                </svg>
-                #{event.location}
-              </div>
-              """
-            else
-              ""
-            end
-
-            description_html = if event.description do
-              """
-              <div class="event-description" style="font-size: 13px; color: #666666; margin-top: 4px; line-height: 1.4;">#{event.description}</div>
-              """
-            else
-              ""
-            end
-
-            """
-            <div class="agenda-event" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px; border: 1px solid #dddddd; border-radius: 4px; background: #ffffff; page-break-inside: avoid;">
-              <div class="event-time" style="font-size: 14px; font-weight: 600; color: #333333; min-width: 110px; flex-shrink: 0; padding-top: 2px;">#{format_event_time(event)}</div>
-              <div class="event-details" style="flex: 1; min-width: 0;">
-                <h3 class="event-title" style="font-size: 16px; font-weight: 600; color: #000000; margin: 0 0 4px 0; line-height: 1.3;">#{event.title}</h3>
-                #{location_html}
-                #{description_html}
-              </div>
-              <div class="event-color-indicator" style="width: 4px; min-height: 40px; border-radius: 2px; background-color: #{event.color || "#06b6d4"}; flex-shrink: 0;"></div>
-            </div>
-            """
-          end)
-
+      events_html = Enum.map_join(day_events, "\n", fn event ->
+        location_html = if event.location do
           """
-          <div class="agenda-day" style="margin-bottom: 20px; page-break-inside: avoid;">
-            <h2 class="agenda-date" style="font-size: 16px; font-weight: bold; color: #000000; margin: 0 0 8px 0; padding: 8px 12px; background: #f0f0f0; border-left: 4px solid #333333;">#{format_date_header(date)}</h2>
-            <div class="agenda-events" style="display: flex; flex-direction: column; gap: 8px; padding-left: 12px;">
-              #{events_html}
-            </div>
+          <div class="event-location" style="font-size: 14px; color: #555555; display: flex; align-items: center; gap: 4px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            #{event.location}
           </div>
           """
-        end)}
+        else
+          ""
+        end
+
+        description_html = if event.description do
+          """
+          <div class="event-description" style="font-size: 13px; color: #666666; margin-top: 4px; line-height: 1.4;">#{event.description}</div>
+          """
+        else
+          ""
+        end
+
+        """
+        <div class="agenda-event" style="display: flex; align-items: flex-start; gap: 12px; padding: 12px; border: 1px solid #dddddd; border-radius: 4px; background: #ffffff; page-break-inside: avoid;">
+          <div class="event-time" style="font-size: 14px; font-weight: 600; color: #333333; min-width: 110px; flex-shrink: 0; padding-top: 2px;">#{format_event_time(event)}</div>
+          <div class="event-details" style="flex: 1; min-width: 0;">
+            <h3 class="event-title" style="font-size: 16px; font-weight: 600; color: #000000; margin: 0 0 4px 0; line-height: 1.3;">#{event.title}</h3>
+            #{location_html}
+            #{description_html}
+          </div>
+          <div class="event-color-indicator" style="width: 4px; min-height: 40px; border-radius: 2px; background-color: #{event.color || "#06b6d4"}; flex-shrink: 0;"></div>
+        </div>
+        """
+      end)
+
+      """
+      <div class="agenda-day" style="margin-bottom: 20px; page-break-inside: avoid;">
+        <h2 class="agenda-date" style="font-size: 16px; font-weight: bold; color: #000000; margin: 0 0 8px 0; padding: 8px 12px; background: #f0f0f0; border-left: 4px solid #333333;">#{format_date_header(date)}</h2>
+        <div class="agenda-events" style="display: flex; flex-direction: column; gap: 8px; padding-left: 12px;">
+          #{events_html}
+        </div>
+      </div>
+      """
+    end)}
       </div>
     </div>
     """
@@ -398,52 +401,50 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
           </div>
           <div class="calendar-days" style="background: #ffffff;">
             #{Enum.map_join(0..5, "\n", fn week_offset ->
-              week_days = Enum.map_join(0..6, "", fn day_of_week ->
-                day_num = week_offset * 7 + day_of_week - first_day_weekday + 1
-                border_right = if day_of_week < 6, do: "border-right: 1px solid #cccccc;", else: ""
+        week_days = Enum.map_join(0..6, "", fn day_of_week ->
+          day_num = week_offset * 7 + day_of_week - first_day_weekday + 1
+          border_right = if day_of_week < 6, do: "border-right: 1px solid #cccccc;", else: ""
 
-                if day_num > 0 and day_num <= days_in_month do
-                  current_date = Date.new!(month.year, month.month, day_num)
-                  day_events = Map.get(events_by_date, current_date, [])
+          if day_num > 0 and day_num <= days_in_month do
+            current_date = Date.new!(month.year, month.month, day_num)
+            day_events = Map.get(events_by_date, current_date, [])
 
-                  events_html = Enum.map_join(Enum.take(day_events, 3), "", fn event ->
-                    """
-                    <div class="day-event" style="font-size: 10px; padding: 2px 4px; border-radius: 2px; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background-color: #{event.color || "#06b6d4"};">
-                      #{event.title}
-                    </div>
-                    """
-                  end)
-
-                  more_html = if length(day_events) > 3 do
-                    """
-                    <div class="more-events" style="font-size: 10px; color: #666666; font-style: italic;">+#{length(day_events) - 3} more</div>
-                    """
-                  else
-                    ""
-                  end
-
-                  """
-                  <div class="calendar-day" style="min-height: 80px; padding: 4px; #{border_right} background: #ffffff; vertical-align: top;">
-                    <div class="day-number" style="font-size: 14px; font-weight: bold; color: #000000; margin-bottom: 4px;">#{day_num}</div>
-                    <div class="day-events" style="display: flex; flex-direction: column; gap: 2px;">
-                      #{events_html}
-                      #{more_html}
-                    </div>
-                  </div>
-                  """
-                else
-                  """
-                  <div class="calendar-day empty" style="min-height: 80px; padding: 4px; #{border_right} background: #f9f9f9;"></div>
-                  """
-                end
-              end)
-
-              """
-              <div class="calendar-week" style="display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid #cccccc;">
-                #{week_days}
+            events_html = Enum.map_join(Enum.take(day_events, 3), "", fn event -> """
+              <div class="day-event" style="font-size: 10px; padding: 2px 4px; border-radius: 2px; color: #ffffff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background-color: #{event.color || "#06b6d4"};">
+                #{event.title}
               </div>
+              """ end)
+
+            more_html = if length(day_events) > 3 do
               """
-            end)}
+              <div class="more-events" style="font-size: 10px; color: #666666; font-style: italic;">+#{length(day_events) - 3} more</div>
+              """
+            else
+              ""
+            end
+
+            """
+            <div class="calendar-day" style="min-height: 80px; padding: 4px; #{border_right} background: #ffffff; vertical-align: top;">
+              <div class="day-number" style="font-size: 14px; font-weight: bold; color: #000000; margin-bottom: 4px;">#{day_num}</div>
+              <div class="day-events" style="display: flex; flex-direction: column; gap: 2px;">
+                #{events_html}
+                #{more_html}
+              </div>
+            </div>
+            """
+          else
+            """
+            <div class="calendar-day empty" style="min-height: 80px; padding: 4px; #{border_right} background: #f9f9f9;"></div>
+            """
+          end
+        end)
+
+        """
+        <div class="calendar-week" style="display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid #cccccc;">
+          #{week_days}
+        </div>
+        """
+      end)}
           </div>
         </div>
       </div>
@@ -667,7 +668,9 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
                   >
                     <.icon name="hero-calendar-days" class="h-8 w-8 text-gray-300 mb-2" />
                     <span class="text-gray-300 font-medium">Monthly Grid</span>
-                    <span class="text-xs text-gray-500 mt-1 text-center">Traditional calendar view</span>
+                    <span class="text-xs text-gray-500 mt-1 text-center">
+                      Traditional calendar view
+                    </span>
                   </div>
                 </div>
               </div>
@@ -710,8 +713,7 @@ defmodule ChurchappWeb.EventsLive.IndexLive do
                   phx-click="generate_print"
                   class="px-4 py-2 text-white bg-primary-500 hover:bg-primary-600 rounded-md transition-colors inline-flex items-center gap-2"
                 >
-                  <.icon name="hero-printer" class="h-4 w-4" />
-                  Print
+                  <.icon name="hero-printer" class="h-4 w-4" /> Print
                 </button>
               </div>
             </div>

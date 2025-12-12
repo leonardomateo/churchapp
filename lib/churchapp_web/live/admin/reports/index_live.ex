@@ -6,7 +6,7 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
   use ChurchappWeb, :live_view
 
   alias Chms.Church.Reports.{ResourceConfig, QueryBuilder}
-  alias Chms.Church.Reports.Export.CsvExport
+  alias Chms.Church.Reports.Export.{CsvExport, PdfExport}
 
   def mount(_params, _session, socket) do
     socket =
@@ -154,6 +154,83 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
 
   def handle_event("toggle_export_menu", _params, socket) do
     {:noreply, assign(socket, :show_export_menu, !socket.assigns.show_export_menu)}
+  end
+
+  def handle_event("export_pdf", _params, socket) do
+    if socket.assigns.selected_resource_config && length(socket.assigns.results) > 0 do
+      # Generate HTML for PDF (browser-based approach as fallback)
+      html_content =
+        PdfExport.generate_html(
+          socket.assigns.selected_resource_config,
+          socket.assigns.results,
+          socket.assigns.filter_params
+        )
+
+      # Try to generate PDF binary using wkhtmltopdf
+      case PdfExport.generate(
+             socket.assigns.selected_resource_config,
+             socket.assigns.results,
+             socket.assigns.filter_params
+           ) do
+        {:ok, pdf_binary} ->
+          filename =
+            "#{socket.assigns.selected_resource_config.key}_report_#{Date.utc_today()}.pdf"
+
+          socket =
+            socket
+            |> push_event("download", %{
+              content: Base.encode64(pdf_binary),
+              filename: filename,
+              mime_type: "application/pdf",
+              is_base64: true
+            })
+            |> assign(:show_export_menu, false)
+
+          {:noreply, socket}
+
+        {:error, _reason} ->
+          # Fallback to browser print-to-PDF
+          socket =
+            socket
+            |> push_event("print_report", %{html: html_content})
+            |> assign(:show_export_menu, false)
+
+          {:noreply, socket}
+      end
+    else
+      socket =
+        socket
+        |> put_flash(:error, "No data to export")
+        |> assign(:show_export_menu, false)
+
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("print_report", _params, socket) do
+    if socket.assigns.selected_resource_config && length(socket.assigns.results) > 0 do
+      # Generate print-ready HTML
+      html_content =
+        PdfExport.generate_html(
+          socket.assigns.selected_resource_config,
+          socket.assigns.results,
+          socket.assigns.filter_params
+        )
+
+      socket =
+        socket
+        |> push_event("print_report", %{html: html_content})
+        |> assign(:show_export_menu, false)
+
+      {:noreply, socket}
+    else
+      socket =
+        socket
+        |> put_flash(:error, "No data to print")
+        |> assign(:show_export_menu, false)
+
+      {:noreply, socket}
+    end
   end
 
   # Private functions
@@ -340,6 +417,21 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
                     >
                       <.icon name="hero-document-text" class="mr-2 h-4 w-4" /> Export as CSV
                     </button>
+                    <button
+                      type="button"
+                      phx-click="export_pdf"
+                      class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 transition-colors flex items-center"
+                    >
+                      <.icon name="hero-document-arrow-down" class="mr-2 h-4 w-4" /> Export as PDF
+                    </button>
+                    <div class="border-t border-dark-700 my-1"></div>
+                    <button
+                      type="button"
+                      phx-click="print_report"
+                      class="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-dark-700 transition-colors flex items-center"
+                    >
+                      <.icon name="hero-printer" class="mr-2 h-4 w-4" /> Print Report
+                    </button>
                   </div>
                 <% end %>
               </div>
@@ -399,7 +491,9 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
         <div class="bg-dark-800 border border-dark-700 rounded-lg p-12 text-center">
           <.icon name="hero-chart-bar-square" class="mx-auto h-16 w-16 text-gray-500 mb-4" />
           <h3 class="text-lg font-medium text-white mb-2">Select a Resource</h3>
-          <p class="text-gray-400">Choose a resource from the dropdown above to begin generating reports.</p>
+          <p class="text-gray-400">
+            Choose a resource from the dropdown above to begin generating reports.
+          </p>
         </div>
       <% end %>
     </div>

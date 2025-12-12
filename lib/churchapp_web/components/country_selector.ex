@@ -15,14 +15,14 @@ defmodule ChurchappWeb.CountrySelector do
     selected_country =
       if current_value && current_value != "" do
         # Try to find by name first (since we store the name)
+        # Try to find by code
+        # If not found, create a tuple with the value as both name and code
         Enum.find(countries, fn {name, _code} ->
           String.downcase(name) == String.downcase(current_value)
         end) ||
-          # Try to find by code
           Enum.find(countries, fn {_name, code} ->
             String.downcase(code) == String.downcase(current_value)
           end) ||
-          # If not found, create a tuple with the value as both name and code
           {current_value, current_value}
       end
 

@@ -911,7 +911,8 @@ generate_events_for_months = fn ->
   event_templates = [
     %{
       title: "Community Outreach",
-      description: "Serving the local community through various outreach programs and activities.",
+      description:
+        "Serving the local community through various outreach programs and activities.",
       locations: ["Community Center", "Local Park", "Downtown Area"],
       colors: ["#10b981", "#059669", "#047857"],
       time_ranges: [{9, 12}, {14, 17}, {10, 13}]
@@ -997,12 +998,18 @@ generate_events_for_months = fn ->
 
   # Define months to generate events for (December 2025 through May 2026)
   months = [
-    {2025, 12},  # December 2025
-    {2026, 1},   # January 2026
-    {2026, 2},   # February 2026
-    {2026, 3},   # March 2026
-    {2026, 4},   # April 2026
-    {2026, 5}    # May 2026
+    # December 2025
+    {2025, 12},
+    # January 2026
+    {2026, 1},
+    # February 2026
+    {2026, 2},
+    # March 2026
+    {2026, 3},
+    # April 2026
+    {2026, 4},
+    # May 2026
+    {2026, 5}
   ]
 
   # Generate 8 events per month
@@ -1023,15 +1030,16 @@ generate_events_for_months = fn ->
       # Create some recurring events (30% chance)
       is_recurring = Enum.random(1..10) <= 3
 
-      recurrence_rule = if is_recurring do
-        case Enum.random(1..3) do
-          1 -> "FREQ=WEEKLY;BYDAY=#{get_day_of_week.(date)}"
-          2 -> "FREQ=MONTHLY;BYMONTHDAY=#{date.day}"
-          3 -> "FREQ=WEEKLY;INTERVAL=2;BYDAY=#{get_day_of_week.(date)}"
+      recurrence_rule =
+        if is_recurring do
+          case Enum.random(1..3) do
+            1 -> "FREQ=WEEKLY;BYDAY=#{get_day_of_week.(date)}"
+            2 -> "FREQ=MONTHLY;BYMONTHDAY=#{date.day}"
+            3 -> "FREQ=WEEKLY;INTERVAL=2;BYDAY=#{get_day_of_week.(date)}"
+          end
+        else
+          nil
         end
-      else
-        nil
-      end
 
       %{
         title: template.title,
@@ -1059,7 +1067,9 @@ existing_events =
 
 # Always seed base events if none exist, then add monthly events
 if length(existing_events) > 0 do
-  IO.puts("⊙ Base events already exist, adding monthly events (8 per month, Dec 2025 - May 2026)...")
+  IO.puts(
+    "⊙ Base events already exist, adding monthly events (8 per month, Dec 2025 - May 2026)..."
+  )
 
   # Generate events for each month (8 per month)
   monthly_events = generate_events_for_months.()
@@ -1070,7 +1080,10 @@ if length(existing_events) > 0 do
          |> Ash.create(authorize?: false) do
       {:ok, event} ->
         recurring_text = if event.is_recurring, do: " (recurring)", else: ""
-        IO.puts("✓ Created event: #{event.title} on #{Date.to_string(DateTime.to_date(event.start_time))}#{recurring_text}")
+
+        IO.puts(
+          "✓ Created event: #{event.title} on #{Date.to_string(DateTime.to_date(event.start_time))}#{recurring_text}"
+        )
 
       {:error, changeset} ->
         IO.puts("✗ Failed to create event: #{attrs.title}")

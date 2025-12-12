@@ -494,9 +494,22 @@ const CsvDownload = {
 // ReportDownload Hook - handles generic file downloads (CSV, PDF, etc.) from Reports
 const ReportDownload = {
   mounted() {
-    this.handleEvent("download", ({content, filename, mime_type}) => {
-      // Create blob with specified MIME type
-      const blob = new Blob([content], { type: mime_type })
+    // Handle file downloads (CSV, PDF)
+    this.handleEvent("download", ({content, filename, mime_type, is_base64}) => {
+      let blob
+
+      if (is_base64) {
+        // Decode base64 content (for binary files like PDF)
+        const binaryString = atob(content)
+        const bytes = new Uint8Array(binaryString.length)
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i)
+        }
+        blob = new Blob([bytes], { type: mime_type })
+      } else {
+        // Plain text content (for CSV)
+        blob = new Blob([content], { type: mime_type })
+      }
 
       // Create download link
       const url = window.URL.createObjectURL(blob)
@@ -509,6 +522,38 @@ const ReportDownload = {
 
       // Clean up
       window.URL.revokeObjectURL(url)
+    })
+
+    // Handle print report (opens in new window for proper multi-page support)
+    this.handleEvent("print_report", ({html}) => {
+      // Open new window for printing
+      const printWindow = window.open('', '_blank', 'width=900,height=700')
+
+      if (printWindow) {
+        printWindow.document.open()
+        printWindow.document.write(html)
+        printWindow.document.close()
+
+        // Wait for content to render, then print
+        setTimeout(() => {
+          printWindow.focus()
+          printWindow.print()
+
+          // Close the window after printing
+          printWindow.onafterprint = () => {
+            printWindow.close()
+          }
+
+          // Fallback: close after a delay if onafterprint doesn't fire
+          setTimeout(() => {
+            if (!printWindow.closed) {
+              printWindow.close()
+            }
+          }, 60000) // Close after 60 seconds if still open
+        }, 500)
+      } else {
+        alert('Please allow popups to print the report')
+      }
     })
   }
 }

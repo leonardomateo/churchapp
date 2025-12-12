@@ -102,6 +102,7 @@ defmodule ChurchappWeb.Utils.Countries do
 
   def get_country_by_name(name) when is_binary(name) do
     name_lower = String.downcase(name)
+
     Enum.find(@default_countries, fn {country_name, _code} ->
       String.downcase(country_name) == name_lower
     end)

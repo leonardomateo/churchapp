@@ -41,8 +41,7 @@ defmodule ChurchappWeb.ReportComponents do
     <div class="bg-dark-800 border border-dark-700 rounded-lg p-6">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-sm font-medium text-white flex items-center">
-          <.icon name="hero-funnel" class="mr-2 h-4 w-4 text-primary-500" />
-          Filters
+          <.icon name="hero-funnel" class="mr-2 h-4 w-4 text-primary-500" /> Filters
         </h3>
         <%= if @has_active_filters do %>
           <button
@@ -193,7 +192,8 @@ defmodule ChurchappWeb.ReportComponents do
                 scope="col"
                 class={[
                   "px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider",
-                  field.key in @resource_config.sortable_fields && "cursor-pointer hover:text-white transition-colors"
+                  field.key in @resource_config.sortable_fields &&
+                    "cursor-pointer hover:text-white transition-colors"
                 ]}
                 phx-click={field.key in @resource_config.sortable_fields && "sort"}
                 phx-value-field={field.key}

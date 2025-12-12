@@ -107,6 +107,12 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# PDF Generator configuration
+# Set to false to allow app to start even if wkhtmltopdf is not installed
+# PDF export will fallback to browser print-to-PDF in that case
+config :pdf_generator,
+  raise_on_missing_wkhtmltopdf_binary: false
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

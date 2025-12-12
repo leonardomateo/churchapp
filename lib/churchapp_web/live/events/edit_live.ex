@@ -462,7 +462,9 @@ defmodule ChurchappWeb.EventsLive.EditLive do
                           "opacity-50 cursor-not-allowed"
                       ]}
                     >
-                      <span>{format_time_label_from_value(extract_time(@form[:end_time].value))}</span>
+                      <span>
+                        {format_time_label_from_value(extract_time(@form[:end_time].value))}
+                      </span>
                       <.icon name="hero-chevron-down" class="w-4 h-4 text-gray-400" />
                     </button>
                     <%= if @end_time_dropdown_open do %>
