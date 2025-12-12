@@ -188,7 +188,13 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
                   <.link
                     :for={rel <- @family_relationships}
                     navigate={~p"/congregants/#{rel.related_congregant.id}"}
-                    class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-900/30 text-white border border-white hover:bg-primary-900/50 transition-all"
+                    class={[
+                      "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium",
+                      "bg-primary-900/30 text-white border border-white",
+                      "transition-all duration-200 ease-in-out",
+                      "hover:bg-primary-900/70 hover:scale-105 hover:shadow-lg hover:shadow-primary-500/25",
+                      "hover:-translate-y-0.5 active:scale-95"
+                    ]}
                   >
                     {rel.family_relationship_type.display_name} of {rel.related_congregant.first_name} {rel.related_congregant.last_name}
                   </.link>
