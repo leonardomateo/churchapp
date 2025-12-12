@@ -31,6 +31,11 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
       |> assign(:show_manage_templates_modal, false)
       |> assign(:template_form, nil)
       |> assign(:editing_template_id, nil)
+      # Chart-related assigns
+      |> assign(:view_mode, :table)
+      |> assign(:selected_chart, nil)
+      |> assign(:chart_data, [])
+      |> assign(:chart_data_json, "[]")
 
     {:ok, socket}
   end
@@ -58,6 +63,13 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
     resource_key_atom = String.to_existing_atom(resource_key)
     resource_config = ResourceConfig.get_resource(resource_key_atom)
 
+    # Set default chart selection (first chart in the config)
+    default_chart =
+      case Map.get(resource_config, :charts, []) do
+        [first | _] -> first.key
+        _ -> nil
+      end
+
     socket =
       socket
       |> assign(:selected_resource_key, resource_key_atom)
@@ -68,6 +80,9 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
       |> assign(:page, 1)
       |> assign(:results, [])
       |> assign(:metadata, %{total_count: 0, total_pages: 0})
+      |> assign(:selected_chart, default_chart)
+      |> assign(:chart_data, [])
+      |> assign(:chart_data_json, "[]")
       |> load_templates(resource_key_atom)
       |> push_patch(to: ~p"/admin/reports?resource=#{resource_key}")
 
@@ -459,6 +474,30 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
     end
   end
 
+  # Chart View Events
+
+  def handle_event("toggle_view", %{"mode" => mode}, socket) do
+    view_mode = String.to_existing_atom(mode)
+
+    socket =
+      socket
+      |> assign(:view_mode, view_mode)
+      |> maybe_prepare_chart_data()
+
+    {:noreply, socket}
+  end
+
+  def handle_event("select_chart", %{"chart" => chart_key}, socket) do
+    chart_key_atom = String.to_existing_atom(chart_key)
+
+    socket =
+      socket
+      |> assign(:selected_chart, chart_key_atom)
+      |> prepare_chart_data()
+
+    {:noreply, socket}
+  end
+
   # Private functions
 
   defp load_resource_config(socket, resource_key) do
@@ -535,6 +574,7 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
           |> assign(:results, results)
           |> assign(:metadata, metadata)
           |> assign(:loading, false)
+          |> maybe_prepare_chart_data()
 
         {:error, _error} ->
           socket
@@ -542,11 +582,152 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
           |> assign(:results, [])
           |> assign(:metadata, %{total_count: 0, total_pages: 0})
           |> assign(:loading, false)
+          |> assign(:chart_data, [])
+          |> assign(:chart_data_json, "[]")
       end
     else
       socket
     end
   end
+
+  # Chart data preparation functions
+
+  defp maybe_prepare_chart_data(socket) do
+    # Only prepare chart data if in chart view mode and we have results
+    if socket.assigns.view_mode == :chart && length(socket.assigns.results) > 0 do
+      prepare_chart_data(socket)
+    else
+      socket
+    end
+  end
+
+  defp prepare_chart_data(socket) do
+    resource_config = socket.assigns.selected_resource_config
+    results = socket.assigns.results
+    selected_chart = socket.assigns.selected_chart
+
+    charts = Map.get(resource_config, :charts, [])
+    chart_config = Enum.find(charts, List.first(charts), &(&1.key == selected_chart))
+
+    if chart_config && length(results) > 0 do
+      chart_data = aggregate_chart_data(results, chart_config)
+
+      socket
+      |> assign(:chart_data, chart_data)
+      |> assign(:chart_data_json, Jason.encode!(chart_data))
+    else
+      socket
+      |> assign(:chart_data, [])
+      |> assign(:chart_data_json, "[]")
+    end
+  end
+
+  defp aggregate_chart_data(results, chart_config) do
+    group_by = chart_config.group_by
+    aggregate = Map.get(chart_config, :aggregate)
+    aggregate_field = Map.get(chart_config, :aggregate_field)
+
+    # Handle special groupings (e.g., month extraction)
+    grouped =
+      case group_by do
+        :contribution_month ->
+          Enum.group_by(results, fn r ->
+            case Map.get(r, :contribution_date) do
+              %DateTime{} = dt -> Calendar.strftime(dt, "%Y-%m")
+              %NaiveDateTime{} = dt -> Calendar.strftime(dt, "%Y-%m")
+              _ -> "Unknown"
+            end
+          end)
+
+        :event_month ->
+          Enum.group_by(results, fn r ->
+            case Map.get(r, :start_time) do
+              %DateTime{} = dt -> Calendar.strftime(dt, "%Y-%m")
+              %NaiveDateTime{} = dt -> Calendar.strftime(dt, "%Y-%m")
+              _ -> "Unknown"
+            end
+          end)
+
+        field ->
+          Enum.group_by(results, fn r ->
+            value = Map.get(r, field)
+            format_group_label(value)
+          end)
+      end
+
+    # Calculate values based on aggregate type
+    grouped
+    |> Enum.map(fn {label, items} ->
+      value =
+        case aggregate do
+          :sum when not is_nil(aggregate_field) ->
+            Enum.reduce(items, Decimal.new(0), fn item, acc ->
+              val = Map.get(item, aggregate_field)
+
+              case val do
+                %Decimal{} = d -> Decimal.add(acc, d)
+                n when is_number(n) -> Decimal.add(acc, Decimal.from_float(n / 1))
+                _ -> acc
+              end
+            end)
+            |> Decimal.to_float()
+            |> Float.round(2)
+
+          :avg when not is_nil(aggregate_field) ->
+            sum =
+              Enum.reduce(items, Decimal.new(0), fn item, acc ->
+                val = Map.get(item, aggregate_field)
+
+                case val do
+                  %Decimal{} = d -> Decimal.add(acc, d)
+                  n when is_number(n) -> Decimal.add(acc, Decimal.from_float(n / 1))
+                  _ -> acc
+                end
+              end)
+
+            count = length(items)
+
+            if count > 0 do
+              sum |> Decimal.div(count) |> Decimal.to_float() |> Float.round(2)
+            else
+              0
+            end
+
+          _ ->
+            # Default: count
+            length(items)
+        end
+
+      %{label: label, value: value}
+    end)
+    |> Enum.reject(fn %{label: label} -> label in [nil, "", "Unknown", "N/A"] end)
+    |> Enum.sort_by(& &1.value, :desc)
+    |> Enum.take(20)
+  end
+
+  defp format_group_label(nil), do: "N/A"
+  defp format_group_label(""), do: "N/A"
+
+  defp format_group_label(value) when is_boolean(value) do
+    if value, do: "Yes", else: "No"
+  end
+
+  defp format_group_label(value) when is_atom(value) do
+    value
+    |> to_string()
+    |> String.replace("_", " ")
+    |> String.capitalize()
+  end
+
+  defp format_group_label(value) when is_binary(value) do
+    if String.length(value) > 30 do
+      String.slice(value, 0, 27) <> "..."
+    else
+      value
+    end
+  end
+
+  defp format_group_label(value), do: to_string(value)
 
   defp load_templates(socket, resource_key) do
     actor = socket.assigns.current_user
@@ -595,6 +776,13 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
 
   def has_active_filters?(filter_params) do
     Enum.any?(filter_params, fn {_key, value} -> value && value != "" end)
+  end
+
+  def has_charts?(nil), do: false
+
+  def has_charts?(resource_config) do
+    charts = Map.get(resource_config, :charts, [])
+    length(charts) > 0
   end
 
   def pagination_range(current_page, total_pages) do
@@ -681,11 +869,18 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
 
         <%!-- Actions Bar --%>
         <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div class="text-sm text-gray-400">
-            <%= if @metadata.total_count > 0 do %>
-              Showing {(@page - 1) * @per_page + 1} to {min(@page * @per_page, @metadata.total_count)} of {@metadata.total_count} results
-            <% else %>
-              No results found
+          <div class="flex items-center gap-4">
+            <div class="text-sm text-gray-400">
+              <%= if @metadata.total_count > 0 do %>
+                Showing {(@page - 1) * @per_page + 1} to {min(@page * @per_page, @metadata.total_count)} of {@metadata.total_count} results
+              <% else %>
+                No results found
+              <% end %>
+            </div>
+
+            <%!-- View Mode Toggle (only show when there are charts configured and results) --%>
+            <%= if length(@results) > 0 && has_charts?(@selected_resource_config) do %>
+              <ChurchappWeb.ReportChartComponents.view_mode_toggle view_mode={@view_mode} />
             <% end %>
           </div>
           <div class="flex items-center gap-3">
@@ -744,24 +939,35 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
             <ChurchappWeb.ReportComponents.loading_spinner />
           </div>
         <% else %>
-          <%!-- Results Table --%>
+          <%!-- Results (Table or Chart View) --%>
           <%= if length(@results) > 0 do %>
-            <ChurchappWeb.ReportComponents.results_table
-              resource_config={@selected_resource_config}
-              results={@results}
-              sort_by={@sort_by}
-              sort_dir={@sort_dir}
-            />
+            <%= if @view_mode == :chart && has_charts?(@selected_resource_config) do %>
+              <%!-- Chart View --%>
+              <ChurchappWeb.ReportChartComponents.chart_view
+                resource_config={@selected_resource_config}
+                selected_chart={@selected_chart}
+                chart_data={@chart_data}
+                chart_data_json={@chart_data_json}
+              />
+            <% else %>
+              <%!-- Table View --%>
+              <ChurchappWeb.ReportComponents.results_table
+                resource_config={@selected_resource_config}
+                results={@results}
+                sort_by={@sort_by}
+                sort_dir={@sort_dir}
+              />
 
-            <%!-- Pagination --%>
-            <%= if @metadata.total_pages > 1 do %>
-              <div class="mt-6">
-                <ChurchappWeb.ReportComponents.pagination
-                  page={@page}
-                  total_pages={@metadata.total_pages}
-                  pagination_range={pagination_range(@page, @metadata.total_pages)}
-                />
-              </div>
+              <%!-- Pagination --%>
+              <%= if @metadata.total_pages > 1 do %>
+                <div class="mt-6">
+                  <ChurchappWeb.ReportComponents.pagination
+                    page={@page}
+                    total_pages={@metadata.total_pages}
+                    pagination_range={pagination_range(@page, @metadata.total_pages)}
+                  />
+                </div>
+              <% end %>
             <% end %>
           <% else %>
             <div class="bg-dark-800 border border-dark-700 rounded-lg p-8 text-center">

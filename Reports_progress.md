@@ -405,10 +405,132 @@ Test these items to verify Phase 3 implementation:
 
 ---
 
-## PHASE 4: Charts & Visualizations ⏳ NOT STARTED
+## PHASE 4: Charts & Visualizations ✅ COMPLETED
 
-**Duration:** 3-4 days (estimated)
+**Duration:** Implemented
 **Deliverable:** Chart view with multiple visualization types
+
+### Completed Items
+
+- [x] **Step 4.1: Add Chart View to Reports LiveView** (`lib/churchapp_web/live/admin/reports/index_live.ex`)
+  - Added chart-related assigns to state:
+    - `:view_mode` - Toggle between :table and :chart views
+    - `:selected_chart` - Currently selected chart type
+    - `:chart_data` - Processed data for charts
+    - `:chart_data_json` - JSON-encoded chart data for JavaScript hooks
+  - Added event handlers:
+    - `toggle_view` - Switch between table and chart views
+    - `select_chart` - Change the selected chart type
+  - Added helper functions:
+    - `has_charts?/1` - Check if resource has chart configurations
+    - `maybe_prepare_chart_data/1` - Conditionally prepare chart data
+    - `prepare_chart_data/1` - Process results into chart format
+    - `aggregate_chart_data/2` - Group and aggregate data based on chart config
+    - `format_group_label/1` - Format labels for chart display
+
+- [x] **Step 4.2: Add Chart Configurations to ResourceConfig** (`lib/chms/church/reports/resource_config.ex`)
+  - Added chart configurations for all 5 resources:
+
+  **Congregants Charts:**
+  - Status Distribution (pie) - Distribution by status
+  - Gender Distribution (doughnut) - Distribution by gender
+  - By Country (bar) - Grouped by country
+  - By State (horizontal bar) - Grouped by state
+  - By City (horizontal bar) - Grouped by city
+  - Leaders vs Non-Leaders (pie) - Proportion of leaders
+
+  **Contributions Charts:**
+  - By Type (pie) - Distribution by contribution type
+  - Revenue by Type (bar) - Total revenue per type (sum aggregate)
+  - Monthly Revenue (bar) - Revenue by month (sum aggregate)
+
+  **Ministry Funds Charts:**
+  - Revenue vs Expense (pie) - Transaction type distribution
+  - By Ministry (horizontal bar) - Transaction count per ministry
+  - Amount by Ministry (horizontal bar) - Sum of amounts per ministry
+  - Amount by Type (doughnut) - Sum by transaction type
+
+  **Week Ending Reports Charts:**
+  - Weekly Totals (bar) - Grand totals by week
+
+  **Events Charts:**
+  - All Day vs Timed (pie) - All-day event distribution
+  - Recurring vs One-Time (doughnut) - Recurring status distribution
+  - By Location (horizontal bar) - Events per location
+  - Events by Month (bar) - Monthly event count
+
+- [x] **Step 4.3: Create Chart Components Module** (`lib/churchapp_web/components/report_chart_components.ex`)
+  - Created comprehensive chart components:
+    - `view_mode_toggle/1` - Toggle buttons for Table/Chart view
+    - `chart_selector/1` - Dropdown to select chart type
+    - `chart_display/1` - Canvas container with correct hook (PieChart, DoughnutChart, BarChart)
+    - `chart_stats/1` - Summary statistics panel (total, categories, largest item)
+    - `empty_chart_state/1` - Empty state when no data
+    - `chart_view/1` - Complete chart view container
+  - Components leverage existing Chart.js hooks from dashboard
+  - Supports currency formatting, horizontal bars, tooltips
+
+- [x] **Step 4.4: Update Reports LiveView Render** (`lib/churchapp_web/live/admin/reports/index_live.ex`)
+  - Added view mode toggle in actions bar (only shows when charts available)
+  - Conditional rendering based on view_mode:
+    - `:table` - Shows results table with pagination
+    - `:chart` - Shows chart view with selector and visualization
+  - Charts update automatically when filters change
+
+### Phase 4 Features Summary
+
+✅ **Working Features:**
+- Toggle between table and chart views
+- Multiple chart types per resource (pie, doughnut, bar)
+- Horizontal bar chart support
+- Currency formatting in charts
+- Chart selector dropdown for switching chart types
+- Summary statistics panel (total, categories, largest)
+- Automatic chart data preparation from query results
+- Support for count aggregation (default)
+- Support for sum aggregation (for currency fields)
+- Support for average aggregation
+- Special grouping for datetime fields (monthly grouping)
+- Label formatting for atoms, booleans, strings
+- Dark/light theme compatibility via existing hooks
+- Empty state handling
+- Maximum 20 categories displayed (top values)
+
+### Files Created (1 new file)
+
+1. `lib/churchapp_web/components/report_chart_components.ex` (~260 lines)
+
+### Files Modified (2 files)
+
+1. `lib/chms/church/reports/resource_config.ex` - Added chart configurations for all 5 resources (~160 lines added)
+2. `lib/churchapp_web/live/admin/reports/index_live.ex` - Added chart state, events, helpers, and render updates (~150 lines added)
+
+### Phase 4 Testing Checklist
+
+Test these items to verify Phase 4 implementation:
+
+- [ ] Toggle between table and chart view works
+- [ ] Charts display correct data
+- [ ] Chart colors work in dark/light mode
+- [ ] Chart selector shows available chart types
+- [ ] Pie charts show percentages in tooltips
+- [ ] Bar charts show proper labels and values
+- [ ] Horizontal bar charts display correctly
+- [ ] Currency values display with $ symbol
+- [ ] Charts update when filters change
+- [ ] Empty data shows appropriate message
+- [ ] Summary statistics show correct values
+- [ ] Monthly grouping works for datetime fields
+
+### Chart Types by Resource
+
+| Resource | Chart Types Available |
+|----------|----------------------|
+| Congregants | 6 charts (pie, doughnut, bar, horizontal bar) |
+| Contributions | 3 charts (pie, bar with sum aggregation) |
+| Ministry Funds | 4 charts (pie, doughnut, horizontal bar) |
+| Week Ending Reports | 1 chart (bar with sum aggregation) |
+| Events | 4 charts (pie, doughnut, bar, horizontal bar) |
 
 ---
 
@@ -438,10 +560,11 @@ Test these items to verify Phase 3 implementation:
 **Phase 1 Status:** ✅ COMPLETED
 **Phase 2 Status:** ✅ COMPLETED
 **Phase 3 Status:** ✅ COMPLETED
-**Total Progress:** 3/7 phases (43%)
-**Next Phase:** Phase 4 - Charts & Visualizations
+**Phase 4 Status:** ✅ COMPLETED
+**Total Progress:** 4/7 phases (57%)
+**Next Phase:** Phase 5 - Advanced Features
 
-Phases 1-3 deliver a fully functional reporting system with export capabilities and template management. Users can now:
+Phases 1-4 deliver a comprehensive reporting system with export capabilities, template management, and data visualizations. Users can now:
 - Select from 5 different resource types
 - Apply context-sensitive filters
 - Sort and paginate results
@@ -453,5 +576,9 @@ Phases 1-3 deliver a fully functional reporting system with export capabilities 
 - Share templates with other admins
 - Quickly load templates to reproduce reports
 - Manage saved templates (edit, delete, toggle sharing)
+- **Toggle between table and chart views**
+- **Visualize data with pie, doughnut, and bar charts**
+- **View aggregated data (counts, sums, averages)**
+- **See summary statistics for chart data**
 
 The foundation is solid and extensible, making it easy to add new resources and continue with advanced features in subsequent phases.

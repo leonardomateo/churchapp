@@ -125,7 +125,54 @@ defmodule Chms.Church.Reports.ResourceConfig do
       sortable_fields: [:member_id, :first_name, :last_name, :member_since, :city, :state],
       default_sort: {:first_name, :asc},
       preloads: [],
-      required_roles: [:admin, :super_admin, :staff, :leader, :member]
+      required_roles: [:admin, :super_admin, :staff, :leader, :member],
+      # Chart configurations for visualization
+      charts: [
+        %{
+          key: :status_distribution,
+          name: "Status Distribution",
+          type: :pie,
+          group_by: :status,
+          description: "Distribution of congregants by status"
+        },
+        %{
+          key: :gender_distribution,
+          name: "Gender Distribution",
+          type: :doughnut,
+          group_by: :gender,
+          description: "Distribution of congregants by gender"
+        },
+        %{
+          key: :country_distribution,
+          name: "By Country",
+          type: :bar,
+          group_by: :country,
+          description: "Congregants grouped by country"
+        },
+        %{
+          key: :state_distribution,
+          name: "By State",
+          type: :bar,
+          group_by: :state,
+          horizontal: true,
+          description: "Congregants grouped by state"
+        },
+        %{
+          key: :city_distribution,
+          name: "By City",
+          type: :bar,
+          group_by: :city,
+          horizontal: true,
+          description: "Congregants grouped by city"
+        },
+        %{
+          key: :leader_distribution,
+          name: "Leaders vs Non-Leaders",
+          type: :pie,
+          group_by: :is_leader,
+          description: "Proportion of leaders in congregation"
+        }
+      ]
     }
   end
 
@@ -202,7 +249,37 @@ defmodule Chms.Church.Reports.ResourceConfig do
       sortable_fields: [:contribution_type, :revenue, :contribution_date],
       default_sort: {:contribution_date, :desc},
       preloads: [:congregant],
-      required_roles: [:admin, :super_admin, :staff, :leader]
+      required_roles: [:admin, :super_admin, :staff, :leader],
+      # Chart configurations for visualization
+      charts: [
+        %{
+          key: :type_distribution,
+          name: "By Type",
+          type: :pie,
+          group_by: :contribution_type,
+          description: "Distribution of contributions by type"
+        },
+        %{
+          key: :type_revenue,
+          name: "Revenue by Type",
+          type: :bar,
+          group_by: :contribution_type,
+          aggregate: :sum,
+          aggregate_field: :revenue,
+          currency: true,
+          description: "Total revenue by contribution type"
+        },
+        %{
+          key: :monthly_revenue,
+          name: "Monthly Revenue",
+          type: :bar,
+          group_by: :contribution_month,
+          aggregate: :sum,
+          aggregate_field: :revenue,
+          currency: true,
+          description: "Total contributions by month"
+        }
+      ]
     }
   end
 
@@ -281,7 +358,46 @@ defmodule Chms.Church.Reports.ResourceConfig do
       sortable_fields: [:ministry_name, :transaction_type, :amount, :transaction_date],
       default_sort: {:transaction_date, :desc},
       preloads: [],
-      required_roles: [:admin, :super_admin, :staff, :leader]
+      required_roles: [:admin, :super_admin, :staff, :leader],
+      # Chart configurations for visualization
+      charts: [
+        %{
+          key: :type_distribution,
+          name: "Revenue vs Expense",
+          type: :pie,
+          group_by: :transaction_type,
+          description: "Distribution of revenue vs expense transactions"
+        },
+        %{
+          key: :ministry_breakdown,
+          name: "By Ministry",
+          type: :bar,
+          group_by: :ministry_name,
+          horizontal: true,
+          description: "Transaction count by ministry"
+        },
+        %{
+          key: :ministry_amounts,
+          name: "Amount by Ministry",
+          type: :bar,
+          group_by: :ministry_name,
+          aggregate: :sum,
+          aggregate_field: :amount,
+          currency: true,
+          horizontal: true,
+          description: "Total amounts by ministry"
+        },
+        %{
+          key: :type_amounts,
+          name: "Amount by Type",
+          type: :doughnut,
+          group_by: :transaction_type,
+          aggregate: :sum,
+          aggregate_field: :amount,
+          currency: true,
+          description: "Total amounts by transaction type"
+        }
+      ]
     }
   end
 
@@ -345,7 +461,20 @@ defmodule Chms.Church.Reports.ResourceConfig do
       sortable_fields: [:report_name, :week_start_date, :week_end_date, :grand_total],
       default_sort: {:week_end_date, :desc},
       preloads: [:grand_total],
-      required_roles: [:admin, :super_admin]
+      required_roles: [:admin, :super_admin],
+      # Chart configurations for visualization
+      charts: [
+        %{
+          key: :weekly_totals,
+          name: "Weekly Totals",
+          type: :bar,
+          group_by: :report_name,
+          aggregate: :sum,
+          aggregate_field: :grand_total,
+          currency: true,
+          description: "Grand totals by week"
+        }
+      ]
     }
   end
 
@@ -416,7 +545,39 @@ defmodule Chms.Church.Reports.ResourceConfig do
       sortable_fields: [:title, :start_time, :end_time, :location],
       default_sort: {:start_time, :desc},
       preloads: [],
-      required_roles: [:admin, :super_admin, :staff, :leader, :member]
+      required_roles: [:admin, :super_admin, :staff, :leader, :member],
+      # Chart configurations for visualization
+      charts: [
+        %{
+          key: :all_day_distribution,
+          name: "All Day vs Timed",
+          type: :pie,
+          group_by: :all_day,
+          description: "Distribution of all-day vs timed events"
+        },
+        %{
+          key: :recurring_distribution,
+          name: "Recurring vs One-Time",
+          type: :doughnut,
+          group_by: :is_recurring,
+          description: "Distribution of recurring vs one-time events"
+        },
+        %{
+          key: :location_breakdown,
+          name: "By Location",
+          type: :bar,
+          group_by: :location,
+          horizontal: true,
+          description: "Events grouped by location"
+        },
+        %{
+          key: :monthly_events,
+          name: "Events by Month",
+          type: :bar,
+          group_by: :event_month,
+          description: "Number of events by month"
+        }
+      ]
     }
   end
 end
