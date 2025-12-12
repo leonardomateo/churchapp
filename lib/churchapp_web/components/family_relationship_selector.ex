@@ -344,7 +344,7 @@ defmodule ChurchappWeb.FamilyRelationshipSelector do
                           class="flex items-center gap-3 p-3 text-left bg-dark-700/50 hover:bg-dark-700 rounded-lg border border-dark-600 hover:border-primary-500/50 transition-all cursor-pointer"
                         >
                           <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-primary-500/20 flex items-center justify-center">
-                            <.icon name="hero-heart" class="w-5 h-5 text-primary-400" />
+                            <.icon name="hero-heart" class="w-5 h-5 text-cyan-500" />
                           </div>
                           <div>
                             <div class="text-sm font-medium text-white">{type.display_name}</div>

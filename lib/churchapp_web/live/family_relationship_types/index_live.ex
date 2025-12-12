@@ -200,7 +200,7 @@ defmodule ChurchappWeb.FamilyRelationshipTypesLive.IndexLive do
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <div class="flex-shrink-0 h-10 w-10 rounded-full bg-primary-500/20 flex items-center justify-center">
-                    <.icon name="hero-heart" class="w-5 h-5 text-primary-400" />
+                    <.icon name="hero-heart" class="w-5 h-5 text-cyan-500" />
                   </div>
                   <div class="ml-4">
                     <div class="text-sm font-medium text-white">
