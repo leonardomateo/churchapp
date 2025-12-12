@@ -5,6 +5,7 @@ defmodule Chms.Church.Reports.QueryBuilder do
   """
 
   require Ash.Query
+  require Ash.Expr
 
   @doc """
   Main entry point: builds and executes a query for the given resource configuration.
@@ -160,26 +161,30 @@ defmodule Chms.Church.Reports.QueryBuilder do
   end
 
   defp apply_filter(query, %{query_builder: :text_search_filter, field: field}, value) do
-    # Generic text search with contains
+    # Generic text search with contains - use dynamic filter with keyword list
     search_term = String.downcase(value)
-    Ash.Query.filter(query, contains(string_downcase(^ref(field)), ^search_term))
+    filter_expr = [{field, [contains: search_term]}]
+    Ash.Query.filter(query, ^filter_expr)
   end
 
   defp apply_filter(query, %{query_builder: :enum_filter, field: field}, value) do
     # Enum field filtering (status, gender, etc.)
     enum_value = String.to_existing_atom(value)
-    Ash.Query.filter(query, ^ref(field) == ^enum_value)
+    filter_expr = [{field, [eq: enum_value]}]
+    Ash.Query.filter(query, ^filter_expr)
   end
 
   defp apply_filter(query, %{query_builder: :string_filter, field: field}, value) do
     # Exact string matching
-    Ash.Query.filter(query, ^ref(field) == ^value)
+    filter_expr = [{field, [eq: value]}]
+    Ash.Query.filter(query, ^filter_expr)
   end
 
   defp apply_filter(query, %{query_builder: :boolean_filter, field: field}, value) do
     # Boolean field filtering
     bool_value = value in ["true", true, "1"]
-    Ash.Query.filter(query, ^ref(field) == ^bool_value)
+    filter_expr = [{field, [eq: bool_value]}]
+    Ash.Query.filter(query, ^filter_expr)
   end
 
   defp apply_filter(
@@ -190,12 +195,15 @@ defmodule Chms.Church.Reports.QueryBuilder do
     # Date range filtering
     case Date.from_iso8601(value) do
       {:ok, date} ->
-        case operator do
-          :gte -> Ash.Query.filter(query, ^ref(field) >= ^date)
-          :lte -> Ash.Query.filter(query, ^ref(field) <= ^date)
-          :eq -> Ash.Query.filter(query, ^ref(field) == ^date)
-          _ -> query
-        end
+        filter_expr =
+          case operator do
+            :gte -> [{field, [greater_than_or_equal: date]}]
+            :lte -> [{field, [less_than_or_equal: date]}]
+            :eq -> [{field, [eq: date]}]
+            _ -> nil
+          end
+
+        if filter_expr, do: Ash.Query.filter(query, ^filter_expr), else: query
 
       _ ->
         query
@@ -218,12 +226,15 @@ defmodule Chms.Church.Reports.QueryBuilder do
             _ -> DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
           end
 
-        case operator do
-          :gte -> Ash.Query.filter(query, ^ref(field) >= ^datetime)
-          :lte -> Ash.Query.filter(query, ^ref(field) <= ^datetime)
-          :eq -> Ash.Query.filter(query, ^ref(field) == ^datetime)
-          _ -> query
-        end
+        filter_expr =
+          case operator do
+            :gte -> [{field, [greater_than_or_equal: datetime]}]
+            :lte -> [{field, [less_than_or_equal: datetime]}]
+            :eq -> [{field, [eq: datetime]}]
+            _ -> nil
+          end
+
+        if filter_expr, do: Ash.Query.filter(query, ^filter_expr), else: query
 
       _ ->
         query
@@ -238,23 +249,13 @@ defmodule Chms.Church.Reports.QueryBuilder do
     # Numeric range filtering with Decimal support
     case Decimal.parse(value) do
       {decimal_value, _} ->
-        case operator do
-          :gte -> Ash.Query.filter(query, ^ref(field) >= ^decimal_value)
-          :lte -> Ash.Query.filter(query, ^ref(field) <= ^decimal_value)
-          :eq -> Ash.Query.filter(query, ^ref(field) == ^decimal_value)
-          _ -> query
-        end
+        apply_number_filter(query, field, operator, decimal_value)
 
       :error ->
         # Try integer parse as fallback
         case Integer.parse(value) do
           {int_value, _} ->
-            case operator do
-              :gte -> Ash.Query.filter(query, ^ref(field) >= ^int_value)
-              :lte -> Ash.Query.filter(query, ^ref(field) <= ^int_value)
-              :eq -> Ash.Query.filter(query, ^ref(field) == ^int_value)
-              _ -> query
-            end
+            apply_number_filter(query, field, operator, int_value)
 
           :error ->
             query
@@ -265,6 +266,18 @@ defmodule Chms.Church.Reports.QueryBuilder do
   defp apply_filter(query, _filter_config, _value) do
     # Unknown filter type - return query unchanged
     query
+  end
+
+  defp apply_number_filter(query, field, operator, num_value) do
+    filter_expr =
+      case operator do
+        :gte -> [{field, [greater_than_or_equal: num_value]}]
+        :lte -> [{field, [less_than_or_equal: num_value]}]
+        :eq -> [{field, [eq: num_value]}]
+        _ -> nil
+      end
+
+    if filter_expr, do: Ash.Query.filter(query, ^filter_expr), else: query
   end
 
   # Apply sorting based on params or default
@@ -314,7 +327,4 @@ defmodule Chms.Church.Reports.QueryBuilder do
         {:error, error}
     end
   end
-
-  # Helper to create field reference in filter expressions
-  defp ref(field) when is_atom(field), do: field
 end

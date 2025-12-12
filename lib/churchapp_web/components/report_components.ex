@@ -78,16 +78,16 @@ defmodule ChurchappWeb.ReportComponents do
       <label class="block text-xs font-medium text-gray-400 mb-1">
         {@filter.label}
       </label>
-      <input
-        type="text"
-        phx-change="update_filter"
-        phx-value-filter={@filter.key}
-        phx-debounce="300"
-        name="value"
-        value={@value}
-        placeholder={@filter[:placeholder] || ""}
-        class="w-full px-3 py-2 text-sm text-gray-200 placeholder-gray-500 bg-dark-900 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-      />
+      <form phx-change="update_filter" phx-value-filter={@filter.key}>
+        <input
+          type="text"
+          phx-debounce="300"
+          name="value"
+          value={@value}
+          placeholder={@filter[:placeholder] || ""}
+          class="w-full px-3 py-2 text-sm text-gray-200 placeholder-gray-500 bg-dark-900 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        />
+      </form>
     </div>
     """
   end
@@ -98,19 +98,19 @@ defmodule ChurchappWeb.ReportComponents do
       <label class="block text-xs font-medium text-gray-400 mb-1">
         {@filter.label}
       </label>
-      <select
-        phx-change="update_filter"
-        phx-value-filter={@filter.key}
-        name="value"
-        class="w-full px-3 py-2 text-sm text-gray-200 bg-dark-900 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent hover:bg-dark-800 transition-colors cursor-pointer"
-      >
-        <option value="">All</option>
-        <%= for option <- @filter.options do %>
-          <option value={option} selected={to_string(option) == @value}>
-            {format_option_label(option)}
-          </option>
-        <% end %>
-      </select>
+      <form phx-change="update_filter" phx-value-filter={@filter.key}>
+        <select
+          name="value"
+          class="w-full px-3 py-2 text-sm text-gray-200 bg-dark-900 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent hover:bg-dark-800 transition-colors cursor-pointer"
+        >
+          <option value="">All</option>
+          <%= for option <- @filter.options do %>
+            <option value={option} selected={to_string(option) == @value}>
+              {format_option_label(option)}
+            </option>
+          <% end %>
+        </select>
+      </form>
     </div>
     """
   end
@@ -121,16 +121,16 @@ defmodule ChurchappWeb.ReportComponents do
       <label class="block text-xs font-medium text-gray-400 mb-1">
         {@filter.label}
       </label>
-      <input
-        type="date"
-        id={"filter-#{@filter.key}"}
-        phx-change="update_filter"
-        phx-value-filter={@filter.key}
-        phx-hook="DatePicker"
-        name="value"
-        value={@value}
-        class="w-full px-3 py-2 text-sm text-gray-200 bg-dark-900 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-      />
+      <form phx-change="update_filter" phx-value-filter={@filter.key}>
+        <input
+          type="date"
+          id={"filter-#{@filter.key}"}
+          phx-hook="DatePicker"
+          name="value"
+          value={@value}
+          class="w-full px-3 py-2 text-sm text-gray-200 bg-dark-900 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        />
+      </form>
     </div>
     """
   end
@@ -141,16 +141,16 @@ defmodule ChurchappWeb.ReportComponents do
       <label class="block text-xs font-medium text-gray-400 mb-1">
         {@filter.label}
       </label>
-      <input
-        type="number"
-        phx-change="update_filter"
-        phx-value-filter={@filter.key}
-        phx-debounce="300"
-        name="value"
-        value={@value}
-        step="0.01"
-        class="w-full px-3 py-2 text-sm text-gray-200 bg-dark-900 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-      />
+      <form phx-change="update_filter" phx-value-filter={@filter.key}>
+        <input
+          type="number"
+          phx-debounce="300"
+          name="value"
+          value={@value}
+          step="0.01"
+          class="w-full px-3 py-2 text-sm text-gray-200 bg-dark-900 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        />
+      </form>
     </div>
     """
   end
@@ -159,14 +159,15 @@ defmodule ChurchappWeb.ReportComponents do
     ~H"""
     <div>
       <label class="flex items-center">
-        <input
-          type="checkbox"
-          phx-click="update_filter"
-          phx-value-filter={@filter.key}
-          phx-value-value={if @value in ["true", true], do: "false", else: "true"}
-          checked={@value in ["true", true]}
-          class="h-4 w-4 text-primary-500 bg-dark-900 border-dark-700 rounded focus:ring-2 focus:ring-primary-500"
-        />
+        <form phx-change="update_filter" phx-value-filter={@filter.key}>
+          <input
+            type="checkbox"
+            name="value"
+            value="true"
+            checked={@value in ["true", true]}
+            class="h-4 w-4 text-primary-500 bg-dark-900 border-dark-700 rounded focus:ring-2 focus:ring-primary-500"
+          />
+        </form>
         <span class="ml-2 text-sm text-gray-300">{@filter.label}</span>
       </label>
     </div>

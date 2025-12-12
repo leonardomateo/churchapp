@@ -44,6 +44,7 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
         socket
         |> assign(:selected_resource_key, resource_key_atom)
         |> load_resource_config(resource_key_atom)
+        |> load_templates(resource_key_atom)
         |> apply_url_params(params)
         |> generate_report()
       else
@@ -73,15 +74,25 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
     {:noreply, socket}
   end
 
-  def handle_event("update_filter", %{"filter" => filter_key, "value" => value}, socket) do
-    filter_params = Map.put(socket.assigns.filter_params, filter_key, value)
+  def handle_event("update_filter", params, socket) do
+    # phx-change sends params as %{"value" => "...", "_target" => [...], "filter" => "filter_key"}
+    # The filter key comes from phx-value-filter attribute
+    filter_key = params["filter"]
+    value = params["value"]
 
-    socket =
-      socket
-      |> assign(:filter_params, filter_params)
-      |> assign(:page, 1)
+    if filter_key do
+      filter_params = Map.put(socket.assigns.filter_params, filter_key, value)
 
-    {:noreply, socket}
+      socket =
+        socket
+        |> assign(:filter_params, filter_params)
+        |> assign(:page, 1)
+        |> generate_report()
+
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
   end
 
   def handle_event("clear_filters", _params, socket) do
