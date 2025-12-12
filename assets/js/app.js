@@ -491,73 +491,6 @@ const CsvDownload = {
   }
 }
 
-// ReportDownload Hook - handles generic file downloads (CSV, PDF, etc.) from Reports
-const ReportDownload = {
-  mounted() {
-    // Handle file downloads (CSV, PDF)
-    this.handleEvent("download", ({content, filename, mime_type, is_base64}) => {
-      let blob
-
-      if (is_base64) {
-        // Decode base64 content (for binary files like PDF)
-        const binaryString = atob(content)
-        const bytes = new Uint8Array(binaryString.length)
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i)
-        }
-        blob = new Blob([bytes], { type: mime_type })
-      } else {
-        // Plain text content (for CSV)
-        blob = new Blob([content], { type: mime_type })
-      }
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = filename
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-
-      // Clean up
-      window.URL.revokeObjectURL(url)
-    })
-
-    // Handle print report (opens in new window for proper multi-page support)
-    this.handleEvent("print_report", ({html}) => {
-      // Open new window for printing
-      const printWindow = window.open('', '_blank', 'width=900,height=700')
-
-      if (printWindow) {
-        printWindow.document.open()
-        printWindow.document.write(html)
-        printWindow.document.close()
-
-        // Wait for content to render, then print
-        setTimeout(() => {
-          printWindow.focus()
-          printWindow.print()
-
-          // Close the window after printing
-          printWindow.onafterprint = () => {
-            printWindow.close()
-          }
-
-          // Fallback: close after a delay if onafterprint doesn't fire
-          setTimeout(() => {
-            if (!printWindow.closed) {
-              printWindow.close()
-            }
-          }, 60000) // Close after 60 seconds if still open
-        }, 500)
-      } else {
-        alert('Please allow popups to print the report')
-      }
-    })
-  }
-}
-
 // FullCalendar Hook - Event Calendar with month/week/day/list views
 const EventCalendar = {
   mounted() {
@@ -1162,7 +1095,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, DatePickerClose, DateTimeInput, LocalTime, CsvDownload, ReportDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, DatePickerClose, DateTimeInput, LocalTime, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar},
 })
 
 // Show progress bar on live navigation and form submits

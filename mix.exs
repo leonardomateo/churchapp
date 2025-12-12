@@ -79,9 +79,7 @@ defmodule Churchapp.MixProject do
       {:gettext, "~> 0.26"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"},
-      # PDF Generation for Reports
-      {:pdf_generator, "~> 0.6"}
+      {:bandit, "~> 1.5"}
     ]
   end
 
