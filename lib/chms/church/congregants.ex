@@ -169,6 +169,10 @@ defmodule Chms.Church.Congregants do
     has_many :contributions, Chms.Church.Contributions do
       destination_attribute :congregant_id
     end
+
+    has_many :family_relationships, Chms.Church.FamilyRelationship do
+      destination_attribute :congregant_id
+    end
   end
 
   identities do

@@ -679,6 +679,58 @@ else
   end)
 end
 
+# Seed Family Relationship Types
+IO.puts("\nSeeding family relationship types...")
+
+family_relationship_types = [
+  %{name: "father", display_name: "Father", inverse_name: "child", sort_order: 1},
+  %{name: "mother", display_name: "Mother", inverse_name: "child", sort_order: 2},
+  %{name: "son", display_name: "Son", inverse_name: "parent", sort_order: 3},
+  %{name: "daughter", display_name: "Daughter", inverse_name: "parent", sort_order: 4},
+  %{name: "spouse", display_name: "Spouse", inverse_name: "spouse", sort_order: 5},
+  %{name: "brother", display_name: "Brother", inverse_name: "sibling", sort_order: 6},
+  %{name: "sister", display_name: "Sister", inverse_name: "sibling", sort_order: 7},
+  %{name: "grandfather", display_name: "Grandfather", inverse_name: "grandchild", sort_order: 8},
+  %{name: "grandmother", display_name: "Grandmother", inverse_name: "grandchild", sort_order: 9},
+  %{name: "grandson", display_name: "Grandson", inverse_name: "grandparent", sort_order: 10},
+  %{
+    name: "granddaughter",
+    display_name: "Granddaughter",
+    inverse_name: "grandparent",
+    sort_order: 11
+  },
+  %{name: "uncle", display_name: "Uncle", inverse_name: "nephew_niece", sort_order: 12},
+  %{name: "aunt", display_name: "Aunt", inverse_name: "nephew_niece", sort_order: 13},
+  %{name: "nephew", display_name: "Nephew", inverse_name: "uncle_aunt", sort_order: 14},
+  %{name: "niece", display_name: "Niece", inverse_name: "uncle_aunt", sort_order: 15},
+  %{name: "cousin", display_name: "Cousin", inverse_name: "cousin", sort_order: 16}
+]
+
+existing_relationship_types =
+  case Chms.Church.FamilyRelationshipType
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, types} -> types
+    _ -> []
+  end
+
+if length(existing_relationship_types) > 0 do
+  IO.puts("⊙ Family relationship types already exist, skipping seed")
+else
+  Enum.each(family_relationship_types, fn attrs ->
+    case Chms.Church.FamilyRelationshipType
+         |> Ash.Changeset.for_create(:create, attrs)
+         |> Ash.create(authorize?: false) do
+      {:ok, type} ->
+        IO.puts("✓ Created family relationship type: #{type.display_name}")
+
+      {:error, changeset} ->
+        IO.puts("✗ Failed to create type: #{attrs.display_name}")
+        IO.inspect(changeset.errors)
+    end
+  end)
+end
+
 # Seed Week Ending Reports
 IO.puts("\nSeeding week ending reports...")
 

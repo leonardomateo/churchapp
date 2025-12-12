@@ -120,6 +120,11 @@ defmodule ChurchappWeb.Router do
 
       # Events Management
       live("/events", Admin.EventsLive, :index)
+
+      # Family Relationship Types
+      live("/family-relationship-types", FamilyRelationshipTypesLive.IndexLive, :index)
+      live("/family-relationship-types/new", FamilyRelationshipTypesLive.NewLive, :new)
+      live("/family-relationship-types/:id/edit", FamilyRelationshipTypesLive.EditLive, :edit)
     end
   end
 

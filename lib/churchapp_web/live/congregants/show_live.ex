@@ -1,22 +1,39 @@
 defmodule ChurchappWeb.CongregantsLive.ShowLive do
   use ChurchappWeb, :live_view
 
+  require Ash.Query
+
   def mount(%{"id" => id}, _session, socket) do
     # Get the current user for authorization
     actor = socket.assigns[:current_user]
 
     case Chms.Church.get_congregant_by_id(id, actor: actor) do
       {:ok, congregant} ->
+        # Load family relationships with preloads
+        family_relationships = load_family_relationships(id, actor)
+
         {:ok,
          socket
          |> assign(:page_title, "View Congregant")
-         |> assign(:congregant, congregant)}
+         |> assign(:congregant, congregant)
+         |> assign(:family_relationships, family_relationships)}
 
       {:error, _} ->
         {:ok,
          socket
          |> put_flash(:error, "Congregant not found")
          |> push_navigate(to: ~p"/congregants")}
+    end
+  end
+
+  defp load_family_relationships(congregant_id, actor) do
+    case Chms.Church.FamilyRelationship
+         |> Ash.Query.for_read(:read)
+         |> Ash.Query.filter(congregant_id == ^congregant_id)
+         |> Ash.Query.load([:related_congregant, :family_relationship_type])
+         |> Ash.read(actor: actor) do
+      {:ok, relationships} -> relationships
+      _ -> []
     end
   end
 
@@ -154,6 +171,46 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
                 </dd>
               </div>
             </dl>
+          </div>
+
+          <hr class="border-dark-700" />
+
+          <%!-- Family Relationships --%>
+          <div class="py-8">
+            <h3 class="mb-6 ml-6 flex items-center text-lg font-medium leading-6 text-white">
+              <.icon name="hero-heart" class="mr-2 h-5 w-5 text-primary-500" /> Family Relationships
+            </h3>
+            <div class="ml-6">
+              <%= if @family_relationships == [] do %>
+                <p class="text-sm text-gray-500 italic">No family relationships recorded</p>
+              <% else %>
+                <div class="flex flex-wrap gap-3">
+                  <%= for rel <- @family_relationships do %>
+                    <.link
+                      navigate={~p"/congregants/#{rel.related_congregant.id}"}
+                      class="inline-flex items-center gap-2 px-4 py-2 text-sm bg-dark-700 hover:bg-dark-600 rounded-lg border border-dark-600 hover:border-primary-500/50 transition-all"
+                    >
+                      <.avatar
+                        image={rel.related_congregant.image}
+                        first_name={rel.related_congregant.first_name}
+                        last_name={rel.related_congregant.last_name}
+                        size="sm"
+                      />
+                      <span class="text-gray-300">
+                        <span class="text-primary-400 font-medium">
+                          {rel.family_relationship_type.display_name}
+                        </span>
+                        <span class="text-gray-500 mx-1">-</span>
+                        <span class="text-white">
+                          {rel.related_congregant.first_name} {rel.related_congregant.last_name}
+                        </span>
+                      </span>
+                      <.icon name="hero-arrow-right" class="h-3 w-3 text-gray-500" />
+                    </.link>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
           </div>
 
           <hr class="border-dark-700" />

@@ -37,6 +37,7 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
       |> assign(:show_custom_ministry_modal, false)
       |> assign(:custom_ministry_input, "")
       |> assign(:custom_ministry_error, nil)
+      |> assign(:pending_relationships, [])
       |> allow_upload(:image,
         accept: ~w(.jpg .jpeg .png .gif .webp),
         max_file_size: 5_000_000,
@@ -96,12 +97,18 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
       |> Map.put("ministries_string", ministries_string)
       |> Map.put("ministries", filtered_ministries)
 
+    actor = socket.assigns.current_user
+    pending_relationships = socket.assigns.pending_relationships
+
     # Check if there are any uploaded files
     case socket.assigns.uploads.image.entries do
       [] ->
         # No image uploaded, proceed without image
         case Form.submit(socket.assigns.form, params: params) do
-          {:ok, _congregant} ->
+          {:ok, congregant} ->
+            # Create pending family relationships
+            create_pending_relationships(congregant, pending_relationships, actor)
+
             {:noreply,
              socket
              |> put_flash(:info, "Congregant created successfully")
@@ -138,7 +145,10 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
           end
 
         case Form.submit(socket.assigns.form, params: params) do
-          {:ok, _congregant} ->
+          {:ok, congregant} ->
+            # Create pending family relationships
+            create_pending_relationships(congregant, pending_relationships, actor)
+
             {:noreply,
              socket
              |> put_flash(:info, "Congregant created successfully")
@@ -286,6 +296,23 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
   # Handle ministry selection changes from the MinistrySelector component
   def handle_info({:ministries_changed, selected}, socket) do
     {:noreply, assign(socket, :selected_ministries, selected)}
+  end
+
+  # Handle family relationship changes from the FamilyRelationshipSelector component
+  def handle_info({:family_relationships_changed, relationships}, socket) do
+    {:noreply, assign(socket, :pending_relationships, relationships)}
+  end
+
+  defp create_pending_relationships(congregant, pending_relationships, actor) do
+    Enum.each(pending_relationships, fn rel ->
+      attrs = %{
+        congregant_id: congregant.id,
+        related_congregant_id: rel.related_congregant_id,
+        family_relationship_type_id: rel.family_relationship_type_id
+      }
+
+      Chms.Church.create_family_relationship(attrs, actor: actor)
+    end)
   end
 
   def render(assigns) do
@@ -797,6 +824,25 @@ defmodule ChurchappWeb.CongregantsLive.NewLive do
               </div>
               <p class="mt-3 text-xs text-gray-500">
                 Search and select ministries, or add a custom one
+              </p>
+            </div>
+
+            <hr class="border-dark-700" />
+
+            <%!-- Family Relationships Section --%>
+            <div>
+              <h3 class="mb-4 flex items-center text-lg font-medium leading-6 text-white">
+                <.icon name="hero-heart" class="mr-2 h-5 w-5 text-primary-500" /> Family Relationships
+              </h3>
+              <.live_component
+                module={ChurchappWeb.FamilyRelationshipSelector}
+                id="family-relationship-selector-new"
+                congregant_id={nil}
+                actor={@current_user}
+                pending_relationships={@pending_relationships}
+              />
+              <p class="mt-3 text-xs text-gray-500">
+                Add family relationships with other congregants
               </p>
             </div>
           </div>

@@ -72,5 +72,23 @@ defmodule Chms.Church do
       define :destroy_event, action: :destroy
       define :get_event_by_id, action: :read, get_by: [:id]
     end
+
+    # Family Relationships
+    resource Chms.Church.FamilyRelationshipType do
+      define :create_family_relationship_type, action: :create
+      define :list_family_relationship_types, action: :read
+      define :list_active_family_relationship_types, action: :list_active
+      define :update_family_relationship_type, action: :update
+      define :destroy_family_relationship_type, action: :destroy
+      define :get_family_relationship_type_by_id, action: :read, get_by: [:id]
+      define :get_family_relationship_type_by_name, action: :read, get_by: [:name]
+    end
+
+    resource Chms.Church.FamilyRelationship do
+      define :create_family_relationship, action: :create
+      define :list_family_relationships, action: :read
+      define :destroy_family_relationship, action: :destroy
+      define :get_family_relationship_by_id, action: :read, get_by: [:id]
+    end
   end
 end

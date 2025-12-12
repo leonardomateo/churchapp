@@ -859,6 +859,21 @@ defmodule ChurchappWeb.CongregantsLive.EditLive do
                 Search and select ministries, or add a custom one
               </p>
             </div>
+
+            <hr class="border-dark-700" />
+
+            <%!-- Family Relationships Section --%>
+            <div>
+              <h3 class="mb-4 flex items-center text-lg font-medium leading-6 text-white">
+                <.icon name="hero-heart" class="mr-2 h-5 w-5 text-primary-500" /> Family Relationships
+              </h3>
+              <.live_component
+                module={ChurchappWeb.FamilyRelationshipSelector}
+                id="family-relationship-selector-edit"
+                congregant_id={@congregant.id}
+                actor={@actor}
+              />
+            </div>
           </div>
 
           <div class="px-6 py-4 flex justify-end space-x-3 bg-dark-700/50 border-t border-dark-700">
