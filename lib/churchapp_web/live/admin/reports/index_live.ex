@@ -5,6 +5,7 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
   """
   use ChurchappWeb, :live_view
 
+  alias Chms.Church
   alias Chms.Church.Reports.{ResourceConfig, QueryBuilder}
   alias Chms.Church.Reports.Export.{CsvExport, PdfExport}
 
@@ -24,6 +25,12 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
       |> assign(:metadata, %{total_count: 0, total_pages: 0})
       |> assign(:loading, false)
       |> assign(:show_export_menu, false)
+      # Template-related assigns
+      |> assign(:templates, [])
+      |> assign(:show_save_template_modal, false)
+      |> assign(:show_manage_templates_modal, false)
+      |> assign(:template_form, nil)
+      |> assign(:editing_template_id, nil)
 
     {:ok, socket}
   end
@@ -60,6 +67,7 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
       |> assign(:page, 1)
       |> assign(:results, [])
       |> assign(:metadata, %{total_count: 0, total_pages: 0})
+      |> load_templates(resource_key_atom)
       |> push_patch(to: ~p"/admin/reports?resource=#{resource_key}")
 
     {:noreply, socket}
@@ -233,6 +241,213 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
     end
   end
 
+  # Template Management Events
+
+  def handle_event("show_save_template_modal", _params, socket) do
+    form = build_template_form(socket, :create)
+
+    socket =
+      socket
+      |> assign(:show_save_template_modal, true)
+      |> assign(:template_form, form)
+      |> assign(:editing_template_id, nil)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("close_save_template_modal", _params, socket) do
+    socket =
+      socket
+      |> assign(:show_save_template_modal, false)
+      |> assign(:template_form, nil)
+      |> assign(:editing_template_id, nil)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("show_manage_templates", _params, socket) do
+    {:noreply, assign(socket, :show_manage_templates_modal, true)}
+  end
+
+  def handle_event("close_manage_templates", _params, socket) do
+    {:noreply, assign(socket, :show_manage_templates_modal, false)}
+  end
+
+  def handle_event("save_template", %{"template" => params}, socket) do
+    actor = socket.assigns.current_user
+
+    # Build the full params with current state
+    full_params = %{
+      name: params["name"],
+      description: params["description"],
+      resource_key: socket.assigns.selected_resource_key,
+      filter_params: socket.assigns.filter_params,
+      sort_by: socket.assigns.sort_by,
+      sort_dir: socket.assigns.sort_dir,
+      is_shared: params["is_shared"] == "true",
+      created_by_id: actor.id
+    }
+
+    case Church.create_report_template(full_params, actor: actor) do
+      {:ok, _template} ->
+        socket =
+          socket
+          |> put_flash(:info, "Template saved successfully")
+          |> assign(:show_save_template_modal, false)
+          |> assign(:template_form, nil)
+          |> load_templates(socket.assigns.selected_resource_key)
+
+        {:noreply, socket}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to save template")}
+    end
+  end
+
+  def handle_event("load_template", %{"id" => template_id}, socket) do
+    actor = socket.assigns.current_user
+
+    case Church.get_report_template_by_id(template_id, actor: actor) do
+      {:ok, template} ->
+        socket =
+          socket
+          |> apply_template_filters(template)
+          |> assign(:show_manage_templates_modal, false)
+          |> generate_report()
+          |> put_flash(:info, "Template \"#{template.name}\" applied")
+
+        {:noreply, socket}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Template not found")}
+    end
+  end
+
+  def handle_event("edit_template", %{"id" => template_id}, socket) do
+    actor = socket.assigns.current_user
+
+    case Church.get_report_template_by_id(template_id, actor: actor) do
+      {:ok, template} ->
+        form = build_template_form_for_edit(template)
+
+        socket =
+          socket
+          |> assign(:show_save_template_modal, true)
+          |> assign(:show_manage_templates_modal, false)
+          |> assign(:template_form, form)
+          |> assign(:editing_template_id, template_id)
+
+        {:noreply, socket}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Template not found")}
+    end
+  end
+
+  def handle_event("update_template", %{"template" => params}, socket) do
+    actor = socket.assigns.current_user
+    template_id = socket.assigns.editing_template_id
+
+    case Church.get_report_template_by_id(template_id, actor: actor) do
+      {:ok, template} ->
+        # Check ownership (unless super_admin)
+        if template.created_by_id == actor.id || actor.role == :super_admin do
+          update_params = %{
+            name: params["name"],
+            description: params["description"],
+            filter_params: socket.assigns.filter_params,
+            sort_by: socket.assigns.sort_by,
+            sort_dir: socket.assigns.sort_dir,
+            is_shared: params["is_shared"] == "true"
+          }
+
+          case Church.update_report_template(template, update_params, actor: actor) do
+            {:ok, _updated} ->
+              socket =
+                socket
+                |> put_flash(:info, "Template updated successfully")
+                |> assign(:show_save_template_modal, false)
+                |> assign(:template_form, nil)
+                |> assign(:editing_template_id, nil)
+                |> load_templates(socket.assigns.selected_resource_key)
+
+              {:noreply, socket}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, "Failed to update template")}
+          end
+        else
+          {:noreply, put_flash(socket, :error, "You can only edit your own templates")}
+        end
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Template not found")}
+    end
+  end
+
+  def handle_event("delete_template", %{"id" => template_id}, socket) do
+    actor = socket.assigns.current_user
+
+    case Church.get_report_template_by_id(template_id, actor: actor) do
+      {:ok, template} ->
+        # Check ownership (unless super_admin)
+        if template.created_by_id == actor.id || actor.role == :super_admin do
+          case Church.destroy_report_template(template, actor: actor) do
+            :ok ->
+              socket =
+                socket
+                |> put_flash(:info, "Template deleted")
+                |> load_templates(socket.assigns.selected_resource_key)
+
+              {:noreply, socket}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, "Failed to delete template")}
+          end
+        else
+          {:noreply, put_flash(socket, :error, "You can only delete your own templates")}
+        end
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Template not found")}
+    end
+  end
+
+  def handle_event("toggle_template_share", %{"id" => template_id}, socket) do
+    actor = socket.assigns.current_user
+
+    case Church.get_report_template_by_id(template_id, actor: actor) do
+      {:ok, template} ->
+        if template.created_by_id == actor.id || actor.role == :super_admin do
+          case Church.update_report_template(template, %{is_shared: !template.is_shared},
+                 actor: actor
+               ) do
+            {:ok, _updated} ->
+              socket =
+                socket
+                |> load_templates(socket.assigns.selected_resource_key)
+                |> put_flash(
+                  :info,
+                  if(template.is_shared,
+                    do: "Template is now private",
+                    else: "Template is now shared with all admins"
+                  )
+                )
+
+              {:noreply, socket}
+
+            {:error, _} ->
+              {:noreply, put_flash(socket, :error, "Failed to update template")}
+          end
+        else
+          {:noreply, put_flash(socket, :error, "You can only modify your own templates")}
+        end
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Template not found")}
+    end
+  end
+
   # Private functions
 
   defp load_resource_config(socket, resource_key) do
@@ -322,6 +537,49 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
     end
   end
 
+  defp load_templates(socket, resource_key) do
+    actor = socket.assigns.current_user
+
+    case Church.list_visible_report_templates(resource_key, actor.id, actor: actor) do
+      {:ok, templates} ->
+        assign(socket, :templates, templates)
+
+      {:error, _} ->
+        assign(socket, :templates, [])
+    end
+  end
+
+  defp build_template_form(_socket, :create) do
+    # Simple map-based form for template creation
+    %{
+      "name" => "",
+      "description" => "",
+      "is_shared" => false
+    }
+  end
+
+  defp build_template_form_for_edit(template) do
+    %{
+      "name" => template.name,
+      "description" => template.description || "",
+      "is_shared" => template.is_shared
+    }
+  end
+
+  defp apply_template_filters(socket, template) do
+    # Convert stored filter_params keys to strings (they may be atoms from storage)
+    filter_params =
+      template.filter_params
+      |> Enum.map(fn {k, v} -> {to_string(k), v} end)
+      |> Map.new()
+
+    socket
+    |> assign(:filter_params, filter_params)
+    |> assign(:sort_by, template.sort_by)
+    |> assign(:sort_dir, template.sort_dir)
+    |> assign(:page, 1)
+  end
+
   # Helper functions for template
 
   def has_active_filters?(filter_params) do
@@ -363,11 +621,41 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
       </div>
 
       <%!-- Resource Selection --%>
-      <div class="mb-6">
+      <div class="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
         <ChurchappWeb.ReportComponents.resource_selector
           resources={@available_resources}
           selected={@selected_resource_key}
         />
+
+        <%= if @selected_resource_config && length(@templates) > 0 do %>
+          <ChurchappWeb.ReportComponents.template_selector templates={@templates} />
+        <% end %>
+
+        <%= if @selected_resource_config do %>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              phx-click="show_save_template_modal"
+              class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-300 bg-dark-800 border border-dark-700 rounded-md hover:bg-dark-700 hover:border-dark-600 transition-colors"
+              title="Save current configuration as template"
+            >
+              <.icon name="hero-bookmark" class="h-4 w-4" />
+              <span class="ml-2 hidden sm:inline">Save Template</span>
+            </button>
+
+            <%= if length(@templates) > 0 do %>
+              <button
+                type="button"
+                phx-click="show_manage_templates"
+                class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-300 bg-dark-800 border border-dark-700 rounded-md hover:bg-dark-700 hover:border-dark-600 transition-colors"
+                title="Manage saved templates"
+              >
+                <.icon name="hero-cog-6-tooth" class="h-4 w-4" />
+                <span class="ml-2 hidden sm:inline">Manage</span>
+              </button>
+            <% end %>
+          </div>
+        <% end %>
       </div>
 
       <%= if @selected_resource_config do %>
@@ -495,6 +783,22 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
             Choose a resource from the dropdown above to begin generating reports.
           </p>
         </div>
+      <% end %>
+
+      <%!-- Save Template Modal --%>
+      <%= if @show_save_template_modal do %>
+        <ChurchappWeb.ReportComponents.save_template_modal
+          form={@template_form}
+          editing_id={@editing_template_id}
+        />
+      <% end %>
+
+      <%!-- Manage Templates Modal --%>
+      <%= if @show_manage_templates_modal do %>
+        <ChurchappWeb.ReportComponents.manage_templates_modal
+          templates={@templates}
+          current_user={@current_user}
+        />
       <% end %>
     </div>
     """

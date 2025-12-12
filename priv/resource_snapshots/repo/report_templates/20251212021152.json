@@ -21,20 +21,20 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "contribution_type",
+      "source": "name",
       "type": "text"
     },
     {
-      "allow_nil?": false,
+      "allow_nil?": true,
       "default": "nil",
       "generated?": false,
-      "precision": 10,
+      "precision": null,
       "primary_key?": false,
       "references": null,
-      "scale": 2,
+      "scale": null,
       "size": null,
-      "source": "revenue",
-      "type": "decimal"
+      "source": "description",
+      "type": "text"
     },
     {
       "allow_nil?": false,
@@ -45,20 +45,56 @@
       "references": null,
       "scale": null,
       "size": null,
-      "source": "notes",
+      "source": "resource_key",
       "type": "text"
     },
     {
-      "allow_nil?": false,
-      "default": "fragment(\"(now() AT TIME ZONE 'utc')\")",
+      "allow_nil?": true,
+      "default": "%{}",
       "generated?": false,
       "precision": null,
       "primary_key?": false,
       "references": null,
       "scale": null,
       "size": null,
-      "source": "contribution_date",
-      "type": "utc_datetime_usec"
+      "source": "filter_params",
+      "type": "map"
+    },
+    {
+      "allow_nil?": true,
+      "default": "nil",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "sort_by",
+      "type": "text"
+    },
+    {
+      "allow_nil?": true,
+      "default": "\"asc\"",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "sort_dir",
+      "type": "text"
+    },
+    {
+      "allow_nil?": false,
+      "default": "false",
+      "generated?": false,
+      "precision": null,
+      "primary_key?": false,
+      "references": null,
+      "scale": null,
+      "size": null,
+      "source": "is_shared",
+      "type": "boolean"
     },
     {
       "allow_nil?": false,
@@ -103,16 +139,16 @@
           "global": null,
           "strategy": null
         },
-        "name": "contributions_congregant_id_fkey",
+        "name": "report_templates_created_by_id_fkey",
         "on_delete": null,
         "on_update": null,
         "primary_key?": true,
         "schema": "public",
-        "table": "congregants"
+        "table": "users"
       },
       "scale": null,
       "size": null,
-      "source": "congregant_id",
+      "source": "created_by_id",
       "type": "uuid"
     }
   ],
@@ -121,8 +157,31 @@
   "custom_indexes": [],
   "custom_statements": [],
   "has_create_action": true,
-  "hash": "F8AE728C3767AC736677B39E5A6BDBDA5A90379568014E0E4C69BD77C80D4079",
-  "identities": [],
+  "hash": "B38D97CBCD4226B03A3F0B7BBDF4862151952325BC18B5A36F477634CE09EB66",
+  "identities": [
+    {
+      "all_tenants?": false,
+      "base_filter": null,
+      "index_name": "report_templates_unique_name_per_user_resource_index",
+      "keys": [
+        {
+          "type": "atom",
+          "value": "name"
+        },
+        {
+          "type": "atom",
+          "value": "created_by_id"
+        },
+        {
+          "type": "atom",
+          "value": "resource_key"
+        }
+      ],
+      "name": "unique_name_per_user_resource",
+      "nils_distinct?": true,
+      "where": null
+    }
+  ],
   "multitenancy": {
     "attribute": null,
     "global": null,
@@ -130,5 +189,5 @@
   },
   "repo": "Elixir.Churchapp.Repo",
   "schema": null,
-  "table": "contributions"
+  "table": "report_templates"
 }

@@ -72,5 +72,23 @@ defmodule Chms.Church do
       define :destroy_event, action: :destroy
       define :get_event_by_id, action: :read, get_by: [:id]
     end
+
+    # Report Templates
+    resource Chms.Church.ReportTemplate do
+      define :create_report_template, action: :create
+      define :list_report_templates, action: :read
+
+      define :list_report_templates_for_resource,
+        action: :list_for_resource,
+        args: [:resource_key]
+
+      define :list_visible_report_templates,
+        action: :list_visible,
+        args: [:resource_key, :user_id]
+
+      define :update_report_template, action: :update
+      define :destroy_report_template, action: :destroy
+      define :get_report_template_by_id, action: :read, get_by: [:id]
+    end
   end
 end

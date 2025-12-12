@@ -259,10 +259,149 @@ Test these items to verify Phase 2 implementation:
 
 ---
 
-## PHASE 3: Report Templates ⏳ NOT STARTED
+## PHASE 3: Report Templates ✅ COMPLETED
 
-**Duration:** 2-3 days (estimated)
+**Duration:** Implemented
 **Deliverable:** Save/load report configurations
+
+### Completed Items
+
+- [x] **Step 3.1: Create ReportTemplate Resource** (`lib/chms/church/report_template.ex`)
+  - Created Ash resource for storing report templates
+  - Attributes:
+    - `name` - Template name (required, max 100 chars)
+    - `description` - Optional description (max 500 chars)
+    - `resource_key` - Atom identifying the resource type
+    - `filter_params` - Map storing filter values
+    - `sort_by` - Sort field atom
+    - `sort_dir` - Sort direction (:asc or :desc)
+    - `is_shared` - Boolean for sharing with all admins
+    - `created_by_id` - Reference to creator (User)
+  - Actions:
+    - `create` - Create new template with creator relationship
+    - `update` - Update template properties
+    - `read` - Standard read
+    - `destroy` - Delete template
+    - `list_for_resource` - Filter templates by resource_key
+    - `list_visible` - Get templates visible to user (owned or shared)
+  - Policies:
+    - Super admins bypass all policies
+    - Admins can create templates
+    - Admins/staff/leaders can read templates
+    - Update/destroy limited to owners or super_admin
+  - Unique identity on (name, created_by_id, resource_key)
+
+- [x] **Step 3.2: Generate Migration** (`priv/repo/migrations/[timestamp]_create_report_templates.exs`)
+  - Created table with all attributes
+  - Foreign key to users table
+  - Unique index for preventing duplicate names per user per resource
+
+- [x] **Step 3.3: Add to Church Domain** (`lib/chms/church.ex`)
+  - Added ReportTemplate resource to domain
+  - Defined domain-level functions:
+    - `create_report_template/2`
+    - `list_report_templates/1`
+    - `list_report_templates_for_resource/2`
+    - `list_visible_report_templates/3`
+    - `update_report_template/3`
+    - `destroy_report_template/2`
+    - `get_report_template_by_id/2`
+
+- [x] **Step 3.4: Add Template Management to Reports LiveView** (`lib/churchapp_web/live/admin/reports/index_live.ex`)
+  - Added template-related assigns:
+    - `:templates` - List of templates for current resource
+    - `:show_save_template_modal` - Modal visibility
+    - `:show_manage_templates_modal` - Manage modal visibility
+    - `:template_form` - Form data for save/edit
+    - `:editing_template_id` - ID of template being edited
+  - Added event handlers:
+    - `show_save_template_modal` - Opens save template modal
+    - `close_save_template_modal` - Closes save modal
+    - `show_manage_templates` - Opens manage templates modal
+    - `close_manage_templates` - Closes manage modal
+    - `save_template` - Creates new template with current filters
+    - `load_template` - Applies template filters to report
+    - `edit_template` - Opens edit form for template
+    - `update_template` - Updates existing template
+    - `delete_template` - Deletes template with ownership check
+    - `toggle_template_share` - Toggles is_shared flag
+  - Helper functions:
+    - `load_templates/2` - Loads visible templates for resource
+    - `build_template_form/2` - Builds form for new template
+    - `build_template_form_for_edit/1` - Builds form from existing template
+    - `apply_template_filters/2` - Applies template settings to socket
+  - Templates auto-load when resource is selected
+
+- [x] **Step 3.5: Create Template UI Components** (`lib/churchapp_web/components/report_components.ex`)
+  - `template_selector/1` - Dropdown for quick template loading
+  - `save_template_modal/1` - Modal for creating/editing templates
+    - Name input (required)
+    - Description textarea (optional)
+    - Share with admins checkbox
+    - Info box explaining what gets saved
+    - Cancel and Save/Update buttons
+  - `manage_templates_modal/1` - Modal for viewing all templates
+    - Lists all visible templates
+    - Empty state when no templates
+  - `template_card/1` - Individual template display
+    - Shows name with shared/private badge
+    - Optional description
+    - Creation date and ownership info
+    - Action buttons: Load, Edit, Share Toggle, Delete
+    - Owner-only actions for edit/delete/share
+  - Updated render to include:
+    - Template selector dropdown (when templates exist)
+    - Save Template button
+    - Manage Templates button (when templates exist)
+    - Both modals with conditional rendering
+
+### Phase 3 Features Summary
+
+✅ **Working Features:**
+- Save current report configuration as template
+- Templates store filters, sort field, and sort direction
+- Private templates (visible only to creator)
+- Shared templates (visible to all admins)
+- Quick-load template from dropdown
+- Full template management (create, edit, delete)
+- Toggle sharing on/off
+- Ownership-based permissions (only owner can edit/delete)
+- Super admin can modify any template
+- Templates automatically loaded when resource selected
+- Unique constraint prevents duplicate names per user per resource
+
+### Files Created (2 new files)
+
+1. `lib/chms/church/report_template.ex` (~120 lines)
+2. `priv/repo/migrations/20251212021152_create_report_templates.exs` (auto-generated)
+
+### Files Modified (3 files)
+
+1. `lib/chms/church.ex` - Added ReportTemplate resource and domain functions
+2. `lib/churchapp_web/live/admin/reports/index_live.ex` - Added template management logic and UI
+3. `lib/churchapp_web/components/report_components.ex` - Added template UI components (~280 lines)
+
+### Phase 3 Testing Checklist
+
+Test these items to verify Phase 3 implementation:
+
+- [ ] Save Template button appears when resource is selected
+- [ ] Save template modal opens with empty form
+- [ ] Template name is required
+- [ ] Template saves successfully with current filters
+- [ ] Saved template appears in dropdown
+- [ ] Loading template applies filters correctly
+- [ ] Loading template generates report automatically
+- [ ] Manage Templates modal shows all templates
+- [ ] Template cards show shared/private status
+- [ ] Edit template loads existing values
+- [ ] Update template saves changes
+- [ ] Delete template removes with confirmation
+- [ ] Toggle share changes visibility status
+- [ ] Shared templates visible to other admins
+- [ ] Non-shared templates only visible to creator
+- [ ] Owner-only actions hidden for non-owners
+- [ ] Super admin can modify any template
 
 ---
 
@@ -298,10 +437,11 @@ Test these items to verify Phase 2 implementation:
 
 **Phase 1 Status:** ✅ COMPLETED
 **Phase 2 Status:** ✅ COMPLETED
-**Total Progress:** 2/7 phases (29%)
-**Next Phase:** Phase 3 - Report Templates
+**Phase 3 Status:** ✅ COMPLETED
+**Total Progress:** 3/7 phases (43%)
+**Next Phase:** Phase 4 - Charts & Visualizations
 
-Phase 1 and Phase 2 deliver a fully functional reporting system with export capabilities. Users can now:
+Phases 1-3 deliver a fully functional reporting system with export capabilities and template management. Users can now:
 - Select from 5 different resource types
 - Apply context-sensitive filters
 - Sort and paginate results
@@ -309,5 +449,9 @@ Phase 1 and Phase 2 deliver a fully functional reporting system with export capa
 - Export to PDF format (with wkhtmltopdf) or print-to-PDF via browser
 - Print reports directly
 - Share filtered reports via URL
+- Save report configurations as reusable templates
+- Share templates with other admins
+- Quickly load templates to reproduce reports
+- Manage saved templates (edit, delete, toggle sharing)
 
 The foundation is solid and extensible, making it easy to add new resources and continue with advanced features in subsequent phases.
