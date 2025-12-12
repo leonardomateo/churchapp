@@ -120,6 +120,9 @@ defmodule ChurchappWeb.Router do
 
       # Events Management
       live("/events", Admin.EventsLive, :index)
+
+      # Reports
+      live("/reports", Admin.ReportsLive.IndexLive, :index)
     end
   end
 

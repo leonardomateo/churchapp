@@ -472,21 +472,43 @@ const CsvDownload = {
     this.handleEvent("download_csv", ({content, filename}) => {
       // Create blob from CSV content
       const blob = new Blob([content], { type: "text/csv;charset=utf-8;" })
-      
+
       // Create download link
       const link = document.createElement("a")
       const url = URL.createObjectURL(blob)
       link.setAttribute("href", url)
       link.setAttribute("download", filename)
       link.style.visibility = "hidden"
-      
+
       // Trigger download
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      
+
       // Clean up
       URL.revokeObjectURL(url)
+    })
+  }
+}
+
+// ReportDownload Hook - handles generic file downloads (CSV, PDF, etc.) from Reports
+const ReportDownload = {
+  mounted() {
+    this.handleEvent("download", ({content, filename, mime_type}) => {
+      // Create blob with specified MIME type
+      const blob = new Blob([content], { type: mime_type })
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      // Clean up
+      window.URL.revokeObjectURL(url)
     })
   }
 }
@@ -1095,7 +1117,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, DatePickerClose, DateTimeInput, LocalTime, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, DatePickerClose, DateTimeInput, LocalTime, CsvDownload, ReportDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar},
 })
 
 // Show progress bar on live navigation and form submits
