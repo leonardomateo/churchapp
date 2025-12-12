@@ -24,8 +24,8 @@ defmodule ChurchappWeb.Router do
   scope "/", ChurchappWeb do
     pipe_through(:browser)
 
-    # Public routes
-    get("/", PageController, :home)
+    # Public routes - redirect web domain root to congregants
+    get("/", PageController, :home, as: :web_redirect)
 
     # Controller-based auth routes (callbacks, sign-out)
     auth_routes(AuthController, Churchapp.Accounts.User, path: "/auth")
