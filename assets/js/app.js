@@ -1105,11 +1105,47 @@ const IcalDownload = {
   }
 }
 
+// FlashAutoHide Hook - automatically hides flash messages after a delay
+const FlashAutoHide = {
+  mounted() {
+    // Listen for the flash:hide event dispatched from the flash component
+    window.addEventListener("flash:hide", this.handleFlashHide.bind(this))
+  },
+
+  handleFlashHide(event) {
+    const { id, delay } = event.detail
+    
+    // Set a timer to hide the flash message
+    setTimeout(() => {
+      const flashElement = document.getElementById(id)
+      if (flashElement) {
+        // Add a transition effect before hiding
+        flashElement.style.transition = "opacity 0.3s ease-out, transform 0.3s ease-out"
+        flashElement.style.opacity = "0"
+        flashElement.style.transform = "translateX(100%)"
+        
+        // Remove the element after the transition
+        setTimeout(() => {
+          flashElement.remove()
+          // Also clear the flash from LiveView
+          if (window.liveSocket) {
+            window.liveSocket.push("lv:clear-flash", {key: id.replace("flash-", "")})
+          }
+        }, 300)
+      }
+    }, delay)
+  },
+
+  destroyed() {
+    window.removeEventListener("flash:hide", this.handleFlashHide.bind(this))
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, DatePickerClose, DateTimeInput, LocalTime, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar, ModalPortal},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, DatePickerClose, DateTimeInput, LocalTime, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar, ModalPortal, FlashAutoHide},
 })
 
 // Show progress bar on live navigation and form submits

@@ -374,6 +374,7 @@
 <!-- Main content with scroll -->
     <main class="flex-1 overflow-y-auto p-6">
       <div class="mx-auto max-w-7xl">
+        <div id="flash-auto-hide" phx-hook="FlashAutoHide"></div>
         <.flash_group flash={@flash} />
         {@inner_content}
       </div>

@@ -255,7 +255,9 @@ defmodule ChurchappWeb.FamilyRelationshipSelector do
             <div class="flex flex-wrap gap-2 items-center">
               <%= for rel <- @relationships do %>
                 <div class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/25 hover:border-cyan-500/40 transition-all duration-200">
-                  <span>{get_relationship_type_name(rel, @mode)} of {get_related_name(rel, @mode)}</span>
+                  <span>
+                    {get_relationship_type_name(rel, @mode)} of {get_related_name(rel, @mode)}
+                  </span>
                   <button
                     type="button"
                     phx-click="remove_relationship"
@@ -330,7 +332,10 @@ defmodule ChurchappWeb.FamilyRelationshipSelector do
                   <%!-- Step 1: Select relationship type --%>
                   <%= if @relationship_types == [] do %>
                     <div class="py-8 text-center text-gray-500">
-                      <.icon name="hero-exclamation-triangle" class="h-8 w-8 mx-auto mb-2 text-yellow-500" />
+                      <.icon
+                        name="hero-exclamation-triangle"
+                        class="h-8 w-8 mx-auto mb-2 text-yellow-500"
+                      />
                       <p class="text-sm">No relationship types available.</p>
                       <p class="text-xs mt-1">Please add some in Admin → Family Relations.</p>
                     </div>
