@@ -184,30 +184,14 @@ defmodule ChurchappWeb.CongregantsLive.ShowLive do
               <%= if @family_relationships == [] do %>
                 <p class="text-sm text-gray-500 italic">No family relationships recorded</p>
               <% else %>
-                <div class="flex flex-wrap gap-3">
-                  <%= for rel <- @family_relationships do %>
-                    <.link
-                      navigate={~p"/congregants/#{rel.related_congregant.id}"}
-                      class="inline-flex items-center gap-2 px-4 py-2 text-sm bg-dark-700 hover:bg-dark-600 rounded-lg border border-dark-600 hover:border-primary-500/50 transition-all"
-                    >
-                      <.avatar
-                        image={rel.related_congregant.image}
-                        first_name={rel.related_congregant.first_name}
-                        last_name={rel.related_congregant.last_name}
-                        size="sm"
-                      />
-                      <span class="text-gray-300">
-                        <span class="text-primary-400 font-medium">
-                          {rel.family_relationship_type.display_name}
-                        </span>
-                        <span class="text-gray-500 mx-1">-</span>
-                        <span class="text-white">
-                          {rel.related_congregant.first_name} {rel.related_congregant.last_name}
-                        </span>
-                      </span>
-                      <.icon name="hero-arrow-right" class="h-3 w-3 text-gray-500" />
-                    </.link>
-                  <% end %>
+                <div class="flex flex-wrap gap-2">
+                  <.link
+                    :for={rel <- @family_relationships}
+                    navigate={~p"/congregants/#{rel.related_congregant.id}"}
+                    class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-900/30 text-white border border-white hover:bg-primary-900/50 transition-all"
+                  >
+                    {rel.family_relationship_type.display_name} of {rel.related_congregant.first_name} {rel.related_congregant.last_name}
+                  </.link>
                 </div>
               <% end %>
             </div>

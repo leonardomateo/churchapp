@@ -127,7 +127,7 @@ defmodule ChurchappWeb.FamilyRelationshipSelector do
      |> assign(:filtered_congregants, socket.assigns.congregants)}
   end
 
-  def handle_event("search_congregant", %{"query" => query}, socket) do
+  def handle_event("search_congregant", %{"value" => query}, socket) do
     filtered =
       if query == "" do
         socket.assigns.congregants
@@ -238,9 +238,9 @@ defmodule ChurchappWeb.FamilyRelationshipSelector do
             type="button"
             phx-click="open_add_modal"
             phx-target={@myself}
-            class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-primary-400 hover:text-primary-300 bg-primary-500/10 hover:bg-primary-500/20 rounded-md border border-primary-500/30 transition-colors"
+            class="flex items-center h-[38px] px-4 text-sm font-medium text-primary-500 bg-primary-500/10 border border-primary-500/20 rounded-md hover:bg-primary-500/20 hover:border-primary-500/30 transition-all duration-200 whitespace-nowrap"
           >
-            <.icon name="hero-plus" class="mr-1 h-3 w-3" /> Add Relationship
+            <.icon name="hero-plus" class="h-5 w-5 mr-1.5" /> Add Relationship
           </button>
         </div>
 
@@ -252,25 +252,18 @@ defmodule ChurchappWeb.FamilyRelationshipSelector do
               <p class="text-sm">No family relationships added yet</p>
             </div>
           <% else %>
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-2 items-center">
               <%= for rel <- @relationships do %>
-                <div class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-dark-700 rounded-lg border border-dark-600">
-                  <.icon name="hero-heart" class="h-4 w-4 text-primary-400" />
-                  <span class="text-gray-300">
-                    <span class="text-primary-400 font-medium">
-                      {get_relationship_type_name(rel, @mode)}
-                    </span>
-                    <span class="text-gray-500 mx-1">of</span>
-                    <span class="text-white">{get_related_name(rel, @mode)}</span>
-                  </span>
+                <div class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/25 hover:border-cyan-500/40 transition-all duration-200">
+                  <span>{get_relationship_type_name(rel, @mode)} of {get_related_name(rel, @mode)}</span>
                   <button
                     type="button"
                     phx-click="remove_relationship"
                     phx-value-id={get_relationship_id(rel, @mode)}
                     phx-target={@myself}
-                    class="ml-1 text-gray-500 hover:text-red-400 transition-colors"
+                    class="ml-2 text-cyan-400/70 hover:text-red-400 transition-colors"
                   >
-                    <.icon name="hero-x-mark" class="h-4 w-4" />
+                    <.icon name="hero-x-mark" class="h-3.5 w-3.5" />
                   </button>
                 </div>
               <% end %>
@@ -282,12 +275,17 @@ defmodule ChurchappWeb.FamilyRelationshipSelector do
       <%!-- Add Relationship Modal --%>
       <%= if @show_add_modal do %>
         <div
-          class="fixed inset-0 z-50 overflow-y-auto"
+          id={"#{@id}-modal"}
+          class="fixed inset-0 z-[100] overflow-y-auto"
           aria-labelledby="modal-title"
           role="dialog"
           aria-modal="true"
+          phx-window-keydown="close_modal"
+          phx-key="escape"
+          phx-target={@myself}
         >
           <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <%!-- Backdrop --%>
             <div
               class="fixed inset-0 bg-dark-900/75 transition-opacity"
               phx-click="close_modal"
@@ -295,32 +293,35 @@ defmodule ChurchappWeb.FamilyRelationshipSelector do
             >
             </div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-            <div class="inline-block align-bottom bg-dark-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-dark-700">
+            <%!-- Modal Panel --%>
+            <div
+              class="inline-block align-bottom bg-dark-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-dark-700 relative z-[101]"
+              phx-click-away="close_modal"
+              phx-target={@myself}
+            >
               <%!-- Modal Header --%>
               <div class="px-6 py-4 border-b border-dark-700 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <%= if @step == 2 do %>
-                    <button
-                      type="button"
+                    <div
                       phx-click="back_to_types"
                       phx-target={@myself}
-                      class="p-1 text-gray-400 hover:text-white rounded-md hover:bg-dark-700 transition-colors"
+                      class="p-1 text-gray-400 hover:text-white rounded-md hover:bg-dark-700 transition-colors cursor-pointer"
                     >
                       <.icon name="hero-arrow-left" class="h-5 w-5" />
-                    </button>
+                    </div>
                   <% end %>
                   <h3 class="text-lg font-medium text-white">
                     {if @step == 1, do: "Select Relationship Type", else: "Select Family Member"}
                   </h3>
                 </div>
-                <button
-                  type="button"
+                <div
                   phx-click="close_modal"
                   phx-target={@myself}
-                  class="p-1 text-gray-400 hover:text-white rounded-md hover:bg-dark-700 transition-colors"
+                  class="p-1 text-gray-400 hover:text-white rounded-md hover:bg-dark-700 transition-colors cursor-pointer"
                 >
                   <.icon name="hero-x-mark" class="h-5 w-5" />
-                </button>
+                </div>
               </div>
 
               <%!-- Modal Content --%>
@@ -336,12 +337,11 @@ defmodule ChurchappWeb.FamilyRelationshipSelector do
                   <% else %>
                     <div class="grid grid-cols-2 gap-3">
                       <%= for type <- @relationship_types do %>
-                        <button
-                          type="button"
+                        <div
                           phx-click="select_type"
                           phx-value-id={type.id}
                           phx-target={@myself}
-                          class="flex items-center gap-3 p-3 text-left bg-dark-700/50 hover:bg-dark-700 rounded-lg border border-dark-600 hover:border-primary-500/50 transition-all"
+                          class="flex items-center gap-3 p-3 text-left bg-dark-700/50 hover:bg-dark-700 rounded-lg border border-dark-600 hover:border-primary-500/50 transition-all cursor-pointer"
                         >
                           <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-primary-500/20 flex items-center justify-center">
                             <.icon name="hero-heart" class="w-5 h-5 text-primary-400" />
@@ -349,7 +349,7 @@ defmodule ChurchappWeb.FamilyRelationshipSelector do
                           <div>
                             <div class="text-sm font-medium text-white">{type.display_name}</div>
                           </div>
-                        </button>
+                        </div>
                       <% end %>
                     </div>
                   <% end %>
@@ -362,22 +362,22 @@ defmodule ChurchappWeb.FamilyRelationshipSelector do
                     </div>
 
                     <%!-- Search --%>
-                    <form phx-change="search_congregant" phx-target={@myself}>
-                      <div class="relative">
-                        <.icon
-                          name="hero-magnifying-glass"
-                          class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500"
-                        />
-                        <input
-                          type="text"
-                          name="query"
-                          placeholder="Search by name or member ID..."
-                          value={@search_query}
-                          phx-debounce="200"
-                          class="w-full pl-10 pr-4 py-2 text-sm text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        />
-                      </div>
-                    </form>
+                    <div class="relative">
+                      <.icon
+                        name="hero-magnifying-glass"
+                        class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500"
+                      />
+                      <input
+                        type="text"
+                        name="query"
+                        placeholder="Search by name or member ID..."
+                        value={@search_query}
+                        phx-keyup="search_congregant"
+                        phx-target={@myself}
+                        phx-debounce="200"
+                        class="w-full pl-10 pr-4 py-2 text-sm text-gray-200 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                    </div>
 
                     <%!-- Congregant List --%>
                     <div class="space-y-2 max-h-64 overflow-y-auto">
@@ -387,12 +387,11 @@ defmodule ChurchappWeb.FamilyRelationshipSelector do
                         </div>
                       <% else %>
                         <%= for congregant <- @filtered_congregants do %>
-                          <button
-                            type="button"
+                          <div
                             phx-click="select_congregant"
                             phx-value-id={congregant.id}
                             phx-target={@myself}
-                            class="w-full flex items-center gap-3 p-3 text-left bg-dark-700/50 hover:bg-dark-700 rounded-lg border border-dark-600 hover:border-primary-500/50 transition-all"
+                            class="w-full flex items-center gap-3 p-3 text-left bg-dark-700/50 hover:bg-dark-700 rounded-lg border border-dark-600 hover:border-primary-500/50 transition-all cursor-pointer"
                           >
                             <div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center">
                               <span class="text-primary-400 font-medium text-sm">
@@ -407,7 +406,7 @@ defmodule ChurchappWeb.FamilyRelationshipSelector do
                                 ID: {congregant.member_id}
                               </div>
                             </div>
-                          </button>
+                          </div>
                         <% end %>
                       <% end %>
                     </div>

@@ -35,6 +35,20 @@ import listPlugin from '@fullcalendar/list'
 import interactionPlugin from '@fullcalendar/interaction'
 import { RRule } from 'rrule'
 
+// Modal Portal Hook - moves modal to body to avoid form nesting issues
+const ModalPortal = {
+  mounted() {
+    // Move the modal to body to avoid form nesting
+    document.body.appendChild(this.el)
+  },
+  destroyed() {
+    // Clean up - remove from body if still there
+    if (this.el.parentNode === document.body) {
+      document.body.removeChild(this.el)
+    }
+  }
+}
+
 // Mobile Menu Hook
 const MobileMenu = {
   mounted() {
@@ -1095,7 +1109,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, DatePickerClose, DateTimeInput, LocalTime, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, DatePickerClose, DateTimeInput, LocalTime, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar, ModalPortal},
 })
 
 // Show progress bar on live navigation and form submits
