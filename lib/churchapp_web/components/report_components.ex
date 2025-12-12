@@ -175,20 +175,34 @@ defmodule ChurchappWeb.ReportComponents do
   end
 
   @doc """
-  Results table with sortable headers.
+  Results table with sortable headers, custom column visibility, and aggregates.
   """
   attr :resource_config, :map, required: true
   attr :results, :list, required: true
   attr :sort_by, :atom, required: true
   attr :sort_dir, :atom, required: true
+  attr :visible_columns, :list, default: []
+  attr :show_aggregates, :boolean, default: false
+  attr :aggregates, :map, default: %{}
 
   def results_table(assigns) do
+    # Filter fields to only show visible columns
+    visible_fields =
+      if length(assigns.visible_columns) > 0 do
+        assigns.resource_config.fields
+        |> Enum.filter(&(&1.key in assigns.visible_columns))
+      else
+        assigns.resource_config.fields
+      end
+
+    assigns = assign(assigns, :visible_fields, visible_fields)
+
     ~H"""
     <div class="overflow-x-auto bg-dark-800 border border-dark-700 rounded-lg">
       <table class="min-w-full divide-y divide-dark-700">
         <thead class="bg-dark-900">
           <tr>
-            <%= for field <- @resource_config.fields do %>
+            <%= for field <- @visible_fields do %>
               <th
                 scope="col"
                 class={[
@@ -215,7 +229,7 @@ defmodule ChurchappWeb.ReportComponents do
         <tbody class="bg-dark-800 divide-y divide-dark-700">
           <%= for result <- @results do %>
             <tr class="hover:bg-dark-700 transition-colors">
-              <%= for field <- @resource_config.fields do %>
+              <%= for field <- @visible_fields do %>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                   <.field_value result={result} field={field} />
                 </td>
@@ -223,9 +237,83 @@ defmodule ChurchappWeb.ReportComponents do
             </tr>
           <% end %>
         </tbody>
+        <%= if @show_aggregates && map_size(@aggregates) > 0 do %>
+          <tfoot class="bg-dark-900 border-t-2 border-dark-600">
+            <.aggregates_row visible_fields={@visible_fields} aggregates={@aggregates} />
+          </tfoot>
+        <% end %>
       </table>
     </div>
     """
+  end
+
+  @doc """
+  Aggregates footer row displaying calculated values.
+  """
+  attr :visible_fields, :list, required: true
+  attr :aggregates, :map, required: true
+
+  def aggregates_row(assigns) do
+    ~H"""
+    <tr>
+      <%= for field <- @visible_fields do %>
+        <td class="px-6 py-3 text-sm">
+          <%= case Map.get(@aggregates, field.key) do %>
+            <% %{type: :numeric} = agg -> %>
+              <div class="space-y-1">
+                <div class="flex items-center gap-2 text-gray-400">
+                  <span class="text-xs font-medium">Sum:</span>
+                  <span class="text-white">{format_aggregate_value(agg.sum, field.type)}</span>
+                </div>
+                <div class="flex items-center gap-2 text-gray-400">
+                  <span class="text-xs font-medium">Avg:</span>
+                  <span class="text-white">{format_aggregate_value(agg.avg, field.type)}</span>
+                </div>
+                <div class="flex items-center gap-2 text-gray-400">
+                  <span class="text-xs font-medium">Min:</span>
+                  <span class="text-gray-300">{format_aggregate_value(agg.min, field.type)}</span>
+                </div>
+                <div class="flex items-center gap-2 text-gray-400">
+                  <span class="text-xs font-medium">Max:</span>
+                  <span class="text-gray-300">{format_aggregate_value(agg.max, field.type)}</span>
+                </div>
+              </div>
+            <% %{type: :non_numeric} = agg -> %>
+              <div class="space-y-1">
+                <div class="flex items-center gap-2 text-gray-400">
+                  <span class="text-xs font-medium">Count:</span>
+                  <span class="text-white">{agg.count}</span>
+                </div>
+                <div class="flex items-center gap-2 text-gray-400">
+                  <span class="text-xs font-medium">Unique:</span>
+                  <span class="text-gray-300">{agg.unique_count}</span>
+                </div>
+              </div>
+            <% _ -> %>
+              <span class="text-gray-500">-</span>
+          <% end %>
+        </td>
+      <% end %>
+    </tr>
+    """
+  end
+
+  defp format_aggregate_value(nil, _type), do: "-"
+
+  defp format_aggregate_value(value, :currency) do
+    case value do
+      %Decimal{} -> "$#{Decimal.round(value, 2) |> Decimal.to_string(:normal)}"
+      n when is_number(n) -> "$#{Float.round(n / 1, 2)}"
+      _ -> "-"
+    end
+  end
+
+  defp format_aggregate_value(value, _type) do
+    case value do
+      %Decimal{} -> Decimal.round(value, 2) |> Decimal.to_string(:normal)
+      n when is_number(n) -> Float.round(n / 1, 2)
+      _ -> to_string(value)
+    end
   end
 
   @doc """
@@ -657,6 +745,109 @@ defmodule ChurchappWeb.ReportComponents do
     """
   end
 
+  @doc """
+  Modal for selecting which columns to display in the report table.
+  """
+  attr :resource_config, :map, required: true
+  attr :visible_columns, :list, required: true
+
+  def column_selection_modal(assigns) do
+    total_columns = length(assigns.resource_config.fields)
+    selected_count = length(assigns.visible_columns)
+    assigns = assign(assigns, :total_columns, total_columns)
+    assigns = assign(assigns, :selected_count, selected_count)
+
+    ~H"""
+    <div
+      class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      phx-click="close_column_modal"
+    >
+      <div
+        class="bg-dark-800 border border-dark-700 rounded-lg w-full max-w-lg max-h-[80vh] flex flex-col"
+        phx-click-away="close_column_modal"
+      >
+        <div class="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+          <div>
+            <h3 class="text-lg font-medium text-white">Select Columns</h3>
+            <p class="text-sm text-gray-400 mt-1">
+              {@selected_count} of {@total_columns} columns selected
+            </p>
+          </div>
+          <button
+            type="button"
+            phx-click="close_column_modal"
+            class="text-gray-400 hover:text-white transition-colors"
+          >
+            <.icon name="hero-x-mark" class="h-5 w-5" />
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6">
+          <div class="space-y-2">
+            <%= for field <- @resource_config.fields do %>
+              <label class="flex items-center p-3 bg-dark-900 border border-dark-700 rounded-lg hover:bg-dark-700 hover:border-dark-600 transition-colors cursor-pointer group">
+                <input
+                  type="checkbox"
+                  phx-click="toggle_column"
+                  phx-value-field={field.key}
+                  checked={field.key in @visible_columns}
+                  class="h-4 w-4 text-primary-500 bg-dark-900 border-dark-700 rounded focus:ring-2 focus:ring-primary-500"
+                />
+                <div class="ml-3 flex-1">
+                  <span class="text-sm font-medium text-gray-200 group-hover:text-white">
+                    {field.label}
+                  </span>
+                  <span class="ml-2 text-xs text-gray-500">
+                    ({format_field_type(field.type)})
+                  </span>
+                </div>
+                <%= if field.key in @resource_config.sortable_fields do %>
+                  <span class="text-xs text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded">
+                    Sortable
+                  </span>
+                <% end %>
+              </label>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between px-6 py-4 border-t border-dark-700 bg-dark-900/50">
+          <div class="flex gap-2">
+            <button
+              type="button"
+              phx-click="select_all_columns"
+              class="px-3 py-1.5 text-xs font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded hover:bg-dark-600 transition-colors"
+            >
+              Select All
+            </button>
+            <button
+              type="button"
+              phx-click="deselect_all_columns"
+              class="px-3 py-1.5 text-xs font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded hover:bg-dark-600 transition-colors"
+            >
+              Deselect All
+            </button>
+            <button
+              type="button"
+              phx-click="reset_columns"
+              class="px-3 py-1.5 text-xs font-medium text-gray-300 bg-dark-700 border border-dark-600 rounded hover:bg-dark-600 transition-colors"
+            >
+              Reset to Default
+            </button>
+          </div>
+          <button
+            type="button"
+            phx-click="close_column_modal"
+            class="px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md shadow-lg shadow-primary-500/20 transition-colors"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
   # Helper functions
 
   defp format_option_label(option) when is_atom(option) do
@@ -671,4 +862,16 @@ defmodule ChurchappWeb.ReportComponents do
   defp format_date(datetime) do
     Calendar.strftime(datetime, "%b %d, %Y")
   end
+
+  defp format_field_type(:currency), do: "Currency"
+  defp format_field_type(:datetime), do: "Date/Time"
+  defp format_field_type(:date), do: "Date"
+  defp format_field_type(:boolean), do: "Yes/No"
+  defp format_field_type(:integer), do: "Number"
+  defp format_field_type(:decimal), do: "Decimal"
+  defp format_field_type(:float), do: "Number"
+  defp format_field_type(:string), do: "Text"
+  defp format_field_type(:atom), do: "Option"
+  defp format_field_type(:array), do: "List"
+  defp format_field_type(other), do: to_string(other) |> String.capitalize()
 end

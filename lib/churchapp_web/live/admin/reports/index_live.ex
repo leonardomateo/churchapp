@@ -36,6 +36,12 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
       |> assign(:selected_chart, nil)
       |> assign(:chart_data, [])
       |> assign(:chart_data_json, "[]")
+      # Column selection assigns
+      |> assign(:visible_columns, [])
+      |> assign(:show_column_modal, false)
+      # Aggregate functions assigns
+      |> assign(:show_aggregates, false)
+      |> assign(:aggregates, %{})
 
     {:ok, socket}
   end
@@ -70,6 +76,12 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
         _ -> nil
       end
 
+    # Initialize visible columns with all exportable fields
+    visible_columns =
+      resource_config.fields
+      |> Enum.filter(& &1.exportable)
+      |> Enum.map(& &1.key)
+
     socket =
       socket
       |> assign(:selected_resource_key, resource_key_atom)
@@ -83,6 +95,9 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
       |> assign(:selected_chart, default_chart)
       |> assign(:chart_data, [])
       |> assign(:chart_data_json, "[]")
+      |> assign(:visible_columns, visible_columns)
+      |> assign(:show_aggregates, false)
+      |> assign(:aggregates, %{})
       |> load_templates(resource_key_atom)
       |> push_patch(to: ~p"/admin/reports?resource=#{resource_key}")
 
@@ -498,11 +513,110 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
     {:noreply, socket}
   end
 
+  # Column Management Events
+
+  def handle_event("show_column_modal", _params, socket) do
+    {:noreply, assign(socket, :show_column_modal, true)}
+  end
+
+  def handle_event("close_column_modal", _params, socket) do
+    {:noreply, assign(socket, :show_column_modal, false)}
+  end
+
+  def handle_event("toggle_column", %{"field" => field}, socket) do
+    field_atom = String.to_existing_atom(field)
+    visible_columns = socket.assigns.visible_columns
+
+    new_visible_columns =
+      if field_atom in visible_columns do
+        List.delete(visible_columns, field_atom)
+      else
+        # Add column in the original order from resource config
+        all_field_keys =
+          socket.assigns.selected_resource_config.fields
+          |> Enum.map(& &1.key)
+
+        (visible_columns ++ [field_atom])
+        |> Enum.sort_by(fn key -> Enum.find_index(all_field_keys, &(&1 == key)) || 999 end)
+      end
+
+    socket =
+      socket
+      |> assign(:visible_columns, new_visible_columns)
+      |> maybe_calculate_aggregates()
+
+    {:noreply, socket}
+  end
+
+  def handle_event("reset_columns", _params, socket) do
+    visible_columns =
+      socket.assigns.selected_resource_config.fields
+      |> Enum.filter(& &1.exportable)
+      |> Enum.map(& &1.key)
+
+    socket =
+      socket
+      |> assign(:visible_columns, visible_columns)
+      |> maybe_calculate_aggregates()
+
+    {:noreply, socket}
+  end
+
+  def handle_event("select_all_columns", _params, socket) do
+    visible_columns =
+      socket.assigns.selected_resource_config.fields
+      |> Enum.map(& &1.key)
+
+    socket =
+      socket
+      |> assign(:visible_columns, visible_columns)
+      |> maybe_calculate_aggregates()
+
+    {:noreply, socket}
+  end
+
+  def handle_event("deselect_all_columns", _params, socket) do
+    socket =
+      socket
+      |> assign(:visible_columns, [])
+      |> assign(:aggregates, %{})
+
+    {:noreply, socket}
+  end
+
+  # Aggregate Functions Events
+
+  def handle_event("toggle_aggregates", _params, socket) do
+    show_aggregates = !socket.assigns.show_aggregates
+
+    socket =
+      if show_aggregates && length(socket.assigns.results) > 0 do
+        socket
+        |> assign(:show_aggregates, true)
+        |> calculate_aggregates()
+      else
+        socket
+        |> assign(:show_aggregates, show_aggregates)
+        |> assign(:aggregates, %{})
+      end
+
+    {:noreply, socket}
+  end
+
   # Private functions
 
   defp load_resource_config(socket, resource_key) do
     resource_config = ResourceConfig.get_resource(resource_key)
-    assign(socket, :selected_resource_config, resource_config)
+
+    # Initialize visible columns with all exportable fields
+    visible_columns =
+      resource_config.fields
+      |> Enum.filter(& &1.exportable)
+      |> Enum.map(& &1.key)
+
+    socket
+    |> assign(:selected_resource_config, resource_config)
+    |> assign(:visible_columns, visible_columns)
   end
 
   defp apply_url_params(socket, params) do
@@ -575,6 +689,7 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
           |> assign(:metadata, metadata)
           |> assign(:loading, false)
           |> maybe_prepare_chart_data()
+          |> maybe_calculate_aggregates()
 
         {:error, _error} ->
           socket
@@ -584,6 +699,7 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
           |> assign(:loading, false)
           |> assign(:chart_data, [])
           |> assign(:chart_data_json, "[]")
+          |> assign(:aggregates, %{})
       end
     else
       socket
@@ -729,6 +845,98 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
 
   defp format_group_label(value), do: to_string(value)
 
+  # Aggregate calculation functions
+
+  defp maybe_calculate_aggregates(socket) do
+    if socket.assigns.show_aggregates && length(socket.assigns.results) > 0 do
+      calculate_aggregates(socket)
+    else
+      socket
+    end
+  end
+
+  defp calculate_aggregates(socket) do
+    results = socket.assigns.results
+    visible_columns = socket.assigns.visible_columns
+    fields = socket.assigns.selected_resource_config.fields
+
+    aggregates =
+      Enum.reduce(visible_columns, %{}, fn field_key, acc ->
+        field_config = Enum.find(fields, &(&1.key == field_key))
+
+        if field_config do
+          aggregate_values = calculate_field_aggregates(results, field_key, field_config.type)
+          Map.put(acc, field_key, aggregate_values)
+        else
+          acc
+        end
+      end)
+
+    assign(socket, :aggregates, aggregates)
+  end
+
+  defp calculate_field_aggregates(results, field_key, type)
+       when type in [:integer, :currency, :decimal, :float] do
+    values =
+      results
+      |> Enum.map(&Map.get(&1, field_key))
+      |> Enum.reject(&is_nil/1)
+
+    if length(values) > 0 do
+      sum =
+        Enum.reduce(values, Decimal.new(0), fn val, acc ->
+          case val do
+            %Decimal{} = d -> Decimal.add(acc, d)
+            n when is_number(n) -> Decimal.add(acc, Decimal.from_float(n / 1))
+            _ -> acc
+          end
+        end)
+
+      count = length(values)
+      avg = if count > 0, do: Decimal.div(sum, count), else: Decimal.new(0)
+
+      min_val =
+        Enum.min_by(values, fn
+          %Decimal{} = d -> Decimal.to_float(d)
+          n when is_number(n) -> n
+          _ -> 0
+        end)
+
+      max_val =
+        Enum.max_by(values, fn
+          %Decimal{} = d -> Decimal.to_float(d)
+          n when is_number(n) -> n
+          _ -> 0
+        end)
+
+      %{
+        sum: sum,
+        avg: avg,
+        min: min_val,
+        max: max_val,
+        count: count,
+        type: :numeric
+      }
+    else
+      %{sum: nil, avg: nil, min: nil, max: nil, count: 0, type: :numeric}
+    end
+  end
+
+  defp calculate_field_aggregates(results, field_key, _type) do
+    values =
+      results
+      |> Enum.map(&Map.get(&1, field_key))
+      |> Enum.reject(&(&1 == nil || &1 == ""))
+
+    unique_count = values |> Enum.uniq() |> length()
+
+    %{
+      count: length(values),
+      unique_count: unique_count,
+      type: :non_numeric
+    }
+  end
+
   defp load_templates(socket, resource_key) do
     actor = socket.assigns.current_user
 
@@ -817,6 +1025,12 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
         <div class="flex items-center gap-4">
           <h2 class="text-2xl font-bold text-white">Reports</h2>
         </div>
+        <.link
+          navigate={~p"/admin/reports/comparison"}
+          class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-300 bg-dark-800 border border-dark-700 rounded-md hover:bg-dark-700 hover:border-dark-600 transition-colors"
+        >
+          <.icon name="hero-arrows-right-left" class="mr-2 h-4 w-4" /> Comparison Reports
+        </.link>
       </div>
 
       <%!-- Resource Selection --%>
@@ -872,7 +1086,10 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
           <div class="flex items-center gap-4">
             <div class="text-sm text-gray-400">
               <%= if @metadata.total_count > 0 do %>
-                Showing {(@page - 1) * @per_page + 1} to {min(@page * @per_page, @metadata.total_count)} of {@metadata.total_count} results
+                Showing {(@page - 1) * @per_page + 1} to {min(
+                  @page * @per_page,
+                  @metadata.total_count
+                )} of {@metadata.total_count} results
               <% else %>
                 No results found
               <% end %>
@@ -884,6 +1101,39 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
             <% end %>
           </div>
           <div class="flex items-center gap-3">
+            <%!-- Column Selection Button --%>
+            <button
+              type="button"
+              phx-click="show_column_modal"
+              class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-300 bg-dark-800 border border-dark-700 rounded-md hover:bg-dark-700 hover:border-dark-600 transition-colors"
+              title="Select columns to display"
+            >
+              <.icon name="hero-view-columns" class="h-4 w-4" />
+              <span class="ml-2 hidden sm:inline">Columns</span>
+              <span class="ml-1 text-xs text-gray-500">({length(@visible_columns)})</span>
+            </button>
+
+            <%!-- Aggregates Toggle Button --%>
+            <%= if length(@results) > 0 && @view_mode == :table do %>
+              <button
+                type="button"
+                phx-click="toggle_aggregates"
+                class={[
+                  "inline-flex items-center px-3 py-2 text-sm font-medium rounded-md border transition-colors",
+                  if(@show_aggregates,
+                    do:
+                      "text-primary-400 bg-primary-500/10 border-primary-500/30 hover:bg-primary-500/20",
+                    else:
+                      "text-gray-300 bg-dark-800 border-dark-700 hover:bg-dark-700 hover:border-dark-600"
+                  )
+                ]}
+                title={if @show_aggregates, do: "Hide aggregates", else: "Show aggregates"}
+              >
+                <.icon name="hero-calculator" class="h-4 w-4" />
+                <span class="ml-2 hidden sm:inline">Aggregates</span>
+              </button>
+            <% end %>
+
             <button
               type="button"
               phx-click="generate_report"
@@ -956,6 +1206,9 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
                 results={@results}
                 sort_by={@sort_by}
                 sort_dir={@sort_dir}
+                visible_columns={@visible_columns}
+                show_aggregates={@show_aggregates}
+                aggregates={@aggregates}
               />
 
               <%!-- Pagination --%>
@@ -1015,6 +1268,14 @@ defmodule ChurchappWeb.Admin.ReportsLive.IndexLive do
         <ChurchappWeb.ReportComponents.manage_templates_modal
           templates={@templates}
           current_user={@current_user}
+        />
+      <% end %>
+
+      <%!-- Column Selection Modal --%>
+      <%= if @show_column_modal && @selected_resource_config do %>
+        <ChurchappWeb.ReportComponents.column_selection_modal
+          resource_config={@selected_resource_config}
+          visible_columns={@visible_columns}
         />
       <% end %>
     </div>

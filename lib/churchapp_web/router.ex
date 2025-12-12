@@ -123,6 +123,7 @@ defmodule ChurchappWeb.Router do
 
       # Reports
       live("/reports", Admin.ReportsLive.IndexLive, :index)
+      live("/reports/comparison", Admin.ReportsLive.ComparisonLive, :index)
     end
   end
 
