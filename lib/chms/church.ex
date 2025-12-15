@@ -90,5 +90,50 @@ defmodule Chms.Church do
       define :destroy_family_relationship, action: :destroy
       define :get_family_relationship_by_id, action: :read, get_by: [:id]
     end
+
+    # Attendance Module
+    resource Chms.Church.AttendanceCategories do
+      define :create_attendance_category, action: :create
+      define :list_attendance_categories, action: :read
+      define :list_active_attendance_categories, action: :list_active
+      define :update_attendance_category, action: :update
+      define :deactivate_attendance_category, action: :deactivate
+      define :destroy_attendance_category, action: :destroy
+      define :get_attendance_category_by_id, action: :read, get_by: [:id]
+      define :get_attendance_category_by_name, action: :read, get_by: [:name]
+    end
+
+    resource Chms.Church.AttendanceSessions do
+      define :create_attendance_session, action: :create
+      define :list_attendance_sessions, action: :read
+      define :list_recent_attendance_sessions, action: :list_recent
+
+      define :list_attendance_sessions_by_date_range,
+        action: :list_by_date_range,
+        args: [:start_date, :end_date]
+
+      define :list_attendance_sessions_by_category,
+        action: :list_by_category,
+        args: [:category_id]
+
+      define :update_attendance_session, action: :update
+      define :update_attendance_session_total, action: :update_total_present, args: [:total]
+      define :destroy_attendance_session, action: :destroy
+      define :get_attendance_session_by_id, action: :read, get_by: [:id]
+    end
+
+    resource Chms.Church.AttendanceRecords do
+      define :create_attendance_record, action: :create
+      define :list_attendance_records, action: :read
+      define :list_attendance_records_by_session, action: :list_by_session, args: [:session_id]
+
+      define :list_attendance_records_by_congregant,
+        action: :list_by_congregant,
+        args: [:congregant_id]
+
+      define :update_attendance_record, action: :update
+      define :destroy_attendance_record, action: :destroy
+      define :get_attendance_record_by_id, action: :read, get_by: [:id]
+    end
   end
 end

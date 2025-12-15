@@ -96,6 +96,13 @@ defmodule ChurchappWeb.Router do
       live("/events/new", EventsLive.NewLive, :new)
       live("/events/:id", EventsLive.ShowLive, :show)
       live("/events/:id/edit", EventsLive.EditLive, :edit)
+
+      # Attendance
+      live("/attendance", AttendanceLive.IndexLive, :index)
+      live("/attendance/new", AttendanceLive.NewLive, :new)
+      live("/attendance/reports", AttendanceLive.ReportsLive, :reports)
+      live("/attendance/:id", AttendanceLive.ShowLive, :show)
+      live("/attendance/:id/edit", AttendanceLive.EditLive, :edit)
     end
   end
 
@@ -125,6 +132,11 @@ defmodule ChurchappWeb.Router do
       live("/family-relationship-types", FamilyRelationshipTypesLive.IndexLive, :index)
       live("/family-relationship-types/new", FamilyRelationshipTypesLive.NewLive, :new)
       live("/family-relationship-types/:id/edit", FamilyRelationshipTypesLive.EditLive, :edit)
+
+      # Attendance Categories
+      live("/attendance-categories", AttendanceCategoriesLive.IndexLive, :index)
+      live("/attendance-categories/new", AttendanceCategoriesLive.NewLive, :new)
+      live("/attendance-categories/:id/edit", AttendanceCategoriesLive.EditLive, :edit)
     end
   end
 

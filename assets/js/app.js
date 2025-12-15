@@ -1105,6 +1105,24 @@ const IcalDownload = {
   }
 }
 
+// DownloadCSV Hook - handles CSV file download from LiveView events (for attendance reports)
+const DownloadCSV = {
+  mounted() {
+    this.handleEvent("download", ({content, filename}) => {
+      const blob = new Blob([content], { type: "text/csv;charset=utf-8;" })
+      const link = document.createElement("a")
+      const url = URL.createObjectURL(blob)
+      link.setAttribute("href", url)
+      link.setAttribute("download", filename)
+      link.style.visibility = "hidden"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    })
+  }
+}
+
 // FlashAutoHide Hook - automatically hides flash messages after a delay
 const FlashAutoHide = {
   mounted() {
@@ -1145,7 +1163,7 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, DatePickerClose, DateTimeInput, LocalTime, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar, ModalPortal, FlashAutoHide},
+  hooks: {...colocatedHooks, MobileMenu, ThemeDropdown, PhoneFormat, ImageUpload, AutoFocus, DatePicker, DatePickerClose, DateTimeInput, LocalTime, CsvDownload, BarChart, PieChart, DoughnutChart, EventCalendar, IcalDownload, PrintCalendar, ModalPortal, FlashAutoHide, DownloadCSV},
 })
 
 // Show progress bar on live navigation and form submits

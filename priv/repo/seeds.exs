@@ -731,6 +731,40 @@ else
   end)
 end
 
+# Seed Attendance Categories
+IO.puts("\nSeeding attendance categories...")
+
+# Check if attendance categories already exist
+existing_attendance_categories =
+  case Chms.Church.AttendanceCategories
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, categories} -> categories
+    _ -> []
+  end
+
+if length(existing_attendance_categories) > 0 do
+  IO.puts("⊙ Attendance categories already exist, skipping seed")
+else
+  # Get default attendance categories from the module
+  default_attendance_categories = Chms.Church.AttendanceCategories.default_categories()
+
+  Enum.each(default_attendance_categories, fn attrs ->
+    attrs_with_active = Map.put(attrs, :active, true)
+
+    case Chms.Church.AttendanceCategories
+         |> Ash.Changeset.for_create(:create, attrs_with_active)
+         |> Ash.create(authorize?: false) do
+      {:ok, category} ->
+        IO.puts("✓ Created attendance category: #{category.name} (#{category.color})")
+
+      {:error, changeset} ->
+        IO.puts("✗ Failed to create attendance category: #{attrs.name}")
+        IO.inspect(changeset.errors)
+    end
+  end)
+end
+
 # Seed Week Ending Reports
 IO.puts("\nSeeding week ending reports...")
 
@@ -1270,6 +1304,14 @@ total_events =
     _ -> 0
   end
 
+total_attendance_categories =
+  case Chms.Church.AttendanceCategories
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, all_categories} -> length(all_categories)
+    _ -> 0
+  end
+
 IO.puts("\n" <> String.duplicate("=", 50))
 IO.puts("DATABASE STATISTICS")
 IO.puts(String.duplicate("=", 50))
@@ -1278,6 +1320,7 @@ IO.puts("Total contributions: #{total_contributions}")
 IO.puts("Total ministry fund transactions: #{total_ministry_funds}")
 IO.puts("Total week ending reports: #{total_week_ending_reports}")
 IO.puts("Total events: #{total_events}")
+IO.puts("Total attendance categories: #{total_attendance_categories}")
 IO.puts("\nCongregants by Status:")
 
 Enum.each(status_counts, fn {status, count} ->

@@ -75,6 +75,20 @@
           <.icon name="hero-calendar-days" class="mr-3 h-5 w-5 flex-shrink-0" /> Calendar
         </.link>
 
+        <.link
+          navigate={~p"/attendance"}
+          class={[
+            "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+            if(String.starts_with?(@current_path || "", "/attendance"),
+              do: "bg-primary-500/10 text-primary-500",
+              else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+            )
+          ]}
+        >
+          <.icon name="hero-clipboard-document-check" class="mr-3 h-5 w-5 flex-shrink-0" />
+          Attendance
+        </.link>
+
         <%!-- Admin Section - Only visible to admins and super_admins --%>
         <%= if @current_user && @current_user.role in [:super_admin, :admin] do %>
           <div class="pt-4 mt-4 border-t border-dark-700">
@@ -129,6 +143,18 @@
               ]}
             >
               <.icon name="hero-heart" class="mr-3 h-5 w-5 flex-shrink-0" /> Family Relations
+            </.link>
+            <.link
+              navigate={~p"/admin/attendance-categories"}
+              class={[
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                if(String.starts_with?(@current_path || "", "/admin/attendance-categories"),
+                  do: "bg-primary-500/10 text-primary-500",
+                  else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+                )
+              ]}
+            >
+              <.icon name="hero-tag" class="mr-3 h-5 w-5 flex-shrink-0" /> Attendance Categories
             </.link>
           </div>
         <% end %>
@@ -264,6 +290,19 @@
           <.icon name="hero-calendar-days" class="mr-3 h-5 w-5" /> Calendar
         </.link>
 
+        <.link
+          navigate={~p"/attendance"}
+          class={[
+            "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+            if(String.starts_with?(@current_path || "", "/attendance"),
+              do: "bg-primary-500/10 text-primary-500",
+              else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+            )
+          ]}
+        >
+          <.icon name="hero-clipboard-document-check" class="mr-3 h-5 w-5" /> Attendance
+        </.link>
+
         <%!-- Admin Section - Only visible to admins and super_admins --%>
         <%= if @current_user && @current_user.role in [:super_admin, :admin] do %>
           <div class="pt-4 mt-4 border-t border-dark-700">
@@ -317,6 +356,18 @@
               ]}
             >
               <.icon name="hero-heart" class="mr-3 h-5 w-5" /> Family Relations
+            </.link>
+            <.link
+              navigate={~p"/admin/attendance-categories"}
+              class={[
+                "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                if(String.starts_with?(@current_path || "", "/admin/attendance-categories"),
+                  do: "bg-primary-500/10 text-primary-500",
+                  else: "text-gray-400 hover:bg-dark-700 hover:text-white"
+                )
+              ]}
+            >
+              <.icon name="hero-tag" class="mr-3 h-5 w-5" /> Attendance Categories
             </.link>
           </div>
         <% end %>
