@@ -97,7 +97,8 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
           total_attendance: 0,
           average_attendance: 0,
           by_category: [],
-          by_day_of_week: []
+          by_day_of_week: [],
+          by_week: []
         })
         |> put_flash(:error, "Failed to load report data")
     end
@@ -154,12 +155,44 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
       end)
       |> Enum.sort_by(& &1.day)
 
+    # Group by week (week starts on Sunday)
+    by_week =
+      sessions
+      |> Enum.group_by(fn s ->
+        date = DateTime.to_date(s.session_datetime)
+        # Get the Sunday of the week (start of week)
+        day_of_week = Date.day_of_week(date, :sunday)
+        Date.add(date, -(day_of_week - 1))
+      end)
+      |> Enum.map(fn {week_start, week_sessions} ->
+        week_end = Date.add(week_start, 6)
+        week_total = week_sessions |> Enum.map(& &1.total_present) |> Enum.sum()
+        week_count = length(week_sessions)
+        week_avg = if week_count > 0, do: Float.round(week_total / week_count, 1), else: 0
+
+        # Sort sessions within the week by datetime
+        sorted_sessions =
+          week_sessions
+          |> Enum.sort_by(& &1.session_datetime, DateTime)
+
+        %{
+          week_start: week_start,
+          week_end: week_end,
+          sessions: sorted_sessions,
+          session_count: week_count,
+          total_attendance: week_total,
+          average: week_avg
+        }
+      end)
+      |> Enum.sort_by(& &1.week_start, {:desc, Date})
+
     %{
       total_sessions: total_sessions,
       total_attendance: total_attendance,
       average_attendance: average_attendance,
       by_category: by_category,
-      by_day_of_week: by_day_of_week
+      by_day_of_week: by_day_of_week,
+      by_week: by_week
     }
   end
 
@@ -351,10 +384,84 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
         </div>
       </div>
 
+      <%!-- Weekly Services Attendance --%>
+      <div class="mt-6 bg-dark-800 rounded-lg border border-dark-700 overflow-hidden">
+        <div class="px-6 py-4 border-b border-dark-700">
+          <h3 class="text-lg font-semibold text-white">Weekly Services Attendance</h3>
+          <p class="text-sm text-gray-400 mt-1">Attendance breakdown by week with date and time</p>
+        </div>
+        <div class="divide-y divide-dark-700">
+          <div :for={week <- @stats.by_week} class="p-6">
+            <%!-- Week Header --%>
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h4 class="text-md font-semibold text-white">
+                  Week of {Calendar.strftime(week.week_start, "%b %d")} - {Calendar.strftime(week.week_end, "%b %d, %Y")}
+                </h4>
+                <p class="text-xs text-gray-500 mt-1">
+                  {week.session_count} sessions • {week.total_attendance} total attendance • Avg: {week.average}
+                </p>
+              </div>
+              <div class="text-right">
+                <span class="text-2xl font-bold text-primary-400">{week.total_attendance}</span>
+                <p class="text-xs text-gray-500">attendees</p>
+              </div>
+            </div>
+            <%!-- Sessions in this week --%>
+            <div class="bg-dark-700/30 rounded-lg overflow-hidden">
+              <table class="min-w-full">
+                <thead>
+                  <tr class="border-b border-dark-600">
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Date</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Day</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Time</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Category</th>
+                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-400 uppercase">Attendance</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-dark-600/50">
+                  <tr
+                    :for={session <- week.sessions}
+                    class="hover:bg-dark-600/30 transition-colors cursor-pointer"
+                    phx-click={JS.navigate(~p"/attendance/#{session.id}")}
+                  >
+                    <td class="px-4 py-3 text-sm text-white">
+                      {Calendar.strftime(session.session_datetime, "%b %d, %Y")}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-300">
+                      {Calendar.strftime(session.session_datetime, "%A")}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-300">
+                      {Calendar.strftime(session.session_datetime, "%I:%M %p")}
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center">
+                        <div
+                          class="w-2 h-2 rounded-full mr-2"
+                          style={"background-color: #{session.category.color};"}
+                        >
+                        </div>
+                        <span class="text-sm text-gray-300">{session.category.name}</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <span class="text-sm font-semibold text-white">{session.total_present}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div :if={@stats.by_week == []} class="px-6 py-12 text-center text-gray-500">
+            No weekly data available
+          </div>
+        </div>
+      </div>
+
       <%!-- Sessions Table --%>
       <div class="mt-6 bg-dark-800 rounded-lg border border-dark-700 overflow-hidden">
         <div class="px-6 py-4 border-b border-dark-700">
-          <h3 class="text-lg font-semibold text-white">Session Details</h3>
+          <h3 class="text-lg font-semibold text-white">All Sessions</h3>
         </div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-dark-700">
