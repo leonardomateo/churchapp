@@ -13,17 +13,15 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
         _ -> []
       end
 
-    # Default date range: last 30 days
-    end_date = Date.utc_today()
-    start_date = Date.add(end_date, -30)
+    # Default date: 30 days ago (shows all sessions from that date onwards)
+    default_date = Date.add(Date.utc_today(), -30)
 
     socket =
       socket
       |> assign(:page_title, "Attendance Reports")
       |> assign(:categories, categories)
       |> assign(:category_filter, "")
-      |> assign(:start_date, Date.to_iso8601(start_date))
-      |> assign(:end_date, Date.to_iso8601(end_date))
+      |> assign(:filter_date, Date.to_iso8601(default_date))
       |> fetch_report_data()
 
     {:ok, socket}
@@ -36,13 +34,9 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
     |> then(&{:noreply, &1})
   end
 
-  def handle_event("update_date_range", params, socket) do
-    start_date = Map.get(params, "start_date", socket.assigns.start_date)
-    end_date = Map.get(params, "end_date", socket.assigns.end_date)
-
+  def handle_event("update_date", %{"date" => date}, socket) do
     socket
-    |> assign(:start_date, start_date)
-    |> assign(:end_date, end_date)
+    |> assign(:filter_date, date)
     |> fetch_report_data()
     |> then(&{:noreply, &1})
   end
@@ -52,7 +46,7 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
 
     {:noreply,
      push_event(socket, "download", %{
-       filename: "attendance_report_#{socket.assigns.start_date}_#{socket.assigns.end_date}.csv",
+       filename: "attendance_report_from_#{socket.assigns.filter_date}.csv",
        content: csv_data
      })}
   end
@@ -60,26 +54,18 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
   defp fetch_report_data(socket) do
     actor = socket.assigns[:current_user]
 
-    # Parse dates with validation
-    start_date_result = Date.from_iso8601(socket.assigns.start_date)
-    end_date_result = Date.from_iso8601(socket.assigns.end_date)
-
     query =
       Chms.Church.AttendanceSessions
       |> Ash.Query.sort(session_datetime: :desc)
       |> Ash.Query.load(:category)
 
-    # Apply date filter only if both dates are valid
+    # Apply date filter - show sessions from this date onwards
     query =
-      case {start_date_result, end_date_result} do
-        {{:ok, start_date}, {:ok, end_date}} ->
-          # Ensure end_date includes the full day by using less than next day
-          end_date_next = Date.add(end_date, 1)
-
+      case Date.from_iso8601(socket.assigns.filter_date) do
+        {:ok, filter_date} ->
           Ash.Query.filter(
             query,
-            session_datetime >= ^DateTime.new!(start_date, ~T[00:00:00], "Etc/UTC") and
-              session_datetime < ^DateTime.new!(end_date_next, ~T[00:00:00], "Etc/UTC")
+            session_datetime >= ^DateTime.new!(filter_date, ~T[00:00:00], "Etc/UTC")
           )
 
         _ ->
@@ -228,7 +214,7 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
           <label class="block text-xs font-medium text-gray-400 mb-1">Category</label>
           <select
             name="category"
-            class="w-full px-4 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer"
+            class="w-full h-[38px] px-4 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer"
           >
             <option value="" selected={@category_filter == ""}>All Categories</option>
             <option
@@ -240,30 +226,23 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
             </option>
           </select>
         </form>
-        <form phx-change="update_date_range" class="flex gap-4 items-end">
+        <form phx-change="update_date" class="flex gap-4 items-end">
           <div>
-            <label class="block text-xs font-medium text-gray-400 mb-1">Start Date</label>
+            <label class="block text-xs font-medium text-gray-400 mb-1">Date</label>
             <input
               type="date"
-              name="start_date"
-              value={@start_date}
-              class="px-4 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-400 mb-1">End Date</label>
-            <input
-              type="date"
-              name="end_date"
-              value={@end_date}
-              class="px-4 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              name="date"
+              value={@filter_date}
+              phx-hook="DatePickerClose"
+              id="filter-date"
+              class="h-[38px] px-4 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
         </form>
         <button
           type="button"
           phx-click="export_csv"
-          class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-300 bg-dark-700 hover:bg-dark-600 rounded-md border border-dark-600 transition-colors"
+          class="inline-flex items-center h-[38px] px-4 text-sm font-medium text-gray-300 bg-dark-700 hover:bg-dark-600 rounded-md border border-dark-600 transition-colors"
         >
           <.icon name="hero-arrow-down-tray" class="mr-2 h-4 w-4" /> Export CSV
         </button>

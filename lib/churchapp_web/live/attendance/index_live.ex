@@ -161,7 +161,7 @@ defmodule ChurchappWeb.AttendanceLive.IndexLive do
           <select
             name="category"
             value={@category_filter}
-            class="w-full px-4 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer"
+            class="w-full h-[38px] px-4 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer"
           >
             <option value="">All Categories</option>
             <option :for={category <- @categories} value={category.id}>
@@ -174,7 +174,9 @@ defmodule ChurchappWeb.AttendanceLive.IndexLive do
             type="date"
             name="date"
             value={@date_filter}
-            class="px-4 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            phx-hook="DatePickerClose"
+            id="filter-date"
+            class="h-[38px] px-4 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </form>
         <%= if @category_filter != "" || @date_filter != "" do %>

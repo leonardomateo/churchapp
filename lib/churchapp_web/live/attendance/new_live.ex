@@ -334,8 +334,9 @@ defmodule ChurchappWeb.AttendanceLive.NewLive do
                     id="session_date"
                     name="attendance[session_date]"
                     value={@form_data["session_date"]}
+                    phx-hook="DatePickerClose"
                     class={[
-                      "w-full px-4 py-2 text-gray-200 bg-dark-700 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+                      "w-full h-[38px] px-4 text-gray-200 bg-dark-700 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent",
                       @form_errors[:date] && "border-red-500",
                       !@form_errors[:date] && "border-dark-600"
                     ]}
@@ -355,8 +356,9 @@ defmodule ChurchappWeb.AttendanceLive.NewLive do
                     id="session_time"
                     name="attendance[session_time]"
                     value={@form_data["session_time"]}
+                    phx-hook="DatePickerClose"
                     class={[
-                      "w-full px-4 py-2 text-gray-200 bg-dark-700 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+                      "w-full h-[38px] px-4 text-gray-200 bg-dark-700 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent",
                       @form_errors[:time] && "border-red-500",
                       !@form_errors[:time] && "border-dark-600"
                     ]}

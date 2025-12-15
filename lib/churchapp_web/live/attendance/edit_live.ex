@@ -330,8 +330,10 @@ defmodule ChurchappWeb.AttendanceLive.EditLive do
                   phx-change="update_date"
                   name="date"
                   value={@session_date}
+                  phx-hook="DatePickerClose"
+                  id="session-date"
                   class={[
-                    "w-full px-4 py-2 text-gray-200 bg-dark-700 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+                    "w-full h-[38px] px-4 text-gray-200 bg-dark-700 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent",
                     @form_errors[:date] && "border-red-500",
                     !@form_errors[:date] && "border-dark-600"
                   ]}
@@ -351,8 +353,10 @@ defmodule ChurchappWeb.AttendanceLive.EditLive do
                   phx-change="update_time"
                   name="time"
                   value={@session_time}
+                  phx-hook="DatePickerClose"
+                  id="session-time"
                   class={[
-                    "w-full px-4 py-2 text-gray-200 bg-dark-700 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+                    "w-full h-[38px] px-4 text-gray-200 bg-dark-700 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent",
                     @form_errors[:time] && "border-red-500",
                     !@form_errors[:time] && "border-dark-600"
                   ]}
