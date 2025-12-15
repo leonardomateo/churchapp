@@ -40,6 +40,22 @@ defmodule ChurchappWeb.AttendanceLive.EditLive do
         session_time =
           DateTime.to_time(session.session_datetime) |> Time.to_iso8601() |> String.slice(0, 5)
 
+        # Determine attendance mode based on whether there are individual records
+        # If no records but there's a total_present, it's headcount mode
+        attendance_mode =
+          if length(session.records) == 0 and session.total_present > 0 do
+            "headcount"
+          else
+            "individual"
+          end
+
+        manual_count =
+          if attendance_mode == "headcount" do
+            Integer.to_string(session.total_present)
+          else
+            ""
+          end
+
         socket =
           socket
           |> assign(:page_title, "Edit Attendance")
@@ -51,6 +67,8 @@ defmodule ChurchappWeb.AttendanceLive.EditLive do
           |> assign(:session_time, session_time)
           |> assign(:notes, session.notes || "")
           |> assign(:selected_congregant_ids, selected_ids)
+          |> assign(:attendance_mode, attendance_mode)
+          |> assign(:manual_count, manual_count)
           |> assign(:search_query, "")
           |> assign(:form_errors, %{})
 
@@ -100,6 +118,28 @@ defmodule ChurchappWeb.AttendanceLive.EditLive do
 
   def handle_event("update_notes", %{"notes" => notes}, socket) do
     {:noreply, assign(socket, :notes, notes)}
+  end
+
+  def handle_event("set_attendance_mode", %{"mode" => mode}, socket) do
+    # Clear mode-specific errors when switching
+    form_errors =
+      socket.assigns.form_errors
+      |> Map.delete(:congregants)
+      |> Map.delete(:manual_count)
+
+    {:noreply,
+     socket
+     |> assign(:attendance_mode, mode)
+     |> assign(:form_errors, form_errors)}
+  end
+
+  def handle_event("update_manual_count", %{"count" => count}, socket) do
+    form_errors = Map.delete(socket.assigns.form_errors, :manual_count)
+
+    {:noreply,
+     socket
+     |> assign(:manual_count, count)
+     |> assign(:form_errors, form_errors)}
   end
 
   def handle_event("search_congregants", %{"query" => query}, socket) do
@@ -191,19 +231,45 @@ defmodule ChurchappWeb.AttendanceLive.EditLive do
         errors
       end
 
+    # Mode-specific validation
     errors =
-      if MapSet.size(assigns.selected_congregant_ids) == 0 do
-        Map.put(errors, :congregants, "Please select at least one congregant")
-      else
-        errors
+      case assigns.attendance_mode do
+        "headcount" ->
+          manual_count = assigns.manual_count || ""
+
+          cond do
+            manual_count == "" ->
+              Map.put(errors, :manual_count, "Please enter the attendance count")
+
+            not valid_positive_integer?(manual_count) ->
+              Map.put(errors, :manual_count, "Please enter a valid positive number")
+
+            true ->
+              errors
+          end
+
+        _ ->
+          if MapSet.size(assigns.selected_congregant_ids) == 0 do
+            Map.put(errors, :congregants, "Please select at least one congregant")
+          else
+            errors
+          end
       end
 
     errors
   end
 
+  defp valid_positive_integer?(value) do
+    case Integer.parse(value) do
+      {num, ""} when num > 0 -> true
+      _ -> false
+    end
+  end
+
   defp update_session_with_records(socket) do
     actor = socket.assigns[:current_user]
     session = socket.assigns.session
+    mode = socket.assigns.attendance_mode
 
     # Parse datetime
     datetime =
@@ -224,28 +290,36 @@ defmodule ChurchappWeb.AttendanceLive.EditLive do
 
     case Chms.Church.update_attendance_session(session, session_attrs, actor: actor) do
       {:ok, updated_session} ->
-        # Delete all existing records
+        # Delete all existing records (for both modes)
         Enum.each(session.records, fn record ->
           Chms.Church.destroy_attendance_record(record, actor: actor)
         end)
 
-        # Create new records
-        selected_ids = MapSet.to_list(socket.assigns.selected_congregant_ids)
+        case mode do
+          "headcount" ->
+            # Headcount mode: just set the total_present directly
+            {count, _} = Integer.parse(socket.assigns.manual_count)
+            Chms.Church.update_attendance_session_total(updated_session, count, actor: actor)
 
-        Enum.each(selected_ids, fn congregant_id ->
-          record_attrs = %{
-            session_id: updated_session.id,
-            congregant_id: congregant_id,
-            present: true
-          }
+          _ ->
+            # Individual mode: create new records
+            selected_ids = MapSet.to_list(socket.assigns.selected_congregant_ids)
 
-          Chms.Church.create_attendance_record(record_attrs, actor: actor)
-        end)
+            Enum.each(selected_ids, fn congregant_id ->
+              record_attrs = %{
+                session_id: updated_session.id,
+                congregant_id: congregant_id,
+                present: true
+              }
 
-        # Update the total_present count
-        Chms.Church.update_attendance_session_total(updated_session, length(selected_ids),
-          actor: actor
-        )
+              Chms.Church.create_attendance_record(record_attrs, actor: actor)
+            end)
+
+            # Update the total_present count
+            Chms.Church.update_attendance_session_total(updated_session, length(selected_ids),
+              actor: actor
+            )
+        end
 
         {:ok, updated_session}
 
@@ -287,6 +361,52 @@ defmodule ChurchappWeb.AttendanceLive.EditLive do
           <h2 class="text-2xl font-bold text-white">Edit Attendance</h2>
           <p class="mt-1 text-sm text-gray-400">
             Update the session details and attendance records
+          </p>
+        </div>
+
+        <%!-- Attendance Mode Toggle --%>
+        <div class="mb-6 bg-dark-800 rounded-lg border border-dark-700 p-4">
+          <label class="block text-sm font-medium text-gray-300 mb-3">
+            Attendance Mode
+          </label>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              phx-click="set_attendance_mode"
+              phx-value-mode="individual"
+              class={[
+                "flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                @attendance_mode == "individual" &&
+                  "bg-primary-500 text-white",
+                @attendance_mode != "individual" &&
+                  "bg-dark-700 text-gray-400 hover:bg-dark-600 hover:text-white"
+              ]}
+            >
+              <.icon name="hero-user-group" class="h-4 w-4 inline mr-2" />
+              Individual (Select Names)
+            </button>
+            <button
+              type="button"
+              phx-click="set_attendance_mode"
+              phx-value-mode="headcount"
+              class={[
+                "flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                @attendance_mode == "headcount" &&
+                  "bg-primary-500 text-white",
+                @attendance_mode != "headcount" &&
+                  "bg-dark-700 text-gray-400 hover:bg-dark-600 hover:text-white"
+              ]}
+            >
+              <.icon name="hero-calculator" class="h-4 w-4 inline mr-2" />
+              Headcount (Total Only)
+            </button>
+          </div>
+          <p class="mt-2 text-xs text-gray-500">
+            <%= if @attendance_mode == "individual" do %>
+              Select individual congregants to mark as present
+            <% else %>
+              Enter just the total attendance count without individual names
+            <% end %>
           </p>
         </div>
 
@@ -381,17 +501,50 @@ defmodule ChurchappWeb.AttendanceLive.EditLive do
               </div>
             </div>
 
+            <%!-- Headcount Input (only in headcount mode) --%>
+            <div :if={@attendance_mode == "headcount"} class="bg-dark-800 rounded-lg border border-dark-700 p-6">
+              <h3 class="text-lg font-semibold text-white mb-4">Total Attendance</h3>
+              <div>
+                <label for="manual_count" class="block text-sm font-medium text-gray-300 mb-2">
+                  Number of Attendees <span class="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="manual_count"
+                  phx-change="update_manual_count"
+                  name="count"
+                  min="1"
+                  value={@manual_count}
+                  placeholder="Enter total count..."
+                  class={[
+                    "w-full px-4 py-3 text-2xl font-bold text-center text-gray-200 bg-dark-700 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+                    @form_errors[:manual_count] && "border-red-500",
+                    !@form_errors[:manual_count] && "border-dark-600"
+                  ]}
+                />
+                <p :if={@form_errors[:manual_count]} class="mt-1 text-sm text-red-400">
+                  {@form_errors[:manual_count]}
+                </p>
+              </div>
+            </div>
+
             <%!-- Summary Card --%>
             <div class="bg-dark-800 rounded-lg border border-dark-700 p-6">
               <h3 class="text-lg font-semibold text-white mb-4">Summary</h3>
               <div class="space-y-3">
                 <div class="flex justify-between items-center">
-                  <span class="text-gray-400">Selected</span>
+                  <span class="text-gray-400">
+                    <%= if @attendance_mode == "headcount", do: "Total", else: "Selected" %>
+                  </span>
                   <span class="text-2xl font-bold text-primary-500">
-                    {MapSet.size(@selected_congregant_ids)}
+                    <%= if @attendance_mode == "headcount" do %>
+                      <%= if @manual_count != "", do: @manual_count, else: "0" %>
+                    <% else %>
+                      {MapSet.size(@selected_congregant_ids)}
+                    <% end %>
                   </span>
                 </div>
-                <div class="flex justify-between items-center text-sm">
+                <div :if={@attendance_mode == "individual"} class="flex justify-between items-center text-sm">
                   <span class="text-gray-500">Previously recorded</span>
                   <span class="text-gray-400">{length(@session.records)}</span>
                 </div>
@@ -406,8 +559,8 @@ defmodule ChurchappWeb.AttendanceLive.EditLive do
             </div>
           </div>
 
-          <%!-- Right Column: Congregant Selection --%>
-          <div class="lg:col-span-2">
+          <%!-- Right Column: Congregant Selection (only in individual mode) --%>
+          <div :if={@attendance_mode == "individual"} class="lg:col-span-2">
             <div class="bg-dark-800 rounded-lg border border-dark-700 p-6">
               <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold text-white">
@@ -497,6 +650,28 @@ defmodule ChurchappWeb.AttendanceLive.EditLive do
                 <div :if={@filtered_congregants == []} class="py-8 text-center text-gray-500">
                   <.icon name="hero-user-group" class="h-8 w-8 mx-auto mb-2 text-gray-600" />
                   <p>No congregants found</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <%!-- Right Column: Headcount Info (only in headcount mode) --%>
+          <div :if={@attendance_mode == "headcount"} class="lg:col-span-2">
+            <div class="bg-dark-800 rounded-lg border border-dark-700 p-6">
+              <div class="flex flex-col items-center justify-center py-12 text-center">
+                <div class="w-16 h-16 bg-primary-500/20 rounded-full flex items-center justify-center mb-4">
+                  <.icon name="hero-calculator" class="h-8 w-8 text-primary-400" />
+                </div>
+                <h3 class="text-lg font-semibold text-white mb-2">Headcount Mode</h3>
+                <p class="text-gray-400 max-w-sm">
+                  Enter the total number of attendees in the left panel.
+                  Individual congregant records will not be created.
+                </p>
+                <div class="mt-6 p-4 bg-dark-700/50 rounded-lg">
+                  <p class="text-sm text-gray-500">
+                    <.icon name="hero-information-circle" class="h-4 w-4 inline mr-1" />
+                    Use this mode for services where you only have a headcount
+                  </p>
                 </div>
               </div>
             </div>

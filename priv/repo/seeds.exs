@@ -936,6 +936,106 @@ else
   end
 end
 
+# Seed Service Attendance (Tuesdays, Fridays, Sundays - quantity only, no congregant records)
+IO.puts("\nSeeding service attendance (50 sessions on Tue/Fri/Sun)...")
+
+# Find the Services category
+services_category =
+  case Chms.Church.AttendanceCategories
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, categories} -> Enum.find(categories, fn c -> c.name == "Services" end)
+    _ -> nil
+  end
+
+if is_nil(services_category) do
+  IO.puts("⊙ Services category not found, skipping service attendance seed")
+else
+  # Check how many service sessions already exist
+  existing_service_sessions =
+    case Chms.Church.AttendanceSessions
+         |> Ash.Query.for_read(:read)
+         |> Ash.read(authorize?: false) do
+      {:ok, sessions} -> Enum.filter(sessions, fn s -> s.category_id == services_category.id end)
+      _ -> []
+    end
+
+  if length(existing_service_sessions) >= 50 do
+    IO.puts("⊙ Service attendance sessions already exist (#{length(existing_service_sessions)}), skipping seed")
+  else
+    # Generate 50 service sessions on Tuesdays, Fridays, and Sundays
+    today = Date.utc_today()
+
+    # Service times based on day of week
+    service_times = %{
+      2 => ~T[19:00:00],  # Tuesday - 7 PM
+      5 => ~T[19:30:00],  # Friday - 7:30 PM
+      7 => ~T[10:00:00]   # Sunday - 10 AM
+    }
+
+    # Service notes
+    service_notes = [
+      "Regular service",
+      "Good attendance",
+      "Special prayer service",
+      "Guest speaker",
+      "Communion service",
+      "Youth-led worship",
+      "Anniversary celebration",
+      nil,
+      nil,
+      nil
+    ]
+
+    # Generate dates for Tuesdays (2), Fridays (5), and Sundays (7) going back
+    # We need 50 sessions, so roughly 17 weeks back (3 services per week)
+    service_dates =
+      0..120
+      |> Enum.map(fn days_back -> Date.add(today, -days_back) end)
+      |> Enum.filter(fn date ->
+        day_of_week = Date.day_of_week(date)
+        day_of_week in [2, 5, 7]  # Tuesday, Friday, Sunday
+      end)
+      |> Enum.take(50)
+
+    Enum.with_index(service_dates, 1)
+    |> Enum.each(fn {date, index} ->
+      day_of_week = Date.day_of_week(date)
+      time = Map.get(service_times, day_of_week, ~T[10:00:00])
+      session_datetime = DateTime.new!(date, time, "Etc/UTC")
+
+      # Random attendance between 45 and 150
+      attendance = Enum.random(45..150)
+
+      # Random notes
+      notes = Enum.random(service_notes)
+
+      session_attrs = %{
+        category_id: services_category.id,
+        session_datetime: session_datetime,
+        notes: notes
+      }
+
+      case Chms.Church.AttendanceSessions
+           |> Ash.Changeset.for_create(:create, session_attrs)
+           |> Ash.create(authorize?: false) do
+        {:ok, session} ->
+          # Update the total_present count
+          session
+          |> Ash.Changeset.for_update(:update_total_present, %{total: attendance})
+          |> Ash.update(authorize?: false)
+
+          day_name = Calendar.strftime(date, "%A")
+          IO.puts("✓ Service #{index}/50: #{day_name} #{Date.to_string(date)} at #{Time.to_string(time)} - #{attendance} attendees")
+
+        {:error, changeset} ->
+          IO.puts("✗ Failed to create service session #{index}")
+          IO.inspect(changeset.errors)
+      end
+    end)
+  end
+end
+
 # Seed Week Ending Reports
 IO.puts("\nSeeding week ending reports...")
 

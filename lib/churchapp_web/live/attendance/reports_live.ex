@@ -281,43 +281,6 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
         </button>
       </div>
 
-      <%!-- Stats Cards --%>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div class="bg-dark-800 rounded-lg border border-dark-700 p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-400">Total Sessions</p>
-              <p class="text-3xl font-bold text-white mt-1">{@stats.total_sessions}</p>
-            </div>
-            <div class="p-3 bg-blue-500/10 rounded-full">
-              <.icon name="hero-clipboard-document-list" class="h-6 w-6 text-blue-400" />
-            </div>
-          </div>
-        </div>
-        <div class="bg-dark-800 rounded-lg border border-dark-700 p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-400">Total Attendance</p>
-              <p class="text-3xl font-bold text-white mt-1">{@stats.total_attendance}</p>
-            </div>
-            <div class="p-3 bg-green-500/10 rounded-full">
-              <.icon name="hero-users" class="h-6 w-6 text-green-400" />
-            </div>
-          </div>
-        </div>
-        <div class="bg-dark-800 rounded-lg border border-dark-700 p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-400">Average per Session</p>
-              <p class="text-3xl font-bold text-white mt-1">{@stats.average_attendance}</p>
-            </div>
-            <div class="p-3 bg-primary-500/10 rounded-full">
-              <.icon name="hero-chart-bar" class="h-6 w-6 text-primary-400" />
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <%!-- By Category --%>
         <div class="bg-dark-800 rounded-lg border border-dark-700 p-6">
