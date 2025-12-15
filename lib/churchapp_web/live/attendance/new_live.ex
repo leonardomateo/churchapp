@@ -415,7 +415,7 @@ defmodule ChurchappWeb.AttendanceLive.NewLive do
                     id="category_id"
                     name="attendance[category_id]"
                     class={[
-                      "w-full px-4 py-2 text-gray-200 bg-dark-700 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer",
+                      "w-full h-10 px-4 text-gray-200 bg-dark-700 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer",
                       @form_errors[:category] && "border-red-500",
                       !@form_errors[:category] && "border-dark-600"
                     ]}
@@ -505,7 +505,7 @@ defmodule ChurchappWeb.AttendanceLive.NewLive do
                     value={@form_data["manual_count"]}
                     placeholder="Enter total count..."
                     class={[
-                      "w-full px-4 py-3 text-2xl font-bold text-center text-gray-200 bg-dark-700 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+                      "w-full pl-4 pr-10 py-2 text-gray-200 placeholder-gray-500 bg-dark-700 border rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent",
                       @form_errors[:manual_count] && "border-red-500",
                       !@form_errors[:manual_count] && "border-dark-600"
                     ]}
@@ -549,26 +549,10 @@ defmodule ChurchappWeb.AttendanceLive.NewLive do
             <%!-- Right Column: Congregant Selection (only in individual mode) --%>
             <div :if={@attendance_mode == "individual"} class="lg:col-span-2">
               <div class="bg-dark-800 rounded-lg border border-dark-700 p-6">
-                <div class="flex items-center justify-between mb-4">
+                <div class="mb-4">
                   <h3 class="text-lg font-semibold text-white">
                     Mark Present <span class="text-red-500">*</span>
                   </h3>
-                  <div class="flex items-center gap-2">
-                    <button
-                      type="button"
-                      phx-click="select_all"
-                      class="px-3 py-1 text-xs font-medium text-primary-400 hover:text-primary-300 bg-primary-500/10 hover:bg-primary-500/20 rounded transition-colors"
-                    >
-                      Select All
-                    </button>
-                    <button
-                      type="button"
-                      phx-click="deselect_all"
-                      class="px-3 py-1 text-xs font-medium text-gray-400 hover:text-gray-300 bg-dark-600 hover:bg-dark-500 rounded transition-colors"
-                    >
-                      Deselect All
-                    </button>
-                  </div>
                 </div>
 
                 <p :if={@form_errors[:congregants]} class="mb-4 text-sm text-red-400">
@@ -581,7 +565,7 @@ defmodule ChurchappWeb.AttendanceLive.NewLive do
                   <div class="relative">
                     <.icon
                       name="hero-magnifying-glass"
-                      class="absolute left-3 top-1/2 h-4 w-4 text-gray-500 transform -translate-y-1/2 pointer-events-none"
+                      class="absolute left-4 top-1/2 h-4 w-4 text-gray-500 transform -translate-y-1/2 pointer-events-none z-10"
                     />
                     <input
                       type="text"
@@ -590,7 +574,8 @@ defmodule ChurchappWeb.AttendanceLive.NewLive do
                       name="query"
                       value={@search_query}
                       placeholder="Search congregants..."
-                      class="w-full pl-10 pr-4 py-2 text-gray-200 placeholder-gray-500 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      style="padding-left: 2.75rem;"
+                      class="w-full py-2 pr-4 text-gray-200 placeholder-gray-500 bg-dark-700 border border-dark-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                   </div>
                 </div>

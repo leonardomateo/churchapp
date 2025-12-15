@@ -4,11 +4,13 @@ defmodule ChurchappWeb.AttendanceCategoriesLive.EditLive do
   alias AshPhoenix.Form
 
   def mount(%{"id" => id}, _session, socket) do
-    case Chms.Church.get_attendance_category_by_id(id) do
+    actor = socket.assigns[:current_user]
+
+    case Chms.Church.get_attendance_category_by_id(id, actor: actor) do
       {:ok, category} ->
         form =
           category
-          |> Form.for_update(:update, domain: Chms.Church, actor: socket.assigns.current_user)
+          |> Form.for_update(:update, domain: Chms.Church, actor: actor)
           |> to_form()
 
         socket =

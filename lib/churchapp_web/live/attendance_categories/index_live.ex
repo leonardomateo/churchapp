@@ -23,7 +23,9 @@ defmodule ChurchappWeb.AttendanceCategoriesLive.IndexLive do
   end
 
   def handle_event("confirm_delete", _params, socket) do
-    case Chms.Church.get_attendance_category_by_id(socket.assigns.delete_category_id) do
+    actor = socket.assigns[:current_user]
+
+    case Chms.Church.get_attendance_category_by_id(socket.assigns.delete_category_id, actor: actor) do
       {:ok, category} ->
         if category.is_system do
           {:noreply,
@@ -31,7 +33,7 @@ defmodule ChurchappWeb.AttendanceCategoriesLive.IndexLive do
            |> put_flash(:error, "Cannot delete system categories")
            |> assign(show_delete_confirm: false, delete_category_id: nil)}
         else
-          case Chms.Church.destroy_attendance_category(category) do
+          case Chms.Church.destroy_attendance_category(category, actor: actor) do
             :ok ->
               {:noreply,
                socket
@@ -56,11 +58,13 @@ defmodule ChurchappWeb.AttendanceCategoriesLive.IndexLive do
   end
 
   def handle_event("toggle_active", %{"id" => id}, socket) do
-    case Chms.Church.get_attendance_category_by_id(id) do
+    actor = socket.assigns[:current_user]
+
+    case Chms.Church.get_attendance_category_by_id(id, actor: actor) do
       {:ok, category} ->
         new_status = !category.active
 
-        case Chms.Church.update_attendance_category(category, %{active: new_status}) do
+        case Chms.Church.update_attendance_category(category, %{active: new_status}, actor: actor) do
           {:ok, updated} ->
             status_text = if updated.active, do: "activated", else: "deactivated"
 
