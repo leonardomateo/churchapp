@@ -57,9 +57,11 @@ defmodule ChurchappWeb.AttendanceLive.IndexLive do
   end
 
   def handle_event("confirm_delete", _params, socket) do
-    case Chms.Church.get_attendance_session_by_id(socket.assigns.delete_session_id) do
+    actor = socket.assigns[:current_user]
+
+    case Chms.Church.get_attendance_session_by_id(socket.assigns.delete_session_id, actor: actor) do
       {:ok, session} ->
-        case Chms.Church.destroy_attendance_session(session) do
+        case Chms.Church.destroy_attendance_session(session, actor: actor) do
           :ok ->
             {:noreply,
              socket

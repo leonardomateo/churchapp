@@ -43,7 +43,9 @@ defmodule ChurchappWeb.AttendanceLive.ShowLive do
   end
 
   def handle_event("confirm_delete", _params, socket) do
-    case Chms.Church.destroy_attendance_session(socket.assigns.session) do
+    actor = socket.assigns[:current_user]
+
+    case Chms.Church.destroy_attendance_session(socket.assigns.session, actor: actor) do
       :ok ->
         {:noreply,
          socket

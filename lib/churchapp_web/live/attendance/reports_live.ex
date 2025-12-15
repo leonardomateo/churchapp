@@ -36,16 +36,13 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
     |> then(&{:noreply, &1})
   end
 
-  def handle_event("update_start_date", %{"start_date" => date}, socket) do
-    socket
-    |> assign(:start_date, date)
-    |> fetch_report_data()
-    |> then(&{:noreply, &1})
-  end
+  def handle_event("update_date_range", params, socket) do
+    start_date = Map.get(params, "start_date", socket.assigns.start_date)
+    end_date = Map.get(params, "end_date", socket.assigns.end_date)
 
-  def handle_event("update_end_date", %{"end_date" => date}, socket) do
     socket
-    |> assign(:end_date, date)
+    |> assign(:start_date, start_date)
+    |> assign(:end_date, end_date)
     |> fetch_report_data()
     |> then(&{:noreply, &1})
   end
@@ -63,22 +60,30 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
   defp fetch_report_data(socket) do
     actor = socket.assigns[:current_user]
 
+    # Parse dates with validation
+    start_date_result = Date.from_iso8601(socket.assigns.start_date)
+    end_date_result = Date.from_iso8601(socket.assigns.end_date)
+
     query =
       Chms.Church.AttendanceSessions
       |> Ash.Query.sort(session_datetime: :desc)
       |> Ash.Query.load(:category)
 
-    # Apply date filter
+    # Apply date filter only if both dates are valid
     query =
-      with {:ok, start_date} <- Date.from_iso8601(socket.assigns.start_date),
-           {:ok, end_date} <- Date.from_iso8601(socket.assigns.end_date) do
-        Ash.Query.filter(
-          query,
-          fragment("?::date", session_datetime) >= ^start_date and
-            fragment("?::date", session_datetime) <= ^end_date
-        )
-      else
-        _ -> query
+      case {start_date_result, end_date_result} do
+        {{:ok, start_date}, {:ok, end_date}} ->
+          # Ensure end_date includes the full day by using less than next day
+          end_date_next = Date.add(end_date, 1)
+
+          Ash.Query.filter(
+            query,
+            session_datetime >= ^DateTime.new!(start_date, ~T[00:00:00], "Etc/UTC") and
+              session_datetime < ^DateTime.new!(end_date_next, ~T[00:00:00], "Etc/UTC")
+          )
+
+        _ ->
+          query
       end
 
     # Apply category filter
@@ -98,7 +103,7 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
         |> assign(:sessions, sessions)
         |> assign(:stats, stats)
 
-      {:error, _} ->
+      {:error, _error} ->
         socket
         |> assign(:sessions, [])
         |> assign(:stats, %{
@@ -112,7 +117,7 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
     end
   end
 
-  defp calculate_statistics(sessions, categories) do
+  defp calculate_statistics(sessions, _categories) do
     total_sessions = length(sessions)
     total_attendance = sessions |> Enum.map(& &1.total_present) |> Enum.sum()
 
@@ -123,12 +128,12 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
         0
       end
 
-    # Group by category
+    # Group by category - use the loaded category from each session
     by_category =
       sessions
-      |> Enum.group_by(& &1.category_id)
-      |> Enum.map(fn {category_id, cat_sessions} ->
-        category = Enum.find(categories, fn c -> c.id == category_id end)
+      |> Enum.group_by(& &1.category)
+      |> Enum.reject(fn {category, _} -> is_nil(category) end)
+      |> Enum.map(fn {category, cat_sessions} ->
         cat_total = cat_sessions |> Enum.map(& &1.total_present) |> Enum.sum()
         cat_count = length(cat_sessions)
         cat_avg = if cat_count > 0, do: Float.round(cat_total / cat_count, 1), else: 0
@@ -219,40 +224,42 @@ defmodule ChurchappWeb.AttendanceLive.ReportsLive do
 
       <%!-- Filters --%>
       <div class="mb-6 flex flex-col sm:flex-row gap-4 items-end">
-        <div class="flex-1 max-w-xs">
+        <form phx-change="filter_category" class="flex-1 max-w-xs">
           <label class="block text-xs font-medium text-gray-400 mb-1">Category</label>
           <select
-            phx-change="filter_category"
             name="category"
-            value={@category_filter}
             class="w-full px-4 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer"
           >
-            <option value="">All Categories</option>
-            <option :for={category <- @categories} value={category.id}>
+            <option value="" selected={@category_filter == ""}>All Categories</option>
+            <option
+              :for={category <- @categories}
+              value={category.id}
+              selected={@category_filter == category.id}
+            >
               {category.name}
             </option>
           </select>
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-400 mb-1">Start Date</label>
-          <input
-            type="date"
-            phx-change="update_start_date"
-            name="start_date"
-            value={@start_date}
-            class="px-4 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          />
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-400 mb-1">End Date</label>
-          <input
-            type="date"
-            phx-change="update_end_date"
-            name="end_date"
-            value={@end_date}
-            class="px-4 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          />
-        </div>
+        </form>
+        <form phx-change="update_date_range" class="flex gap-4 items-end">
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">Start Date</label>
+            <input
+              type="date"
+              name="start_date"
+              value={@start_date}
+              class="px-4 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">End Date</label>
+            <input
+              type="date"
+              name="end_date"
+              value={@end_date}
+              class="px-4 py-2 text-gray-200 bg-dark-800 border border-dark-700 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+        </form>
         <button
           type="button"
           phx-click="export_csv"

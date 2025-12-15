@@ -765,6 +765,177 @@ else
   end)
 end
 
+# Seed Attendance Sessions and Records
+IO.puts("\nSeeding attendance sessions and records...")
+
+# Get attendance categories
+attendance_categories =
+  case Chms.Church.AttendanceCategories
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, categories} -> categories
+    _ -> []
+  end
+
+# Get all congregants for attendance records
+all_congregants =
+  case Chms.Church.Congregants
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, congregants} -> congregants
+    _ -> []
+  end
+
+# Check for existing attendance sessions
+existing_attendance_sessions =
+  case Chms.Church.AttendanceSessions
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, sessions} -> sessions
+    _ -> []
+  end
+
+if length(existing_attendance_sessions) > 0 do
+  IO.puts("⊙ Attendance sessions already exist, skipping seed")
+else
+  if length(attendance_categories) == 0 do
+    IO.puts("⊙ No attendance categories found, skipping attendance sessions seed")
+  else
+    if length(all_congregants) == 0 do
+      IO.puts("⊙ No congregants found, skipping attendance sessions seed")
+    else
+      # Generate 20 attendance sessions over the last 60 days
+      today = Date.utc_today()
+
+      session_data =
+        Enum.map(1..20, fn i ->
+          # Pick a random category
+          category = Enum.random(attendance_categories)
+
+          # Generate a date within the last 60 days
+          days_ago = Enum.random(0..60)
+          session_date = Date.add(today, -days_ago)
+
+          # Pick appropriate times based on category type
+          {hour, minute} =
+            cond do
+              String.contains?(String.downcase(category.name), "service") or
+                  String.contains?(String.downcase(category.name), "sunday") ->
+                # Sunday services: morning times
+                Enum.random([{9, 0}, {10, 0}, {11, 0}])
+
+              String.contains?(String.downcase(category.name), "youth") ->
+                # Youth: evening times
+                Enum.random([{18, 0}, {19, 0}])
+
+              String.contains?(String.downcase(category.name), "prayer") ->
+                # Prayer: early morning or evening
+                Enum.random([{6, 0}, {7, 0}, {19, 0}, {20, 0}])
+
+              String.contains?(String.downcase(category.name), "bible") or
+                  String.contains?(String.downcase(category.name), "study") ->
+                # Bible study: evening
+                Enum.random([{18, 30}, {19, 0}, {19, 30}])
+
+              true ->
+                # Default: various times
+                Enum.random([{9, 0}, {10, 0}, {14, 0}, {18, 0}, {19, 0}])
+            end
+
+          session_datetime =
+            DateTime.new!(session_date, Time.new!(hour, minute, 0), "Etc/UTC")
+
+          # Random notes (40% chance)
+          notes =
+            if Enum.random(1..10) <= 4 do
+              Enum.random([
+                "Good attendance today",
+                "Guest speaker present",
+                "Special service",
+                "Holiday weekend - lower attendance",
+                "Communion Sunday",
+                "Youth-led worship",
+                "New members welcomed",
+                "Birthday celebrations",
+                "Anniversary service",
+                "Normal service"
+              ])
+            else
+              nil
+            end
+
+          %{
+            category_id: category.id,
+            session_datetime: session_datetime,
+            notes: notes,
+            # Will be updated after records are created
+            total_present: 0,
+            # Randomly select 5-30 congregants for this session
+            attendees: Enum.take_random(all_congregants, Enum.random(5..min(30, length(all_congregants))))
+          }
+        end)
+
+      # Create sessions and their attendance records
+      Enum.with_index(session_data, 1)
+      |> Enum.each(fn {session_attrs, index} ->
+        attendees = session_attrs.attendees
+        session_create_attrs = Map.drop(session_attrs, [:attendees, :total_present])
+
+        case Chms.Church.AttendanceSessions
+             |> Ash.Changeset.for_create(:create, session_create_attrs)
+             |> Ash.create(authorize?: false) do
+          {:ok, session} ->
+            # Create attendance records for each attendee
+            records_created =
+              Enum.reduce(attendees, 0, fn congregant, count ->
+                record_attrs = %{
+                  session_id: session.id,
+                  congregant_id: congregant.id,
+                  present: true,
+                  notes:
+                    if Enum.random(1..10) == 1 do
+                      Enum.random([
+                        "First time visitor",
+                        "Arrived late",
+                        "Left early",
+                        "Volunteered today",
+                        "Brought a guest"
+                      ])
+                    else
+                      nil
+                    end
+                }
+
+                case Chms.Church.AttendanceRecords
+                     |> Ash.Changeset.for_create(:create, record_attrs)
+                     |> Ash.create(authorize?: false) do
+                  {:ok, _record} -> count + 1
+                  {:error, _} -> count
+                end
+              end)
+
+            # Update the session with the total present count
+            session
+            |> Ash.Changeset.for_update(:update_total_present, %{total: records_created})
+            |> Ash.update(authorize?: false)
+
+            # Find category name for display
+            category = Enum.find(attendance_categories, fn c -> c.id == session.category_id end)
+            category_name = if category, do: category.name, else: "Unknown"
+
+            IO.puts(
+              "✓ Created session #{index}/20: #{category_name} on #{Date.to_string(DateTime.to_date(session.session_datetime))} with #{records_created} attendees"
+            )
+
+          {:error, changeset} ->
+            IO.puts("✗ Failed to create attendance session #{index}")
+            IO.inspect(changeset.errors)
+        end
+      end)
+    end
+  end
+end
+
 # Seed Week Ending Reports
 IO.puts("\nSeeding week ending reports...")
 
@@ -1312,6 +1483,22 @@ total_attendance_categories =
     _ -> 0
   end
 
+total_attendance_sessions =
+  case Chms.Church.AttendanceSessions
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, all_sessions} -> length(all_sessions)
+    _ -> 0
+  end
+
+total_attendance_records =
+  case Chms.Church.AttendanceRecords
+       |> Ash.Query.for_read(:read)
+       |> Ash.read(authorize?: false) do
+    {:ok, all_records} -> length(all_records)
+    _ -> 0
+  end
+
 IO.puts("\n" <> String.duplicate("=", 50))
 IO.puts("DATABASE STATISTICS")
 IO.puts(String.duplicate("=", 50))
@@ -1321,6 +1508,8 @@ IO.puts("Total ministry fund transactions: #{total_ministry_funds}")
 IO.puts("Total week ending reports: #{total_week_ending_reports}")
 IO.puts("Total events: #{total_events}")
 IO.puts("Total attendance categories: #{total_attendance_categories}")
+IO.puts("Total attendance sessions: #{total_attendance_sessions}")
+IO.puts("Total attendance records: #{total_attendance_records}")
 IO.puts("\nCongregants by Status:")
 
 Enum.each(status_counts, fn {status, count} ->
